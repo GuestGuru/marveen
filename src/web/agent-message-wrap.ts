@@ -12,6 +12,7 @@ import {
   TRUSTED_PEER_PREAMBLE,
   CHANNEL_INBOUND_PREAMBLE,
   sanitizeAgentIdent,
+  sanitizeOriginNote,
 } from '../prompt-safety.js'
 import { isTrustedPeer } from '../team-trust.js'
 import { MAIN_AGENT_ID } from '../config.js'
@@ -82,7 +83,10 @@ export function wrapAgentMessageForDelivery(
   // rather than "verified" in the wording, and it renders identically in
   // both the trusted-peer and untrusted framing so it never reads as extra
   // credibility.
-  const originSuffix = originNote ? `, self-tagged origin:"${originNote}"` : ''
+  // Sanitize before it enters the trusted framing text -- a raw note could
+  // otherwise forge a trusted-peer line and inject instructions cross-agent.
+  const safeOrigin = sanitizeOriginNote(originNote)
+  const originSuffix = safeOrigin ? `, self-tagged origin:"${safeOrigin}"` : ''
   if (category === 'trusted-peer') {
     return {
       wrapped: wrapTrustedPeer(`agent:${safeFrom}`, content),
