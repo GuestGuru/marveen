@@ -246,15 +246,18 @@ export async function syncFleetTokenFromSharedCredentials(claudeBin?: string): P
 // hasFleetOauthToken() is false, launches fall back to shared-file auth, and
 // the boot sync will only re-promote a credential that passes a live probe.
 
-const BAD_FLEET_TOKEN_PATH = FLEET_OAUTH_TOKEN_PATH + '.bad'
+// Lazy: FLEET_OAUTH_TOKEN_PATH comes through the agent-process <-> guard
+// import cycle, so a module-level concatenation evaluates in the TDZ and
+// crashes boot (ReferenceError; found live on the round-2 verify deploy).
+const badFleetTokenPath = () => FLEET_OAUTH_TOKEN_PATH + '.bad'
 
 export function quarantineFleetToken(reasonLabel: string): boolean {
   try {
     if (!existsSync(FLEET_OAUTH_TOKEN_PATH)) return false
-    renameSync(FLEET_OAUTH_TOKEN_PATH, BAD_FLEET_TOKEN_PATH)
+    renameSync(FLEET_OAUTH_TOKEN_PATH, badFleetTokenPath())
     try { rmSync(VERIFIED_STAMP, { force: true }) } catch { /* best effort */ }
     logger.error(
-      { to: BAD_FLEET_TOKEN_PATH, reason: reasonLabel },
+      { to: badFleetTokenPath(), reason: reasonLabel },
       'credentials-guard: QUARANTINED the fleet token (dead on live probe); newly launched agents fall back to shared-file auth. Restore with mv if this was a false positive.',
     )
     return true
