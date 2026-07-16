@@ -17,6 +17,12 @@ export interface ReauthState {
 // Each entry: a distinctive marker Claude Code renders on an auth failure, and
 // the short reason surfaced to the UI. Ordered most-specific first.
 const REAUTH_MARKERS: { rx: RegExp; reason: string }[] = [
+  // Not a token failure: Claude Code's FIRST-RUN picker, shown when
+  // ~/.claude.json lost hasCompletedOnboarding. It blocks the TUI exactly like
+  // a dead login (2026-07-15 bootcamp "mass /login": the on-disk credential was
+  // valid the whole time) and needs the same owner-visible badge/escalation.
+  // A monitored respawn self-heals it via ensureSharedClaudeOnboarded().
+  { rx: /Select login method/i, reason: 'First-run onboarding picker (Select login method)' },
   { rx: /Invalid authentication credentials/i, reason: 'Invalid authentication credentials (401)' },
   { rx: /Please run\s+\/login/i, reason: 'Please run /login' },
   { rx: /Not logged in/i, reason: 'Not logged in' },

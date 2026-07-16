@@ -204,6 +204,37 @@ export async function tryHandleOnboarding(ctx: RouteContext): Promise<boolean> {
     if (token && !/^sk-ant-oat/.test(token)) { json(res, { error: 'A setup-token formatuma nem stimmel (sk-ant-oat...).', reason: 'bad-token' }, 400); return true }
     if (apiKey && !/^sk-ant-/.test(apiKey)) { json(res, { error: 'Az API-kulcs formatuma nem stimmel (sk-ant-...).', reason: 'bad-key' }, 400); return true }
 
+    // Verify BEFORE persisting (no API spend: `claude auth status` only inspects
+    // the token). 2026-07-15 bootcamp bug 3: the old persist-then-verify order
+    // stored a mistyped/revoked token into .env + the fleet token file and still
+    // returned ok:true -- and since CLAUDE_CODE_OAUTH_TOKEN env strictly
+    // overrides a valid ~/.claude/.credentials.json, that single bad paste
+    // 401-ed ("Invalid bearer token") every sub-agent launched afterwards while
+    // the env-less main agent kept working. A rejected credential must never
+    // land on disk. Only a verification that RAN and failed blocks the persist;
+    // when the check itself cannot run (claude binary missing / timeout) we keep
+    // the old best-effort behaviour and store it as verified:false.
+    let verified = false
+    let verifyRejected = false
+    try {
+      execFileSync(resolveFromPath('claude'), ['auth', 'status'], {
+        timeout: 25_000,
+        stdio: 'ignore',
+        env: { ...process.env, ...(token ? { CLAUDE_CODE_OAUTH_TOKEN: token } : { ANTHROPIC_API_KEY: apiKey }) },
+      })
+      verified = true
+    } catch (err) {
+      // execFileSync sets a numeric `status` only when the process ran and
+      // exited non-zero (= the CLI actively rejected the credential); ENOENT
+      // and timeout leave it undefined/null.
+      verifyRejected = typeof (err as { status?: unknown }).status === 'number'
+    }
+    if (verifyRejected) {
+      logger.warn({ mode: token ? 'oauth' : 'apikey' }, 'onboarding: Claude auth REJECTED by `claude auth status`; nothing persisted')
+      json(res, { error: 'A megadott token/kulcs nem ervenyes (a claude auth status elutasitotta). Ellenorizd, hogy a teljes setup-tokent illesztetted-e be.', reason: 'verify-failed', verified: false }, 400)
+      return true
+    }
+
     try {
       if (token) {
         setEnvKey('CLAUDE_CODE_OAUTH_TOKEN', token)
@@ -217,17 +248,6 @@ export async function tryHandleOnboarding(ctx: RouteContext): Promise<boolean> {
       json(res, { error: 'Nem sikerult elmenteni az .env-be.', reason: 'write-failed' }, 500)
       return true
     }
-
-    // Verify WITHOUT an API spend: `claude auth status` only inspects the token.
-    let verified = false
-    try {
-      execFileSync(resolveFromPath('claude'), ['auth', 'status'], {
-        timeout: 25_000,
-        stdio: 'ignore',
-        env: { ...process.env, ...(token ? { CLAUDE_CODE_OAUTH_TOKEN: token } : { ANTHROPIC_API_KEY: apiKey }) },
-      })
-      verified = true
-    } catch { verified = false }
     logger.info({ verified, mode: token ? 'oauth' : 'apikey' }, 'onboarding: Claude auth stored')
     json(res, { ok: true, verified })
     return true

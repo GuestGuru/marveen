@@ -126,4 +126,33 @@ describe('detectReauthNeeded', () => {
     ].join('\n')
     expect(detectReauthNeeded(pane).needsReauth).toBe(false)
   })
+
+  // 2026-07-15 bootcamp "mass /login": the pane was NOT an auth failure but
+  // Claude Code's first-run picker (hasCompletedOnboarding lost from
+  // ~/.claude.json). It blocks the agent identically, so it must badge.
+  it('detects the first-run "Select login method" onboarding picker', () => {
+    const pane = [
+      ' Welcome to Claude Code',
+      '',
+      ' Select login method:',
+      '',
+      ' ❯ 1. Claude account with subscription',
+      '   2. Anthropic Console account',
+    ].join('\n')
+    const r = detectReauthNeeded(pane)
+    expect(r.needsReauth).toBe(true)
+    expect(r.reason).toMatch(/onboarding picker/i)
+  })
+
+  it('does NOT fire on a chat that merely mentions the picker in scrollback', () => {
+    const pane = [
+      '❯ a "Select login method" képernyőről beszéltünk',
+      ...Array.from({ length: 20 }, (_, i) => `... work line ${i} ...`),
+      '──────────────────────────────────────────────────────────────────────',
+      '❯ ',
+      '──────────────────────────────────────────────────────────────────────',
+      '  ⏵⏵ bypass permissions on (shift+tab to cycle)',
+    ].join('\n')
+    expect(detectReauthNeeded(pane).needsReauth).toBe(false)
+  })
 })

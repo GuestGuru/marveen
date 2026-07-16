@@ -746,6 +746,17 @@ if [ -n "${CLAUDE_AUTH_ENV_LINE:-}" ]; then
   echo "$CLAUDE_AUTH_ENV_LINE" >> "$INSTALL_DIR/.env"
 fi
 chmod 600 "$INSTALL_DIR/.env"
+# Fleet setup-token file: per-agent config-dir isolation and the credentials
+# guard are BOTH gated on store/.claude-oauth-token; without it every
+# sub-agent silently falls back to the shared rotating
+# ~/.claude/.credentials.json (2026-07-15 bootcamp bug family). Parity with
+# the dashboard wizard (/api/onboarding/claude-auth) and scripts/auth.sh.
+if [ -n "${OAUTH_TOKEN_INPUT:-}" ]; then
+  mkdir -p "$INSTALL_DIR/store"
+  printf '%s' "$OAUTH_TOKEN_INPUT" > "$INSTALL_DIR/store/.claude-oauth-token"
+  chmod 600 "$INSTALL_DIR/store/.claude-oauth-token"
+  ok "Fleet setup-token eltarolva (store/.claude-oauth-token) -- per-agent izolacio aktiv"
+fi
 ok ".env letrehozva (chmod 600)"
 
 # CLAUDE.md generalasa template-bol

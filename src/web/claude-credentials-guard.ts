@@ -109,6 +109,51 @@ function tokenIsValid(claudeBin: string): boolean {
 }
 
 /**
+ * Backfill the fleet token file from a setup-token that was pasted into a bare
+ * terminal `claude setup-token` run instead of the wizard.
+ *
+ * 2026-07-15 bootcamp root gap: `claude setup-token` writes its sk-ant-oat01
+ * pair ONLY into ~/.claude/.credentials.json. The wizard's claudeAuthPresent()
+ * then passes from that file alone, so the token-paste step is silently
+ * skipped, store/.claude-oauth-token is never created, and BOTH the per-agent
+ * config-dir isolation and this guard stay disabled -- the whole fleet keeps
+ * sharing one credentials.json. This sync closes that path at boot: when the
+ * fleet file is missing but the shared credentials.json holds a well-formed
+ * setup-token, live-test it and promote it to store/.claude-oauth-token (plus
+ * the verified stamp, so the guard does not re-test). Only ever promotes an
+ * sk-ant-oat01 (1-year, non-rotating) credential -- a rotating `claude auth
+ * login` session token never matches OAUTH_TOKEN_RX and is left alone.
+ *
+ * Deliberately does NOT touch .env: the wizard/auth.sh own that file, and a
+ * boot-time .env rewrite would silently flip the MAIN agent's auth source on
+ * existing installs. Sub-agent launches read the store file directly.
+ */
+export type FleetTokenSyncResult =
+  | 'fleet-token-present' | 'no-credentials' | 'not-setup-token' | 'live-test-failed' | 'synced' | 'error'
+
+export function syncFleetTokenFromSharedCredentials(claudeBin?: string): FleetTokenSyncResult {
+  try {
+    if (readFleetToken()) return 'fleet-token-present'
+    let accessToken = ''
+    try {
+      const parsed = JSON.parse(readFileSync(HOME_CREDENTIALS, 'utf-8')) as { claudeAiOauth?: { accessToken?: string } }
+      accessToken = (parsed?.claudeAiOauth?.accessToken ?? '').trim()
+    } catch { return 'no-credentials' }
+    if (!looksLikeSetupToken(accessToken)) return 'not-setup-token'
+    const bin = claudeBin ?? resolveFromPath('claude')
+    logger.info('credentials-guard: found a terminal-pasted setup-token in ~/.claude/.credentials.json with no fleet token file; live-testing before promoting it')
+    if (!liveTestToken(accessToken, bin)) { logger.warn('credentials-guard: setup-token in credentials.json failed the live test; not promoted'); return 'live-test-failed' }
+    writeFileSync(FLEET_OAUTH_TOKEN_PATH, accessToken, { mode: 0o600 })
+    try { writeFileSync(VERIFIED_STAMP, tokenHash(accessToken) + '\n', { mode: 0o600 }) } catch { /* stamp is an optimisation */ }
+    logger.warn({ to: FLEET_OAUTH_TOKEN_PATH }, 'credentials-guard: promoted the setup-token from ~/.claude/.credentials.json to the fleet token file; per-agent config isolation is now active for newly launched sub-agents')
+    return 'synced'
+  } catch (err) {
+    logger.warn({ err }, 'credentials-guard: fleet-token sync failed (continuing)')
+    return 'error'
+  }
+}
+
+/**
  * The guarded, idempotent, reversible action. Returns a short status for logging
  * and tests. Never throws; never logs the token.
  */

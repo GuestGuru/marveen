@@ -31,6 +31,14 @@ if [ -f "$INSTALL_DIR/.env" ]; then
   _api_key="$(grep -E '^ANTHROPIC_API_KEY=' "$INSTALL_DIR/.env" | head -1 | cut -d= -f2-)"
   [ -n "$_api_key" ] && export ANTHROPIC_API_KEY="$_api_key"
   _oauth="$(grep -E '^CLAUDE_CODE_OAUTH_TOKEN=' "$INSTALL_DIR/.env" | head -1 | cut -d= -f2-)"
+  # Fallback: the fleet setup-token file (written by the wizard / auth.sh /
+  # the boot-time credentials sync). Keeps the MAIN agent on the same stable
+  # token the sub-agents launch with, instead of the rotating
+  # ~/.claude/.credentials.json, even when .env carries no auth key
+  # (2026-07-15 bootcamp: terminal-pasted setup-token never reached .env).
+  if [ -z "$_oauth" ] && [ -s "$INSTALL_DIR/store/.claude-oauth-token" ]; then
+    _oauth="$(cat "$INSTALL_DIR/store/.claude-oauth-token")"
+  fi
   [ -n "$_oauth" ] && export CLAUDE_CODE_OAUTH_TOKEN="$_oauth"
   unset _api_key _oauth
 fi

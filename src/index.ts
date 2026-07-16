@@ -16,7 +16,7 @@ import { runDecaySweep, runDailyDigest } from './memory.js'
 import { initHeartbeat, stopHeartbeat } from './heartbeat.js'
 import { ensureHeartbeatAgent, shouldBootHeartbeatAgent, HEARTBEAT_AGENT_NAME } from './web/heartbeat-agent-scaffold.js'
 import { startAgentProcess } from './web/agent-process.js'
-import { renameSharedCredentialsIfSafe } from './web/claude-credentials-guard.js'
+import { renameSharedCredentialsIfSafe, syncFleetTokenFromSharedCredentials } from './web/claude-credentials-guard.js'
 import { startWebServer } from './web.js'
 import { logger } from './logger.js'
 import { startInviteMonitor, stopInviteMonitor } from './web/channel-invites.js'
@@ -494,6 +494,13 @@ async function main(): Promise<void> {
   // any install with the heartbeat sub-agent disabled (the common case) this
   // never ran at boot at all (found 2026-07-13 while diagnosing recurring
   // dead-token incidents).
+  //
+  // The sync runs FIRST: it backfills store/.claude-oauth-token from a
+  // terminal-pasted `claude setup-token` (which lands only in
+  // ~/.claude/.credentials.json and silently disables per-agent isolation AND
+  // the rename guard -- 2026-07-15 bootcamp root gap). Live-tested, oat01-only,
+  // no-op when the fleet file already exists.
+  syncFleetTokenFromSharedCredentials()
   renameSharedCredentialsIfSafe()
 
   if (shouldBootHeartbeatAgent({ respawnEnabled: RESPAWN_ENABLED, agentEnabled: HEARTBEAT_AGENT_ENABLED })) {
