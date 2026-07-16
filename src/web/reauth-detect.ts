@@ -23,6 +23,10 @@ const REAUTH_MARKERS: { rx: RegExp; reason: string }[] = [
   // valid the whole time) and needs the same owner-visible badge/escalation.
   // A monitored respawn self-heals it via ensureSharedClaudeOnboarded().
   { rx: /Select login method/i, reason: 'First-run onboarding picker (Select login method)' },
+  // The state the picker advances into when something blindly hits Enter on it
+  // (e.g. channels.sh's first-run guard): a browser OAuth prompt no headless
+  // box can complete. Same first-run-gate family, same restart heal.
+  { rx: /Use the url below to sign in|Paste code here if prompted/i, reason: 'Browser sign-in screen (first-run gate)' },
   { rx: /Invalid authentication credentials/i, reason: 'Invalid authentication credentials (401)' },
   { rx: /Please run\s+\/login/i, reason: 'Please run /login' },
   { rx: /Not logged in/i, reason: 'Not logged in' },

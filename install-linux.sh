@@ -751,10 +751,11 @@ chmod 600 "$INSTALL_DIR/.env"
 # sub-agent silently falls back to the shared rotating
 # ~/.claude/.credentials.json (2026-07-15 bootcamp bug family). Parity with
 # the dashboard wizard (/api/onboarding/claude-auth) and scripts/auth.sh.
-if [ -n "${OAUTH_TOKEN_INPUT:-}" ]; then
+# Shape-gated (a garbage paste must not poison every sub-agent launch) and
+# written under umask 077 (no 644 window before a chmod).
+if [ -n "${OAUTH_TOKEN_INPUT:-}" ] && printf '%s' "$OAUTH_TOKEN_INPUT" | grep -Eq '^sk-ant-oat01-[A-Za-z0-9_-]{40,}$'; then
   mkdir -p "$INSTALL_DIR/store"
-  printf '%s' "$OAUTH_TOKEN_INPUT" > "$INSTALL_DIR/store/.claude-oauth-token"
-  chmod 600 "$INSTALL_DIR/store/.claude-oauth-token"
+  (umask 077 && printf '%s' "$OAUTH_TOKEN_INPUT" > "$INSTALL_DIR/store/.claude-oauth-token")
   ok "Fleet setup-token eltarolva (store/.claude-oauth-token) -- per-agent izolacio aktiv"
 fi
 ok ".env letrehozva (chmod 600)"

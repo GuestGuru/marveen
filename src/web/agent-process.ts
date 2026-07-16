@@ -508,14 +508,14 @@ function provisionIsolatedConfigDir(
 export function ensureSharedClaudeOnboarded(dotClaudePath: string = join(homedir(), '.claude.json')): boolean {
   try {
     if (!existsSync(dotClaudePath)) {
-      atomicWriteFileSync(dotClaudePath, JSON.stringify({ hasCompletedOnboarding: true }, null, 2) + '\n')
+      atomicWriteFileSync(dotClaudePath, JSON.stringify({ hasCompletedOnboarding: true }, null, 2) + '\n', { mode: 0o600 })
       logger.info({ dotClaudePath }, 'shared-config: created ~/.claude.json with hasCompletedOnboarding')
       return true
     }
     const cur = JSON.parse(readFileSync(dotClaudePath, 'utf-8')) as Record<string, unknown>
     if (cur.hasCompletedOnboarding === true) return false
     cur.hasCompletedOnboarding = true
-    atomicWriteFileSync(dotClaudePath, JSON.stringify(cur, null, 2) + '\n')
+    atomicWriteFileSync(dotClaudePath, JSON.stringify(cur, null, 2) + '\n', { mode: 0o600 })
     logger.warn({ dotClaudePath }, 'shared-config: re-seeded missing hasCompletedOnboarding (prevents the first-run "Select login method" picker)')
     return true
   } catch (err) {

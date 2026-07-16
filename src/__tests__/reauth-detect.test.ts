@@ -156,3 +156,30 @@ describe('detectReauthNeeded', () => {
     expect(detectReauthNeeded(pane).needsReauth).toBe(false)
   })
 })
+
+// Second first-run-gate marker: the state a blind Enter on the picker advances
+// into (observed live 2026-07-16: channels.sh's first-run guard selected
+// option 1 and parked the session on the browser sign-in screen).
+describe('detectReauthNeeded: browser sign-in screen', () => {
+  it('detects the sign-in URL screen', () => {
+    const pane = [
+      ' Use the url below to sign in:',
+      '',
+      ' https://claude.ai/oauth/authorize?code=...',
+      '',
+      ' Paste code here if prompted >',
+    ].join('\n')
+    const r = detectReauthNeeded(pane)
+    expect(r.needsReauth).toBe(true)
+    expect(r.reason).toMatch(/sign-in screen/i)
+  })
+
+  it('does NOT re-fire on the healer escalation quoting the picker reason (self-loop regression)', () => {
+    const pane = [
+      ...Array.from({ length: 10 }, (_, i) => `... work line ${i} ...`),
+      '🔐 A(z) boni ágens halott OAuth tokent jelez (First-run onboarding picker (Select login method)) több mint ~9 perce.',
+      'Manuális browser /login kell a dashboardon (az ügynök kártyáján a "Bejelentkezés" gomb), automatikusan nem gyógyítható.',
+    ].join('\n')
+    expect(detectReauthNeeded(pane).needsReauth).toBe(false)
+  })
+})

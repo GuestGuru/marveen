@@ -274,6 +274,30 @@ if [ -n "$_node_bin" ] && [ -f "$INSTALL_DIR/dist/web/agent-process.js" ]; then
 fi
 unset _node_bin
 
+# Re-seed hasCompletedOnboarding in the SHARED ~/.claude.json BEFORE launching
+# the main claude. If the key was lost (2026-07-15 bootcamp incident), the
+# fresh TUI parks on the first-run "Select login method" picker -- and the
+# first-run guard below would blindly Enter it into a browser sign-in screen
+# no headless box can complete. Atomic tmp+rename; an unparseable file is left
+# for Claude Code to recover. Mirrors ensureSharedClaudeOnboarded() (the
+# in-process respawn paths); this covers the channels.sh cold-boot path.
+if command -v node >/dev/null 2>&1; then
+  node -e '
+    const fs = require("fs")
+    const p = require("path").join(require("os").homedir(), ".claude.json")
+    try {
+      let j = {}
+      if (fs.existsSync(p)) j = JSON.parse(fs.readFileSync(p, "utf-8"))
+      if (j.hasCompletedOnboarding !== true) {
+        j.hasCompletedOnboarding = true
+        const t = p + ".tmp-" + process.pid
+        fs.writeFileSync(t, JSON.stringify(j, null, 2) + "\n", { mode: 0o600 })
+        fs.renameSync(t, p)
+      }
+    } catch (e) { /* unparseable/unwritable: leave for Claude Code */ }
+  ' 2>/dev/null || true
+fi
+
 # Régi session takarítás
 $TMUX kill-session -t "$SESSION" 2>/dev/null
 

@@ -10,6 +10,7 @@ import { channelStateDir } from '../../channel-provider.js'
 import { sessionExistsOnHost } from '../agent-process.js'
 import { MAIN_CHANNELS_SESSION } from '../main-agent.js'
 import { hardRestartMarveenChannels } from '../channel-monitor.js'
+import { liveProbeAuth, stampTokenVerified } from '../claude-credentials-guard.js'
 import { json, readBody } from '../http-helpers.js'
 import type { RouteContext } from './types.js'
 
@@ -204,42 +205,33 @@ export async function tryHandleOnboarding(ctx: RouteContext): Promise<boolean> {
     if (token && !/^sk-ant-oat/.test(token)) { json(res, { error: 'A setup-token formatuma nem stimmel (sk-ant-oat...).', reason: 'bad-token' }, 400); return true }
     if (apiKey && !/^sk-ant-/.test(apiKey)) { json(res, { error: 'Az API-kulcs formatuma nem stimmel (sk-ant-...).', reason: 'bad-key' }, 400); return true }
 
-    // Verify BEFORE persisting (no API spend: `claude auth status` only inspects
-    // the token). 2026-07-15 bootcamp bug 3: the old persist-then-verify order
-    // stored a mistyped/revoked token into .env + the fleet token file and still
-    // returned ok:true -- and since CLAUDE_CODE_OAUTH_TOKEN env strictly
-    // overrides a valid ~/.claude/.credentials.json, that single bad paste
-    // 401-ed ("Invalid bearer token") every sub-agent launched afterwards while
-    // the env-less main agent kept working. A rejected credential must never
-    // land on disk. Only a verification that RAN and failed blocks the persist;
-    // when the check itself cannot run (claude binary missing / timeout) we keep
-    // the old best-effort behaviour and store it as verified:false.
-    let verified = false
-    let verifyRejected = false
-    try {
-      execFileSync(resolveFromPath('claude'), ['auth', 'status'], {
-        timeout: 25_000,
-        stdio: 'ignore',
-        env: { ...process.env, ...(token ? { CLAUDE_CODE_OAUTH_TOKEN: token } : { ANTHROPIC_API_KEY: apiKey }) },
-      })
-      verified = true
-    } catch (err) {
-      // execFileSync sets a numeric `status` only when the process ran and
-      // exited non-zero (= the CLI actively rejected the credential); ENOENT
-      // and timeout leave it undefined/null.
-      verifyRejected = typeof (err as { status?: unknown }).status === 'number'
-    }
-    if (verifyRejected) {
-      logger.warn({ mode: token ? 'oauth' : 'apikey' }, 'onboarding: Claude auth REJECTED by `claude auth status`; nothing persisted')
-      json(res, { error: 'A megadott token/kulcs nem ervenyes (a claude auth status elutasitotta). Ellenorizd, hogy a teljes setup-tokent illesztetted-e be.', reason: 'verify-failed', verified: false }, 400)
+    // Verify BEFORE persisting, with a REAL probe. 2026-07-15 bootcamp bug 3:
+    // the old persist-then-verify order stored a mistyped/revoked token into
+    // .env + the fleet token file and still returned ok:true -- and since
+    // CLAUDE_CODE_OAUTH_TOKEN env strictly overrides a valid
+    // ~/.claude/.credentials.json, that single bad paste 401-ed ("Invalid
+    // bearer token") every sub-agent launched afterwards while the env-less
+    // main agent kept working. NOTE: `claude auth status` is NOT a validator --
+    // it exits 0 for a garbage token (it reports the auth source; proven live
+    // on the reference VPS) -- so this uses liveProbeAuth (one tiny haiku
+    // `claude -p` call). Only a probe that PROVES the credential dead blocks
+    // the persist; an inconclusive probe (binary missing / network flake)
+    // keeps the old best-effort behaviour and stores it as verified:false.
+    const probe = await liveProbeAuth(token ? { CLAUDE_CODE_OAUTH_TOKEN: token } : { ANTHROPIC_API_KEY: apiKey })
+    if (probe === 'auth-rejected') {
+      logger.warn({ mode: token ? 'oauth' : 'apikey' }, 'onboarding: Claude auth REJECTED by live probe; nothing persisted')
+      json(res, { error: 'A megadott token/kulcs nem ervenyes (a proba-hivast a szerver elutasitotta). Ellenorizd, hogy a teljes setup-tokent illesztetted-e be.', reason: 'verify-failed', verified: false }, 400)
       return true
     }
+    const verified = probe === 'ok'
 
     try {
       if (token) {
         setEnvKey('CLAUDE_CODE_OAUTH_TOKEN', token)
         // Keep the credentials-guard fleet token file in sync (harmless if unused).
         try { mkdirSync(STORE_DIR, { recursive: true }); writeFileSync(FLEET_TOKEN_FILE, token, { mode: 0o600 }) } catch { /* optional */ }
+        // A live-verified token needs no boot-time re-probe.
+        if (verified) stampTokenVerified(token)
       } else {
         setEnvKey('ANTHROPIC_API_KEY', apiKey)
       }
