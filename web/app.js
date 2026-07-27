@@ -481,7 +481,10 @@ function openSidebarGroupForPage(pageId) {
   const key = PAGE_SIDEBAR_GROUP[pageId]
   if (!key) return
   sidebarGroupEls.forEach((g) => {
-    if (g.dataset.group === key && !g.classList.contains('open')) setSidebarGroupOpen(g, true)
+    // persist=false: only user clicks may be remembered. Persisting the
+    // auto-open would let everyday navigation accumulate all 5 groups as
+    // saved-open and quietly bring back the flat 23-item menu.
+    if (g.dataset.group === key && !g.classList.contains('open')) setSidebarGroupOpen(g, true, false)
   })
 }
 
