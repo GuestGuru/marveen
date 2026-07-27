@@ -12987,6 +12987,7 @@ function renderDeviceKeysSection(body) {
   wrap.innerHTML =
     `<div class="auth-sessions-title">${t('auth.devices.title')}</div>` +
     `<p class="auth-muted">${t('auth.devices.desc')}</p>` +
+    `<div class="auth-form-msg err auth-device-warn" id="authDeviceKeyWarn" hidden></div>` +
     `<div id="authDeviceKeyList"></div>` +
     `<div class="auth-form auth-device-mint">` +
       `<input id="authDevName" type="text" autocapitalize="off" spellcheck="false" maxlength="64" placeholder="${t('auth.devices.name_placeholder')}">` +
@@ -13022,8 +13023,24 @@ async function refreshDeviceKeyList() {
     el.querySelectorAll('.auth-device-revoke').forEach((btn) => {
       btn.addEventListener('click', async () => {
         if (!confirm(t('auth.devices.revoke_confirm'))) return
-        try { await fetch(`/api/auth/device-keys/${btn.dataset.keyId}`, { method: 'DELETE' }) } catch { /* ignore */ }
-        refreshDeviceKeyList()
+        // A Bridge-paired revoke means BOTH halves (dashboard key + ssh line).
+        // The key is dead either way, but ssh_removed:false means the
+        // authorized_keys line survived (fs error) and the device can still
+        // open the tunnel -- the ONE outcome the UI must never hide.
+        const warnBefore = document.getElementById('authDeviceKeyWarn')
+        if (warnBefore) warnBefore.hidden = true
+        let sshWarn = false
+        try {
+          const r = await fetch(`/api/auth/device-keys/${btn.dataset.keyId}`, { method: 'DELETE' })
+          const data = await r.json().catch(() => ({}))
+          if (r.ok && data.ssh_removed === false) sshWarn = true
+        } catch { /* ignore -- the list refresh below shows the real state */ }
+        await refreshDeviceKeyList()
+        const warnEl = document.getElementById('authDeviceKeyWarn')
+        if (warnEl && sshWarn) {
+          warnEl.hidden = false
+          warnEl.textContent = t('auth.devices.revoke_ssh_warning')
+        }
       })
     })
   } catch { el.innerHTML = '' }
