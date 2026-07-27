@@ -357,6 +357,7 @@ function switchPage(pageId) {
   if (!document.getElementById('settingsPage').hidden && pageId !== 'settings' && !confirmSettingsLeave()) return
   pages.forEach((p) => (p.hidden = p.id !== pageId + 'Page'))
   navLinks.forEach((l) => l.classList.toggle('active', l.dataset.page === pageId))
+  openSidebarGroupForPage(pageId)
   // Kanban needs full-width layout (overrides main's max-width: 1200px)
   document.querySelector('main').classList.toggle('kanban-active', pageId === 'kanban')
   // Activity page runs a live poll; stop it whenever we navigate away.
@@ -418,6 +419,56 @@ navLinks.forEach((link) => {
     else location.hash = pageId
     setSidebarOpen(false) // close the drawer after navigating on mobile
   })
+})
+
+// === Collapsible sidebar groups ===
+// Open/closed state lives in localStorage (marveen.sidebarGroups) as a JSON
+// array of open group keys. Missing or corrupt state means everything starts
+// collapsed -- that is the designed default, not an error.
+const SIDEBAR_GROUPS_LS_KEY = 'marveen.sidebarGroups'
+const sidebarGroupEls = document.querySelectorAll('.sb-group[data-group]')
+// data-page -> group key, derived from the markup so the two never drift.
+const PAGE_SIDEBAR_GROUP = {}
+sidebarGroupEls.forEach((g) => {
+  g.querySelectorAll('.sb-link[data-page]').forEach((l) => { PAGE_SIDEBAR_GROUP[l.dataset.page] = g.dataset.group })
+})
+
+function loadSidebarGroupState() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(SIDEBAR_GROUPS_LS_KEY))
+    return Array.isArray(arr) ? arr.filter((k) => typeof k === 'string') : []
+  } catch { return [] }
+}
+
+function setSidebarGroupOpen(groupEl, open, persist = true) {
+  groupEl.classList.toggle('open', open)
+  const btn = groupEl.querySelector('.sb-group-header')
+  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false')
+  if (persist) {
+    const key = groupEl.dataset.group
+    const state = loadSidebarGroupState().filter((k) => k !== key)
+    if (open) state.push(key)
+    try { localStorage.setItem(SIDEBAR_GROUPS_LS_KEY, JSON.stringify(state)) } catch {}
+  }
+}
+
+// Called from switchPage: the active page's group must always be visible so the
+// "where am I" highlight is never hidden inside a collapsed group.
+function openSidebarGroupForPage(pageId) {
+  const key = PAGE_SIDEBAR_GROUP[pageId]
+  if (!key) return
+  sidebarGroupEls.forEach((g) => {
+    if (g.dataset.group === key && !g.classList.contains('open')) setSidebarGroupOpen(g, true)
+  })
+}
+
+{
+  const openKeys = loadSidebarGroupState()
+  sidebarGroupEls.forEach((g) => setSidebarGroupOpen(g, openKeys.includes(g.dataset.group), false))
+}
+sidebarGroupEls.forEach((g) => {
+  const btn = g.querySelector('.sb-group-header')
+  if (btn) btn.addEventListener('click', () => setSidebarGroupOpen(g, !g.classList.contains('open')))
 })
 
 
