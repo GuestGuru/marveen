@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { PROJECT_ROOT, ALLOWED_CHAT_ID } from '../config.js'
 import { logger } from '../logger.js'
+import { markTestRun } from '../notify.js'
 import { agentDir, readFileOr, findAvatarForAgent } from './agent-config.js'
 import { TOOL_TIMEOUTS } from '../tool-timeouts.js'
 
@@ -109,6 +110,7 @@ export async function refreshMarveenBotUsername(): Promise<void> {
 }
 
 export async function sendTelegramMessage(token: string, chatId: string, text: string): Promise<void> {
+  text = markTestRun(text)
   const resp = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -126,6 +128,7 @@ export async function sendTelegramMessage(token: string, chatId: string, text: s
 }
 
 export async function sendTelegramPhoto(token: string, chatId: string, photoPath: string, caption: string): Promise<void> {
+  caption = markTestRun(caption)
   const fileData = readFileSync(photoPath)
   const boundary = '----FormBoundary' + Date.now()
   const parts: Buffer[] = []

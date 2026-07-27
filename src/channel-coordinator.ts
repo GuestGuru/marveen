@@ -32,6 +32,7 @@ import { homedir } from 'node:os'
 import { pathToFileURL } from 'node:url'
 import { execFile } from 'node:child_process'
 import { logger } from './logger.js'
+import { markTestRun } from './notify.js'
 import { PROJECT_ROOT, MAIN_AGENT_ID, CHANNEL_PROVIDER, BOT_NAME } from './config.js'
 import { getUpdates, probeHighWater, mapUpdate, TelegramApiError } from './channel-coordinator/telegram-client.js'
 import { probeNativeChannelDown } from './channel-coordinator/liveness.js'
@@ -168,6 +169,7 @@ function releaseLock(): void {
 // uses the project's own token+chat). Used for fatal (401) only -- a 409 here
 // is the EXPECTED "native is back" signal, not an error worth alerting.
 function sendAlert(message: string): void {
+  message = markTestRun(message)
   const script = join(PROJECT_ROOT, 'scripts', 'notify.sh')
   execFile('/bin/bash', [script, message], { timeout: 10_000 }, (err) => {
     if (err) logger.warn({ err }, 'channel-coordinator: notify.sh alert failed')

@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { join } from 'node:path'
 import { logger } from '../logger.js'
+import { markTestRun } from '../notify.js'
 import { MAIN_AGENT_ID, PROJECT_ROOT, RESPAWN_ENABLED, APP_TZ } from '../config.js'
 import { resolveFromPath } from '../platform.js'
 import { listAgentNames } from './agent-config.js'
@@ -256,6 +257,7 @@ export function flushQuietSummary(
 }
 
 function sendNotify(msg: string): void {
+  msg = markTestRun(msg)
   execFile('/bin/bash', [NOTIFY_SCRIPT, msg], { timeout: 10_000 }, (err) => {
     if (err) logger.warn({ err }, 'reauth-healer: notify.sh escalation failed')
   })

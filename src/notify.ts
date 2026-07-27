@@ -2,7 +2,29 @@ import { CHANNEL_PROVIDER, CHANNEL_TOKEN, CHANNEL_CHAT_ID } from './config.js'
 import { getProvider } from './channel-provider.js'
 import { logger } from './logger.js'
 
+// Messages sent from a test run must be DISTINGUISHABLE, not suppressed
+// (owner decision, 2026-07-27): on a wired host the env holds a live bot token
+// and the owner's chat id, so a test-driven code path (e.g. the break-glass
+// audit suite) reaches the owner's phone. A real-looking fake security alert
+// trains the owner to ignore the real one -- so every outbound chokepoint
+// stamps a [TESZT] prefix instead. Kill-switch for long debug cycles: start
+// the run with the channel env emptied (CHANNEL_TOKEN= CHANNEL_CHAT_ID=),
+// which the existing token/chat guards already treat as "do not send".
+export function isTestRun(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.VITEST !== undefined || env.NODE_ENV === 'test'
+}
+
+export const TEST_RUN_PREFIX = '[TESZT] '
+
+// Idempotent: a message that crosses two chokepoints (build -> send) must not
+// end up with a stacked "[TESZT] [TESZT]".
+export function markTestRun(text: string, env: NodeJS.ProcessEnv = process.env): string {
+  if (!isTestRun(env) || text.startsWith(TEST_RUN_PREFIX)) return text
+  return TEST_RUN_PREFIX + text
+}
+
 export async function notifyChannel(text: string): Promise<void> {
+  text = markTestRun(text)
   if (!CHANNEL_TOKEN || !CHANNEL_CHAT_ID) {
     logger.warn('Channel ertesites kihagyva: token vagy chat ID hianyzik')
     return
