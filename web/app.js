@@ -426,11 +426,34 @@ navLinks.forEach((link) => {
 // array of open group keys. Missing or corrupt state means everything starts
 // collapsed -- that is the designed default, not an error.
 const SIDEBAR_GROUPS_LS_KEY = 'marveen.sidebarGroups'
+// Declarative single source of truth for the group -> pages mapping. The markup
+// order is only the default snapshot: at boot the static links are re-parented
+// into their group containers per this map, so regrouping a page (say, moving
+// naplo under system) or relabeling a group is a one-line change right here.
+const SIDEBAR_GROUPS = [
+  { key: 'team',        labelKey: 'nav.group.team',        pages: ['agents', 'activity', 'messages', 'tasks', 'bgTasks'] },
+  { key: 'knowledge',   labelKey: 'nav.group.knowledge',   pages: ['memories', 'naplo', 'skills', 'research', 'ideas'] },
+  { key: 'stats',       labelKey: 'nav.group.stats',       pages: ['costs', 'tokenUsage'] },
+  { key: 'system',      labelKey: 'nav.group.system',      pages: ['status', 'updates', 'settings', 'vault'] },
+  { key: 'connections', labelKey: 'nav.group.connections', pages: ['connectors', 'federation', 'migrate'] },
+]
 const sidebarGroupEls = document.querySelectorAll('.sb-group[data-group]')
-// data-page -> group key, derived from the markup so the two never drift.
+// data-page -> group key, derived from the map (not the DOM) so the map wins.
 const PAGE_SIDEBAR_GROUP = {}
-sidebarGroupEls.forEach((g) => {
-  g.querySelectorAll('.sb-link[data-page]').forEach((l) => { PAGE_SIDEBAR_GROUP[l.dataset.page] = g.dataset.group })
+SIDEBAR_GROUPS.forEach((def) => def.pages.forEach((p) => { PAGE_SIDEBAR_GROUP[p] = def.key }))
+// Re-parent the 23 static links to match the map. Moving an existing DOM node
+// does not invalidate the navLinks refs captured by querySelectorAll at boot.
+SIDEBAR_GROUPS.forEach((def) => {
+  const group = document.querySelector(`.sb-group[data-group="${def.key}"]`)
+  if (!group) return
+  const label = group.querySelector('.sb-group-label')
+  if (label) label.dataset.i18n = def.labelKey
+  const items = group.querySelector('.sb-group-items')
+  if (!items) return
+  def.pages.forEach((p) => {
+    const link = document.querySelector(`.sb-link[data-page="${p}"]`)
+    if (link) items.appendChild(link)
+  })
 })
 
 function loadSidebarGroupState() {
