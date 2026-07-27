@@ -237,8 +237,10 @@ describe('POST /api/security/bridge-enroll (HTTP)', () => {
     }
     expect(r.statusCode).toBe(201)
     expect(findDeviceKeyByInstallId(installId)).not.toBeNull()
-    const audit = getDb().prepare("SELECT COUNT(*) AS c FROM config_change_log WHERE key='security.bridge_enroll'").get() as { c: number }
-    expect(audit.c).toBe(1)
+    const audit = getDb().prepare("SELECT new_value FROM config_change_log WHERE key='security.bridge_enroll'").all() as { new_value: string }[]
+    expect(audit).toHaveLength(1)
+    // The active MARVEEN_SSH_DIR override must be visible in the audit row.
+    expect(audit[0]!.new_value).toContain('sshdir_override=1')
   })
 })
 
@@ -252,7 +254,9 @@ describe('DELETE /api/auth/device-keys/:id for a paired key', () => {
     expect(r.json().ssh_removed).toBe(true)
     expect(authKeysContent()).toBe('')
     expect(listDeviceKeys()).toHaveLength(0)
-    const audit = getDb().prepare("SELECT COUNT(*) AS c FROM config_change_log WHERE key='security.bridge_revoke'").get() as { c: number }
-    expect(audit.c).toBe(1)
+    const audit = getDb().prepare("SELECT new_value FROM config_change_log WHERE key='security.bridge_revoke'").all() as { new_value: string }[]
+    expect(audit).toHaveLength(1)
+    expect(audit[0]!.new_value).toContain('ssh_removed=true')
+    expect(audit[0]!.new_value).toContain('sshdir_override=1')
   })
 })

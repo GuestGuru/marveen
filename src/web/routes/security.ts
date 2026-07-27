@@ -15,7 +15,7 @@ import { readBody, json } from '../http-helpers.js'
 import { logger } from '../../logger.js'
 import { logConfigChange } from '../../db.js'
 import { notifySecurityEvent } from '../../notify.js'
-import { bridgeEnroll, RemoteEnrollError } from '../bridge-enroll.js'
+import { bridgeEnroll, sshDirOverride, RemoteEnrollError } from '../bridge-enroll.js'
 import type { RouteContext } from './types.js'
 
 const BODY_MAX_BYTES = 8 * 1024
@@ -69,8 +69,12 @@ export async function tryHandleSecurity(ctx: RouteContext): Promise<boolean> {
 
   try {
     const outcome = await bridgeEnroll({ keyLine, name, host, sshPort })
-    // Metadata only into the trail -- never the bundle or key material.
-    logConfigChange('security.bridge_enroll', null, `${name} (${outcome.installId}) ${outcome.action}`, auth.kind)
+    // Metadata only into the trail -- never the bundle or key material. An
+    // active MARVEEN_SSH_DIR override (test seam) is flagged so an incident
+    // where pairing "succeeded but does not work" is explainable from the
+    // audit row alone.
+    const overrideNote = sshDirOverride() ? ' sshdir_override=1' : ''
+    logConfigChange('security.bridge_enroll', null, `${name} (${outcome.installId}) ${outcome.action}${overrideNote}`, auth.kind)
     logger.info({ name, installId: outcome.installId, action: outcome.action, deviceKeyId: outcome.deviceKeyId }, 'bridge device enrolled')
     void notifySecurityEvent(
       `🔗 Bridge-párosítás a dashboardról: "${name}" (${outcome.action === 'replaced' ? 'újrapárosítás' : 'új eszköz'}). ` +

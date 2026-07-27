@@ -25,6 +25,7 @@ import { readFileSync } from 'node:fs'
 import { execFile } from 'node:child_process'
 import { homedir, hostname, userInfo, networkInterfaces } from 'node:os'
 import { join } from 'node:path'
+import { logger } from '../logger.js'
 import {
   validatePublicKeyLine,
   buildRestrictedLine,
@@ -73,11 +74,28 @@ export interface BridgeEnrollOutcome {
   bundle: string
 }
 
+/** MARVEEN_SSH_DIR is a test seam for isolated e2e instances (a scratch
+ * server must never write the real ~/.ssh). It lives in a production code
+ * path, so if it ever leaks into a real environment (inherited env, copied
+ * .env, launchd plist) enrollment would silently write elsewhere and pairing
+ * would "succeed but not work". Every use is therefore loudly logged and
+ * flagged into the audit row (see sshDirOverride() callers). */
+export function sshDirOverride(): string | null {
+  return process.env.MARVEEN_SSH_DIR || null
+}
+
+function resolveSshDir(): string {
+  const override = sshDirOverride()
+  if (override) {
+    logger.warn({ sshDir: override }, 'MARVEEN_SSH_DIR override active -- authorized_keys writes are redirected (test seam; must be unset in production)')
+    return override
+  }
+  return join(homedir(), '.ssh')
+}
+
 export function defaultBridgeEnrollDeps(): BridgeEnrollDeps {
   return {
-    // MARVEEN_SSH_DIR is a test seam for isolated e2e instances (a scratch
-    // server must never write the real ~/.ssh); unset in production.
-    sshDir: process.env.MARVEEN_SSH_DIR || join(homedir(), '.ssh'),
+    sshDir: resolveSshDir(),
     readFile: (path) => {
       try {
         return readFileSync(path, 'utf8')
@@ -175,8 +193,9 @@ export async function bridgeEnroll(
  */
 export async function removeBridgeSshAccess(
   installId: string,
-  deps: Pick<BridgeEnrollDeps, 'sshDir'> = { sshDir: process.env.MARVEEN_SSH_DIR || join(homedir(), '.ssh') },
+  deps?: Pick<BridgeEnrollDeps, 'sshDir'>,
 ): Promise<boolean> {
-  const result = await removeEnrolledKey({ sshDir: deps.sshDir, installId })
+  const sshDir = deps?.sshDir ?? resolveSshDir()
+  const result = await removeEnrolledKey({ sshDir, installId })
   return result.removed
 }

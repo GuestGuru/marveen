@@ -46,7 +46,7 @@ import {
   revokeDeviceKey,
   getDeviceKey,
 } from '../auth-device-keys.js'
-import { removeBridgeSshAccess } from '../bridge-enroll.js'
+import { removeBridgeSshAccess, sshDirOverride } from '../bridge-enroll.js'
 import {
   createDashboardUser,
   getDashboardUser,
@@ -401,7 +401,7 @@ export async function tryHandleAuth(ctx: RouteContext): Promise<boolean> {
         logger.error({ err, id, installId: key.installId }, 'device key revoked but authorized_keys removal failed')
         sshRemoved = false
       }
-      logConfigChange('security.bridge_revoke', null, `${key.name} (${key.installId}) ssh_removed=${sshRemoved}`, auth!.kind)
+      logConfigChange('security.bridge_revoke', null, `${key.name} (${key.installId}) ssh_removed=${sshRemoved}${sshDirOverride() ? ' sshdir_override=1' : ''}`, auth!.kind)
     }
     logger.info({ id, name: key.name, installId: key.installId ?? undefined, sshRemoved }, 'device key revoked')
     json(res, { ok: true, ...(key.installId ? { ssh_removed: sshRemoved } : {}) })
