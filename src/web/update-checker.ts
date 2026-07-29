@@ -107,8 +107,13 @@ async function fetchCompare(remote: string, base: string, head: string): Promise
 }
 
 // Matches a `chore(release): vX.Y.Z` subject and captures the version + the
-// human summary that follows a "--" / "—" separator (if any).
-const RELEASE_RE = /^chore\(release\):\s*(v\d+\.\d+\.\d+)\s*(?:--|—)?\s*(.*)$/
+// human summary that follows a "--" / "—" separator (if any). The optional
+// `-gg.N`-style semver prerelease suffix belongs to the VERSION: the GG fork
+// releases on top of an upstream version (v1.25.1-gg.1), and without this the
+// number read as the bare upstream one while "-gg.1" leaked into the summary.
+// The suffix charset excludes "-" on purpose so a missing space before a
+// "--" separator cannot swallow the summary.
+const RELEASE_RE = /^chore\(release\):\s*(v\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?)\s*(?:--|—)?\s*(.*)$/
 
 // Strip trailing git trailers (Co-Authored-By, Signed-off-by) and blank lines
 // from a release-commit body so only the human summary remains.
