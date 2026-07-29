@@ -77,4 +77,15 @@ describe('groupByRelease', () => {
     const groups = groupByRelease(commits, ['chore(release): v1.20.0 -- x', 'feat: a'])
     expect(groups.map(g => g.version)).toEqual(['v1.20.0'])
   })
+
+  // The GG fork ships its own releases on top of an upstream version, tagged
+  // with a semver prerelease suffix (v1.25.1-gg.1). Without suffix support the
+  // version reads as the bare upstream number and the "-gg.1" leaks into the
+  // summary -- a fork release would be indistinguishable from the upstream one.
+  it('keeps a semver prerelease suffix in the version, out of the summary', () => {
+    const commits = [c('rel', 'chore(release): v1.25.1-gg.1 -- GG fork kiadas')]
+    const groups = groupByRelease(commits, ['chore(release): v1.25.1-gg.1 -- GG fork kiadas'])
+    expect(groups[0].version).toBe('v1.25.1-gg.1')
+    expect(groups[0].summary).toBe('GG fork kiadas')
+  })
 })
