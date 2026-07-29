@@ -67,14 +67,24 @@ Consequences, all covered by tests:
 - replayed transcript turns from a non-default provider are **labelled**
   (`[ts] (discord) Tamás: "…"`) so the session cannot answer a Discord message on
   Telegram;
-- a reply tool called **without** a `chat_id` is only resolvable on Telegram (the
-  owner chat is a Telegram id); on any other provider the turn is skipped rather
-  than mis-filed.
+- a reply tool called **without** a `chat_id` falls back to the open question **of
+  the same provider** — that is what such a reply answers in practice. Only when
+  there is no open question on that provider is the turn skipped, because then it
+  is genuinely unattributable. (On Telegram the owner-chat shorthand still
+  applies.) Dropping it unconditionally used to leave the question open forever,
+  so every respawn replayed the same prompt.
+- the open question is resolved **per chat**, not per agent: a reply sent on one
+  channel does not close another channel's unanswered question. Without this the
+  whole multi-provider idea collapses — a Discord answer would silently discard a
+  pending Telegram question.
 
-Adding a provider needs **no code change**: enable its plugin and the `PostToolUse`
-matcher `mcp__plugin_[a-z0-9-]+_[a-z0-9-]+__reply` picks its reply tool up. Only a
-plugin whose server is *not* named after the plugin needs an entry in
-`ledger_lib.REPLY_TOOLS`.
+Adding a provider **does** need a `ledger_lib.REPLY_TOOLS` entry. The
+`<provider>_<provider>` convention does **not** hold in general: per
+`src/channel-provider.ts`, slack is `plugin:slack-channel:marveen-marketplace`
+and teams is `plugin:teams:marveen-marketplace` — their MCP server is named
+after the *marketplace*, not the plugin. An unknown provider therefore yields
+**no** tool name at all (rather than a guessed, non-existent one), and the replay
+describes the channel instead. Keep the table in sync with `channel-provider.ts`.
 
 **Multi-agent scope.** The hooks are **generic across all channel agents**
 (marveen / dia / erno-ba): `agent_id` is derived from the session's cwd
@@ -118,8 +128,12 @@ self-scope by cwd, so they are safe even if inherited. Merge this `hooks` object
 - `UserPromptSubmit` takes no matcher (fires on every prompt).
 - `PostToolUse` matcher `mcp__plugin_[a-z0-9-]+_[a-z0-9-]+__reply`: matches **every**
   channel plugin's sanitized reply tool name (`mcp__plugin_telegram_telegram__reply`,
-  `mcp__plugin_discord_discord__reply`, …). The hook re-parses the tool name itself
-  and ignores anything that is not a channel reply, so a stray match is harmless.
+  `mcp__plugin_discord_discord__reply`, …).
+  ⚠️ The hook re-parses the tool name, but that check only re-applies the **same
+  pattern** — it does not know which plugins are channels. A non-channel plugin
+  that happens to expose a `reply` tool would therefore be recorded as an outbound
+  turn. Capture is restricted to known providers, so such a row cannot become an
+  open question, but the outbound side is still shape-based, not identity-based.
 - `SessionStart` matcher `startup|resume|clear`: the matcher is a **regex over the
   `source` field**, whose only values are `startup` / `resume` / `clear` / `compact`.
   There is no `auto` source — an `"auto"` matcher silently matches nothing, so the
