@@ -146,11 +146,19 @@ def _build_output(transcript, open_q, owner):
         # tool needs the BARE id and the provider decides WHICH tool to call.
         provider, bare_chat = ledger_lib.split_chat(chat_id)
         snippet = _snippet(text, _max_snippet())
+        # An unknown provider yields no tool name. Naming a tool that does not
+        # exist would send the model down a dead end, so we describe the channel
+        # instead and let it pick the right reply tool from what it has.
+        tool = ledger_lib.reply_tool(provider)
+        hogyan = (
+            f'a {provider} reply tool ({tool}) meghívásával'
+            if tool
+            else f'a(z) {provider} csatorna reply tooljával'
+        )
         parts.append(
             f'NYITOTT KÉRDÉS (még NEM válaszoltad meg): {owner} utolsó üzenete '
             f'({provider}, chat {bare_chat}, message_id {message_id}): "{snippet}". '
-            f'Válaszolj rá MOST a {provider} reply tool '
-            f'({ledger_lib.reply_tool(provider)}) meghívásával a(z) {bare_chat} '
+            f'Válaszolj rá MOST {hogyan} a(z) {bare_chat} '
             f'chat_id-re, a lenti kontextusból folytatva.'
         )
     if recent:

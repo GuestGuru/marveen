@@ -43,12 +43,23 @@ def main():
     chat_id = tool_input.get("chat_id")
     chat_id = "" if chat_id is None else str(chat_id).strip()
     if chat_id in ("", "0"):
-        # Telegram-only shorthand; on other providers a missing chat_id is not
-        # resolvable (the owner chat is a Telegram id) -> skip rather than
-        # mis-file the turn under the wrong conversation.
         if provider != ledger_lib.DEFAULT_PROVIDER:
-            sys.exit(0)
-        chat_id = _owner_chat()
+            # The owner-chat shorthand is a Telegram id, so it cannot resolve
+            # here. But dropping the turn is not harmless either: the inbound
+            # stays unanswered forever, and every respawn replays the same
+            # question. Fall back to the open question OF THIS PROVIDER — that
+            # is what a chat_id-less reply answers in practice.
+            oq = ledger_lib.open_question(agent_id)
+            resolved = ""
+            if oq:
+                q_provider, q_bare = ledger_lib.split_chat(oq[0])
+                if q_provider == provider:
+                    resolved = q_bare
+            if not resolved:
+                sys.exit(0)  # genuinely unattributable -> better to skip
+            chat_id = resolved
+        else:
+            chat_id = _owner_chat()
     text = tool_input.get("text")
     if chat_id and text is not None:
         try:

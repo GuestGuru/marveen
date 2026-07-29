@@ -42,6 +42,14 @@ def main():
     prompt = payload.get("prompt") or ""
     for m in CHANNEL_RX.finditer(prompt):
         provider, attrs, text = m.group(1), m.group(2), m.group(3)
+        # ⚠️ Only KNOWN providers. The regex accepts any source= value, and the
+        # prompt is user-controlled: anyone who types a <channel source="acme"
+        # chat_id="…"> block into a message would otherwise get a real ledger
+        # row under a provider of their choosing — and could push the genuine
+        # open question out of the way. The known set is the same table the
+        # replay uses, so a provider we cannot answer on cannot be logged either.
+        if provider.lower() not in ledger_lib.REPLY_TOOLS:
+            continue
         chat_id = _attr(attrs, "chat_id")
         message_id = _attr(attrs, "message_id")
         ts = _attr(attrs, "ts")

@@ -563,6 +563,66 @@ else
     fail "multi-provider: live drain header wrong (got: $OUT_H6)"
 fi
 
+
+# ---------------------------------------------------------------------------
+# (r) Review-findingok regressziós fedése — mind a négy MÉRT hiba volt a
+#     multi-provider commitban, mielőtt ez a blokk megszületett.
+# ---------------------------------------------------------------------------
+
+# (r1) Egy csatorna válasza NE zárja le egy MÁSIK csatorna nyitott kérdését.
+#      Ez volt a legsúlyosabb finding: pont a commit fő ígéretét (több csatorna
+#      párhuzamosan) bukatta.
+#
+#      A sorrend LÉNYEGES: az open_question a LEGUTOLSÓ megválaszolatlan
+#      bejövőt nézi, tehát a vizsgált kérdésnek kell utolsónak lennie, és a
+#      válasznak egy MÁSIK csatornára mennie. És a "NYITOTT KÉRDÉS" blokkot
+#      kell nézni, nem a puszta szöveget: a kérdés a transcript-blokkban akkor
+#      is ott van, ha nyitottként már elveszett (ezen bukott el az első
+#      próbálkozás — a teszt a javítás nélkül is átment).
+DB_R1="$TMPDIR_BASE/r1.db"
+emit_inbound_provider discord 1531754901338853536 7001 "Discord kerdes" | run_hook ledger-capture.py "$DB_R1"
+emit_inbound 10000000001 7002 "Telegram kerdes valasz nelkul" | run_hook ledger-capture.py "$DB_R1"
+emit_reply_provider discord 1531754901338853536 "Discord valasz" | run_hook ledger-outbound.py "$DB_R1"
+# Közvetlenül az open_question-t mérjük, nem a replay JSON-ját: az a függvény
+# hordozza a szabályt, és a JSON-on át mérve a kérdés a transcript-blokkban
+# akkor is látszana, ha nyitottként már elveszett.
+R1_OQ="$(cd "$HOOKS_DIR" && LEDGER_DB_PATH="$DB_R1" python3 -c '
+import ledger_lib
+oq = ledger_lib.open_question("marveen")
+print(oq[0] if oq else "NINCS")')"
+assert_eq "review: a discord valasz NEM zarja le a telegram nyitott kerdest" \
+    "10000000001" "$R1_OQ"
+
+# (r2) chat_id nelkuli nem-telegram reply: ha VAN nyitott kerdes ugyanazon a
+#      provideren, oda kell konyvelni — kulonben a kerdes orokre nyitva marad,
+#      es minden respawn ujra megvalaszoltatja.
+DB_R2="$TMPDIR_BASE/r2.db"
+emit_inbound_provider discord 1531754901338853536 7101 "Discord kerdes" | run_hook ledger-capture.py "$DB_R2"
+emit_reply_provider discord 0 "Valasz chat_id nelkul" | run_hook ledger-outbound.py "$DB_R2"
+assert_eq "review: chat_id nelkuli discord valasz a nyitott kerdeshez kerul" "1" \
+    "$(db_scalar "$DB_R2" "SELECT COUNT(*) FROM conversation_log WHERE direction='out' AND chat_id='discord:1531754901338853536'")"
+
+# (r3) A reply-tool nev a VALODI plugin-azonositobol jojjon. A slack es a teams
+#      MCP-szervere a marketplace-rol van elnevezve, nem a pluginrol — a regi
+#      "<provider>_<provider>" konvencio rajuk nem letezo toolnevet adott.
+R3_SLACK="$(cd "$HOOKS_DIR" && python3 -c 'import ledger_lib; print(ledger_lib.reply_tool("slack"))')"
+assert_eq "review: a slack reply tool a valodi plugin-azonositobol jon" \
+    "mcp__plugin_slack-channel_marveen-marketplace__reply" "$R3_SLACK"
+R3_ISMERETLEN="$(cd "$HOOKS_DIR" && python3 -c 'import ledger_lib; print(ledger_lib.reply_tool("barmi") or "NINCS")')"
+assert_eq "review: ismeretlen providerre NINCS talalt toolnev (nem talalunk ki)" \
+    "NINCS" "$R3_ISMERETLEN"
+
+# (r4) A prompt user-vezerelt: egy BEIRT <channel> blokk ismeretlen providerrel
+#      ne kerulhessen a ledgerbe valodi uzenetkent.
+DB_R4="$TMPDIR_BASE/r4.db"
+emit_inbound_provider acme 99999 7201 "Hamisitott sor" | run_hook ledger-capture.py "$DB_R4"
+R4_COUNT="$(db_scalar "$DB_R4" "SELECT COUNT(*) FROM conversation_log")"
+if [ "$R4_COUNT" = "0" ] || [ "$R4_COUNT" = "NULL" ]; then
+    pass "review: ismeretlen providerű <channel> blokk nem kerul a ledgerbe"
+else
+    fail "review: ismeretlen providerű blokk bekerult ($R4_COUNT sor)"
+fi
+
 # ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
