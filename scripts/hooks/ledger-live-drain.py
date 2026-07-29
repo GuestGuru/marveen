@@ -23,8 +23,11 @@ agent_id is derived from the process cwd (generic across channel agents), so the
 drain only ever surfaces THIS agent's own open question. When it surfaces one it
 writes exactly this block to stdout:
 
-    OPEN_QUESTION chat_id=<id> message_id=<id>
+    OPEN_QUESTION provider=<provider> chat_id=<id> message_id=<id>
     <text>
+
+`chat_id` is the BARE id to pass to that provider's reply tool (the ledger stores
+non-Telegram chats namespaced as "<provider>:<id>" -- see ledger_lib.split_chat).
 """
 import sys
 import os
@@ -83,7 +86,11 @@ def main():
         sys.exit(0)
 
     snippet = (text or "").strip()
-    sys.stdout.write(f"OPEN_QUESTION chat_id={chat_id} message_id={message_id}\n{snippet}\n")
+    provider, bare_chat = ledger_lib.split_chat(chat_id)
+    sys.stdout.write(
+        f"OPEN_QUESTION provider={provider} chat_id={bare_chat} "
+        f"message_id={message_id}\n{snippet}\n"
+    )
     _record_surfaced(path, message_id)
     sys.exit(0)
 

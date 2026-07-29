@@ -17,13 +17,15 @@ agent behaviour (which can fail or restart).
    `initDatabase()` migration; `scripts/hooks/ledger_lib.py` re-creates it defensively
    too (a hook may run before the dashboard migration on a fresh boot).
 2. **Inbound capture** — `UserPromptSubmit` hook `scripts/hooks/ledger-capture.py`
-   parses every inbound `<channel source="plugin:telegram:telegram" …>` block from
+   parses every inbound `<channel source="plugin:<provider>:<server>" …>` block from
    the prompt and `INSERT OR IGNORE`s it as `direction='in'`, **before** the agent
-   acts. The `UNIQUE` constraint makes re-capture idempotent.
-3. **Outbound capture** — `PostToolUse` hook `scripts/hooks/ledger-outbound.py` on the
-   telegram reply tool records the reply text as `direction='out'` (resolves the
-   `chat_id=0` shorthand to the owner chat). Outbound rows carry `message_id=NULL`, so
-   they are never deduped against each other.
+   acts. The `UNIQUE` constraint makes re-capture idempotent. **Provider-generic**:
+   Telegram, Discord and any other channel plugin land in the same ledger (see
+   *Multi-provider* below).
+3. **Outbound capture** — `PostToolUse` hook `scripts/hooks/ledger-outbound.py` on
+   **any** channel plugin's reply tool records the reply text as `direction='out'`
+   (resolving the `chat_id=0` shorthand to the owner chat — Telegram only). Outbound
+   rows carry `message_id=NULL`, so they are never deduped against each other.
 4. **Startup replay** — `SessionStart` hook `scripts/hooks/ledger-replay.py` injects
    hidden `additionalContext` at the top of the fresh session's context:
    - the **last N turns** of the transcript in chronological order, each prefixed
@@ -40,13 +42,49 @@ agent behaviour (which can fail or restart).
    deafness gap): capture still records it, yet the live session never sees it
    until the next respawn. `scripts/hooks/ledger-live-drain.py` (run every ~2 min
    by the `ledger-live-drain` scheduled task in the live session) re-surfaces the
-   still-unanswered inbound — `OPEN_QUESTION chat_id=… message_id=…\n<text>` on
+   still-unanswered inbound — `OPEN_QUESTION provider=… chat_id=… message_id=…\n<text>` on
    stdout — so the running agent answers it without waiting for a respawn. Two
    safety rails: a **grace window** (`GRACE_SECONDS = 60` — never fight an in-flight
    reply) and a **dedup statefile** (`store/.ledger-drain-<agent_id>` — a missed
    question is surfaced once, not every tick). Never blocks (any error → exit 0,
    silent). NOT a settings.json hook — it is a heartbeat scheduled task whose
    prompt answers via the telegram reply tool only when a block is printed.
+
+**Multi-provider.** One agent can be reachable on several channels at once
+(Telegram + Discord + …), and all of them share this single ledger. To keep two
+providers from colliding on the same numeric id — and to keep a replayed turn
+answerable in the place it came from — non-Telegram chats are stored **namespaced**
+as `"<provider>:<chat_id>"` (`ledger_lib.qualify_chat` / `split_chat`). Telegram
+stays **bare**, so every row written before multi-provider support, the drain
+statefiles and the `chat_id=0` owner shorthand keep working unchanged — no schema
+migration was needed (the `conversation_log` columns are frozen by a drift test).
+
+Consequences, all covered by tests:
+
+- the **provider decides which reply tool** the replay tells the fresh session to
+  call (`ledger_lib.reply_tool` → `mcp__plugin_discord_discord__reply`, …), and it
+  is handed the **bare** chat id, never the namespaced key;
+- replayed transcript turns from a non-default provider are **labelled**
+  (`[ts] (discord) Tamás: "…"`) so the session cannot answer a Discord message on
+  Telegram;
+- a reply tool called **without** a `chat_id` falls back to the open question **of
+  the same provider** — that is what such a reply answers in practice. Only when
+  there is no open question on that provider is the turn skipped, because then it
+  is genuinely unattributable. (On Telegram the owner-chat shorthand still
+  applies.) Dropping it unconditionally used to leave the question open forever,
+  so every respawn replayed the same prompt.
+- the open question is resolved **per chat**, not per agent: a reply sent on one
+  channel does not close another channel's unanswered question. Without this the
+  whole multi-provider idea collapses — a Discord answer would silently discard a
+  pending Telegram question.
+
+Adding a provider **does** need a `ledger_lib.REPLY_TOOLS` entry. The
+`<provider>_<provider>` convention does **not** hold in general: per
+`src/channel-provider.ts`, slack is `plugin:slack-channel:marveen-marketplace`
+and teams is `plugin:teams:marveen-marketplace` — their MCP server is named
+after the *marketplace*, not the plugin. An unknown provider therefore yields
+**no** tool name at all (rather than a guessed, non-existent one), and the replay
+describes the channel instead. Keep the table in sync with `channel-provider.ts`.
 
 **Multi-agent scope.** The hooks are **generic across all channel agents**
 (marveen / dia / erno-ba): `agent_id` is derived from the session's cwd
@@ -78,7 +116,7 @@ self-scope by cwd, so they are safe even if inherited. Merge this `hooks` object
       { "hooks": [ { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/hooks/ledger-capture.py\"", "timeout": 15 } ] }
     ],
     "PostToolUse": [
-      { "matcher": "mcp__plugin.telegram.telegram__reply", "hooks": [ { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/hooks/ledger-outbound.py\"", "timeout": 15 } ] }
+      { "matcher": "mcp__plugin_[a-z0-9-]+_[a-z0-9-]+__reply", "hooks": [ { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/hooks/ledger-outbound.py\"", "timeout": 15 } ] }
     ],
     "SessionStart": [
       { "matcher": "startup|resume|clear", "hooks": [ { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/hooks/ledger-replay.py\"", "timeout": 15 } ] }
@@ -88,9 +126,14 @@ self-scope by cwd, so they are safe even if inherited. Merge this `hooks` object
 ```
 
 - `UserPromptSubmit` takes no matcher (fires on every prompt).
-- `PostToolUse` matcher `mcp__plugin.telegram.telegram__reply`: the `.` are regex
-  wildcards that match the sanitized tool name `mcp__plugin_telegram_telegram__reply`
-  (the hook also double-checks `tool_name` contains `telegram`+`reply`).
+- `PostToolUse` matcher `mcp__plugin_[a-z0-9-]+_[a-z0-9-]+__reply`: matches **every**
+  channel plugin's sanitized reply tool name (`mcp__plugin_telegram_telegram__reply`,
+  `mcp__plugin_discord_discord__reply`, …).
+  ⚠️ The hook re-parses the tool name, but that check only re-applies the **same
+  pattern** — it does not know which plugins are channels. A non-channel plugin
+  that happens to expose a `reply` tool would therefore be recorded as an outbound
+  turn. Capture is restricted to known providers, so such a row cannot become an
+  open question, but the outbound side is still shape-based, not identity-based.
 - `SessionStart` matcher `startup|resume|clear`: the matcher is a **regex over the
   `source` field**, whose only values are `startup` / `resume` / `clear` / `compact`.
   There is no `auto` source — an `"auto"` matcher silently matches nothing, so the
@@ -104,10 +147,10 @@ no `jq`). Take effect on the next session start after the settings change.
 
 ## Tests
 
-- `bash scripts/__tests__/conversation-ledger.test.sh` — 34 cases (inbound/outbound
+- `bash scripts/__tests__/conversation-ledger.test.sh` — 48 cases (inbound/outbound
   capture / replay context window / N-limit / chronological order + prefixes /
   open-question / answered-no-block / idempotency / multi-agent scope / live-drain
-  grace + dedup + answered / edges) against the real hooks, isolated via
-  `LEDGER_DB_PATH` + `LEDGER_OWNER_CHAT`.
+  grace + dedup + answered / multi-provider namespacing + reply-tool routing /
+  edges) against the real hooks, isolated via `LEDGER_DB_PATH` + `LEDGER_OWNER_CHAT`.
 - `npx vitest run src/__tests__/conversation-ledger-schema.test.ts` — schema-drift
   guard (db.ts migration == ledger_lib.py).

@@ -3,7 +3,7 @@ import { join, extname, dirname } from 'node:path'
 import { homedir, platform, tmpdir } from 'node:os'
 import { execSync } from 'node:child_process'
 import { logger } from '../../logger.js'
-import { MAIN_AGENT_ID, BOT_NAME, PROJECT_ROOT } from '../../config.js'
+import { MAIN_AGENT_ID, currentBotName, PROJECT_ROOT } from '../../config.js'
 import { createAgentMessage, listPendingChannelRequests, updateChannelRequestStatus, getDb, claimPendingForAgent, markMessageFailed } from '../../db.js'
 import { classifyAgentMessage, wrapAgentMessageForDelivery } from '../agent-message-wrap.js'
 import { ensureFederationClaudeMdSection } from '../federation/onboarding.js'
@@ -131,6 +131,7 @@ import type { RouteContext } from './types.js'
 import { suggestForAgent, type AgentSignals } from '../model-suggest.js'
 import { getTokenSummary } from '../token-usage.js'
 import { listScheduledTasks } from '../scheduled-tasks-io.js'
+import { mergeAccessFile } from '../../gg/access-merge.js'
 
 const VALID_PROVIDERS = new Set<ChannelProviderType>(['telegram', 'slack', 'discord', 'googlechat', 'teams'])
 
@@ -929,15 +930,27 @@ export async function tryHandleAgents(ctx: RouteContext, webDir: string): Promis
         `GOOGLECHAT_PROJECT_ID=${projectId.trim()}\n` +
         `GOOGLECHAT_SUBSCRIPTION=${subscription.trim()}\n`
       atomicWriteFileSync(join(gcDir, '.env'), gcEnv, { mode: 0o600 })
-      atomicWriteFileSync(join(gcDir, 'access.json'), JSON.stringify({
-        policy: allowDomain?.trim() ? 'domain' : 'allowlist',
-        owner: owner.trim(),
-        allowFrom: [],
-        allowDomains: allowDomain?.trim() ? [allowDomain.trim()] : [],
-        roles: {},
-        spaces: {},
-        flatReplies: true,
-      }, null, 2))
+      // GG: merge instead of overwrite (src/gg/access-merge.ts) — same
+      // data-loss bug as the DM-pairing branch, different schema.
+      atomicWriteFileSync(join(gcDir, 'access.json'), JSON.stringify(
+        mergeAccessFile(
+          join(gcDir, 'access.json'),
+          {
+            policy: allowDomain?.trim() ? 'domain' : 'allowlist',
+            owner: owner.trim(),
+            allowDomains: allowDomain?.trim() ? [allowDomain.trim()] : [],
+          },
+          {
+            policy: 'allowlist',
+            owner: owner.trim(),
+            allowFrom: [],
+            allowDomains: [],
+            roles: {},
+            spaces: {},
+            flatReplies: true,
+          },
+        ),
+        null, 2))
       let gcRestarted = false
       let gcWasRunning = false
       if (isMain) {
@@ -1009,12 +1022,12 @@ export async function tryHandleAgents(ctx: RouteContext, webDir: string): Promis
       envContent += `DISCORD_CHANNEL_ID=${channelId.trim()}\n`
     }
     atomicWriteFileSync(join(stateDir, '.env'), envContent, { mode: 0o600 })
-    atomicWriteFileSync(join(stateDir, 'access.json'), JSON.stringify({
-      dmPolicy: 'pairing',
-      allowFrom: [],
-      groups: {},
-      pending: {},
-    }, null, 2))
+    // GG: merge instead of overwrite (src/gg/access-merge.ts). A plain rewrite
+    // dropped every prior approval, which locked people out on a bot-token
+    // rotation or a repeated setup call.
+    atomicWriteFileSync(join(stateDir, 'access.json'), JSON.stringify(
+      mergeAccessFile(join(stateDir, 'access.json'), { dmPolicy: 'pairing' }),
+      null, 2))
 
     // Main agent doesn't have an agent-config.json or enabled-plugins entry
     // (the channels session reuses the system claude install), so skip the
@@ -1169,7 +1182,7 @@ export async function tryHandleAgents(ctx: RouteContext, webDir: string): Promis
     }> = []
     nodes.push({
       id: MAIN_AGENT_ID,
-      label: BOT_NAME,
+      label: currentBotName(),
       role: 'main',
       reportsTo: null,
       delegatesTo: [],
