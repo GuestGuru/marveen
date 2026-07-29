@@ -101,6 +101,33 @@ print(json.dumps(payload))
 PYEOF
 }
 
+# Emit an inbound payload from an ARBITRARY channel provider (discord, slack, ...).
+emit_inbound_provider() { # provider chat_id message_id text [cwd]
+    python3 - "$@" <<'PYEOF'
+import json, sys
+provider, chat_id, message_id, text = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+block = (f'<channel source="plugin:{provider}:{provider}" chat_id="{chat_id}" '
+         f'message_id="{message_id}" user="x" ts="2026-07-28T20:21:00.000Z">\n{text}\n</channel>')
+payload = {"hook_event_name": "UserPromptSubmit", "prompt": block}
+if len(sys.argv) > 5:
+    payload["cwd"] = sys.argv[5]
+print(json.dumps(payload))
+PYEOF
+}
+
+# Emit a reply PostToolUse payload for an arbitrary provider's reply tool.
+emit_reply_provider() { # provider chat_id text [cwd]
+    python3 - "$@" <<'PYEOF'
+import json, sys
+provider = sys.argv[1]
+payload = {"tool_name": f"mcp__plugin_{provider}_{provider}__reply",
+           "tool_input": {"chat_id": sys.argv[2], "text": sys.argv[3]}}
+if len(sys.argv) > 4:
+    payload["cwd"] = sys.argv[4]
+print(json.dumps(payload))
+PYEOF
+}
+
 # Emit a SessionStart payload.
 emit_session() { # [cwd]
     python3 - "$@" <<'PYEOF'
@@ -423,7 +450,7 @@ mkdir -p "$TMPDIR_BASE/ld1"; DB_LD1="$TMPDIR_BASE/ld1/x.db"
 emit_inbound 10000000001 1122 "Elveszett elo kerdes" | run_hook ledger-capture.py "$DB_LD1"
 age_rows "$DB_LD1" 120
 OUT_G1="$(run_drain "$DB_LD1")"
-if printf '%s' "$OUT_G1" | grep -q "OPEN_QUESTION chat_id=10000000001 message_id=1122"; then
+if printf '%s' "$OUT_G1" | grep -q "OPEN_QUESTION provider=telegram chat_id=10000000001 message_id=1122"; then
     pass "live drain: surfaces an aged, unanswered open question"
 else
     fail "live drain: did not surface the open question (got: $OUT_G1)"
@@ -453,6 +480,148 @@ mkdir -p "$TMPDIR_BASE/ld4"; DB_LD4="$TMPDIR_BASE/ld4/x.db"
 emit_inbound 10000000001 1131 "Epp most erkezett" | run_hook ledger-capture.py "$DB_LD4"
 OUT_G4="$(run_drain "$DB_LD4")"
 assert_eq "live drain: in-flight question (within grace) is not surfaced" "" "$OUT_G4"
+
+# ---------------------------------------------------------------------------
+# (h) MULTI-PROVIDER -- Discord (and any other channel plugin) shares the ledger
+#     with Telegram. Non-Telegram chats are namespaced "<provider>:<chat_id>";
+#     Telegram stays BARE (backwards compatible with the pre-existing rows).
+# ---------------------------------------------------------------------------
+echo ""
+echo "(h) Multi-provider capture / replay"
+
+# (h1) inbound from Discord -> namespaced chat_id
+DB_H1="$TMPDIR_BASE/h1.db"
+emit_inbound_provider discord 1531754901338853536 222 "Discord threadbol jott" \
+    | run_hook ledger-capture.py "$DB_H1"
+assert_eq "multi-provider: discord inbound is namespaced" "discord:1531754901338853536" \
+    "$(db_scalar "$DB_H1" "SELECT chat_id FROM conversation_log WHERE direction='in'")"
+
+# (h2) outbound via the Discord reply tool -> same namespaced conversation
+emit_reply_provider discord 1531754901338853536 "Discord valasz" \
+    | run_hook ledger-outbound.py "$DB_H1"
+assert_eq "multi-provider: discord outbound joins the same conversation" "1" \
+    "$(db_scalar "$DB_H1" "SELECT COUNT(*) FROM conversation_log WHERE direction='out' AND chat_id='discord:1531754901338853536'")"
+
+# (h3) the chat_id=0 owner shorthand is Telegram-only: a Discord reply with no
+#      chat_id must NOT be mis-filed under the owner's Telegram chat.
+DB_H3="$TMPDIR_BASE/h3.db"
+emit_reply_provider discord 0 "Nincs chat_id" | run_hook ledger-outbound.py "$DB_H3"
+# The hook bails before touching the DB, so the table may not exist at all:
+# 'NULL' (no table) and '0' (table, no rows) are both "recorded nothing".
+H3_COUNT="$(db_scalar "$DB_H3" "SELECT COUNT(*) FROM conversation_log")"
+if [ "$H3_COUNT" = "0" ] || [ "$H3_COUNT" = "NULL" ]; then
+    pass "multi-provider: discord reply without chat_id records nothing"
+else
+    fail "multi-provider: discord reply without chat_id recorded rows: $H3_COUNT"
+fi
+
+# (h4) same numeric id on two providers -> two SEPARATE conversations
+DB_H4="$TMPDIR_BASE/h4.db"
+emit_inbound 555 9001 "Telegram oldal" | run_hook ledger-capture.py "$DB_H4"
+emit_inbound_provider discord 555 9002 "Discord oldal" | run_hook ledger-capture.py "$DB_H4"
+assert_eq "multi-provider: identical ids on two providers do not collide" "2" \
+    "$(db_scalar "$DB_H4" "SELECT COUNT(DISTINCT chat_id) FROM conversation_log")"
+
+# (h5) replay: a Discord open question names the DISCORD reply tool + the BARE id
+DB_H5="$TMPDIR_BASE/h5.db"
+emit_inbound 10000000001 9100 "Regi telegram fordulo" | run_hook ledger-capture.py "$DB_H5"
+emit_reply 10000000001 "Telegram valasz" | run_hook ledger-outbound.py "$DB_H5"
+emit_inbound_provider discord 1531754901338853536 9101 "Nyitott discord kerdes" \
+    | run_hook ledger-capture.py "$DB_H5"
+emit_session | run_hook ledger-replay.py "$DB_H5" > "$TMPDIR_BASE/h5.json"
+H5_CTX="$(ctx_of "$TMPDIR_BASE/h5.json")"
+if printf '%s' "$H5_CTX" | grep -q "mcp__plugin_discord_discord__reply"; then
+    pass "multi-provider: replay directs the open question to the discord reply tool"
+else
+    fail "multi-provider: replay did not name the discord reply tool"
+fi
+if printf '%s' "$H5_CTX" | grep -q "chat 1531754901338853536"; then
+    pass "multi-provider: replay passes the BARE chat_id (no provider prefix)"
+else
+    fail "multi-provider: replay leaked the namespaced chat_id into the reply instruction"
+fi
+if printf '%s' "$H5_CTX" | grep -q "(discord) Gyula:"; then
+    pass "multi-provider: replayed transcript labels the discord turn"
+else
+    fail "multi-provider: replayed transcript does not label the discord turn"
+fi
+if printf '%s' "$H5_CTX" | grep -q "(telegram) Gyula:"; then
+    fail "multi-provider: telegram turns must stay unlabelled (default provider)"
+else
+    pass "multi-provider: telegram turns stay unlabelled"
+fi
+
+# (h6) live drain reports the provider and the bare chat_id
+mkdir -p "$TMPDIR_BASE/h6"; DB_H6="$TMPDIR_BASE/h6/x.db"
+emit_inbound_provider discord 1531754901338853536 9200 "Elveszett discord kerdes" \
+    | run_hook ledger-capture.py "$DB_H6"
+age_rows "$DB_H6" 120
+OUT_H6="$(run_drain "$DB_H6")"
+if printf '%s' "$OUT_H6" | grep -q "OPEN_QUESTION provider=discord chat_id=1531754901338853536 message_id=9200"; then
+    pass "multi-provider: live drain reports provider + bare chat_id"
+else
+    fail "multi-provider: live drain header wrong (got: $OUT_H6)"
+fi
+
+
+# ---------------------------------------------------------------------------
+# (r) Review-findingok regressziós fedése — mind a négy MÉRT hiba volt a
+#     multi-provider commitban, mielőtt ez a blokk megszületett.
+# ---------------------------------------------------------------------------
+
+# (r1) Egy csatorna válasza NE zárja le egy MÁSIK csatorna nyitott kérdését.
+#      Ez volt a legsúlyosabb finding: pont a commit fő ígéretét (több csatorna
+#      párhuzamosan) bukatta.
+#
+#      A sorrend LÉNYEGES: az open_question a LEGUTOLSÓ megválaszolatlan
+#      bejövőt nézi, tehát a vizsgált kérdésnek kell utolsónak lennie, és a
+#      válasznak egy MÁSIK csatornára mennie. És a "NYITOTT KÉRDÉS" blokkot
+#      kell nézni, nem a puszta szöveget: a kérdés a transcript-blokkban akkor
+#      is ott van, ha nyitottként már elveszett (ezen bukott el az első
+#      próbálkozás — a teszt a javítás nélkül is átment).
+DB_R1="$TMPDIR_BASE/r1.db"
+emit_inbound_provider discord 1531754901338853536 7001 "Discord kerdes" | run_hook ledger-capture.py "$DB_R1"
+emit_inbound 10000000001 7002 "Telegram kerdes valasz nelkul" | run_hook ledger-capture.py "$DB_R1"
+emit_reply_provider discord 1531754901338853536 "Discord valasz" | run_hook ledger-outbound.py "$DB_R1"
+# Közvetlenül az open_question-t mérjük, nem a replay JSON-ját: az a függvény
+# hordozza a szabályt, és a JSON-on át mérve a kérdés a transcript-blokkban
+# akkor is látszana, ha nyitottként már elveszett.
+R1_OQ="$(cd "$HOOKS_DIR" && LEDGER_DB_PATH="$DB_R1" python3 -c '
+import ledger_lib
+oq = ledger_lib.open_question("marveen")
+print(oq[0] if oq else "NINCS")')"
+assert_eq "review: a discord valasz NEM zarja le a telegram nyitott kerdest" \
+    "10000000001" "$R1_OQ"
+
+# (r2) chat_id nelkuli nem-telegram reply: ha VAN nyitott kerdes ugyanazon a
+#      provideren, oda kell konyvelni — kulonben a kerdes orokre nyitva marad,
+#      es minden respawn ujra megvalaszoltatja.
+DB_R2="$TMPDIR_BASE/r2.db"
+emit_inbound_provider discord 1531754901338853536 7101 "Discord kerdes" | run_hook ledger-capture.py "$DB_R2"
+emit_reply_provider discord 0 "Valasz chat_id nelkul" | run_hook ledger-outbound.py "$DB_R2"
+assert_eq "review: chat_id nelkuli discord valasz a nyitott kerdeshez kerul" "1" \
+    "$(db_scalar "$DB_R2" "SELECT COUNT(*) FROM conversation_log WHERE direction='out' AND chat_id='discord:1531754901338853536'")"
+
+# (r3) A reply-tool nev a VALODI plugin-azonositobol jojjon. A slack es a teams
+#      MCP-szervere a marketplace-rol van elnevezve, nem a pluginrol — a regi
+#      "<provider>_<provider>" konvencio rajuk nem letezo toolnevet adott.
+R3_SLACK="$(cd "$HOOKS_DIR" && python3 -c 'import ledger_lib; print(ledger_lib.reply_tool("slack"))')"
+assert_eq "review: a slack reply tool a valodi plugin-azonositobol jon" \
+    "mcp__plugin_slack-channel_marveen-marketplace__reply" "$R3_SLACK"
+R3_ISMERETLEN="$(cd "$HOOKS_DIR" && python3 -c 'import ledger_lib; print(ledger_lib.reply_tool("barmi") or "NINCS")')"
+assert_eq "review: ismeretlen providerre NINCS talalt toolnev (nem talalunk ki)" \
+    "NINCS" "$R3_ISMERETLEN"
+
+# (r4) A prompt user-vezerelt: egy BEIRT <channel> blokk ismeretlen providerrel
+#      ne kerulhessen a ledgerbe valodi uzenetkent.
+DB_R4="$TMPDIR_BASE/r4.db"
+emit_inbound_provider acme 99999 7201 "Hamisitott sor" | run_hook ledger-capture.py "$DB_R4"
+R4_COUNT="$(db_scalar "$DB_R4" "SELECT COUNT(*) FROM conversation_log")"
+if [ "$R4_COUNT" = "0" ] || [ "$R4_COUNT" = "NULL" ]; then
+    pass "review: ismeretlen providerű <channel> blokk nem kerul a ledgerbe"
+else
+    fail "review: ismeretlen providerű blokk bekerult ($R4_COUNT sor)"
+fi
 
 # ---------------------------------------------------------------------------
 # Summary
