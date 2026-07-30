@@ -173,7 +173,12 @@ if command -v free &>/dev/null; then
 fi
 
 MISSING_PKGS=""
-for pkg in ffmpeg git tmux lsof curl python3 pipx unzip; do
+# A sqlite3 CLI kulon csomag: a better-sqlite3 npm modul (amit lentebb forditunk)
+# NEM hozza magaval. A futasido tobb helyen hivja -- doctor.sh, scripts/status.ts,
+# scripts/migrate-main-agent-id.sh, a backup WAL-checkpointja, es a seed-skillek
+# (dream-engine, kanban-audit, handoff) sqlite3-parancsokat irnak elo az agentnek.
+# Nelkule ezek nem hibaznak hangosan, hanem elnemulnak: a doctor "? memories"-t ir.
+for pkg in ffmpeg git tmux lsof curl python3 pipx unzip sqlite3; do
   if ! command -v "$pkg" &>/dev/null; then
     MISSING_PKGS="$MISSING_PKGS $pkg"
   fi
