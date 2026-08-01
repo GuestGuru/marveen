@@ -1,0 +1,99 @@
+# GG fork — kódmódosítási és kiadási konvenciók
+
+Ez a checkout a `Szotasz/marveen` **forkja**: `GuestGuru/marveen`. Az upstream aktívan
+fejlődik (naponta több release), és mi rendszeresen átvesszük a változásait. Minden
+szabály alább ebből az egy célból következik: **az upstream átvétele maradjon olcsó.**
+
+Ha te (az itt futó ágens) a saját kódodba nyúlsz egy javítás miatt, ezeket kövesd.
+
+---
+
+## 1. Saját kiegészítés → saját fájlba, ne meglévő upstream fájlba
+
+Ez a legfontosabb szabály. Minden upstream fájl, amit módosítunk, egy jövőbeli
+merge-konfliktus — az általunk **létrehozott** fájlok viszont soha nem ütköznek.
+
+**Így csináld:**
+
+- Új logika → új modul a **`src/gg/`** alatt. Ez a könyvtár az upstreamben nem létezik,
+  tehát teljes egészében a miénk (első lakója: `src/gg/access-merge.ts`).
+- Új teszt → **saját tesztfájl**, ne bővítsd az upstream tesztfájlját.
+- Új dokumentáció → saját fájl a `docs/` alatt (mint ez itt).
+
+**Ha mégis elkerülhetetlen upstream fájlt módosítani** (mert egy hívási pontot be kell
+kötni), akkor:
+
+1. a lehető **legkisebb felület** — ideálisan egyetlen sor, ami egy `src/gg/` modult hív,
+   miközben az érdemi logika a mi fájlunkban van;
+2. **jelöld meg kommenttel**, hogy ez fork-változtatás és miért, hogy egy konfliktusnál
+   három hónap múlva is eldönthető legyen, melyik oldal kell:
+
+   ```ts
+   // GG fork: az access.json-t MERGE-eljük, nem írjuk felül (lásd src/gg/access-merge.ts)
+   ```
+3. a commit üzenete mondja ki, hogy fork-specifikus.
+
+Jelenleg módosított upstream fájljaink (ezekre számíts konfliktusra): `install-linux.sh`,
+`src/web/routes/agents.ts`, `src/web/update-checker.ts`, `scripts/hooks/ledger*.py`.
+
+---
+
+## 2. Ágstruktúra: `develop`-ra dolgozunk, `main`-ről frissül a szerver
+
+Ez a fork két különböző konvenció metszéspontjában él:
+
+- az **upstream default ága a `develop`** — ott folyik a fejlesztés, a `chore(release)`
+  commit is oda megy, a `main` azt fast-forwardolja, a tag a `main`-en ül;
+- a **futó telepítés viszont a `main` ágon áll**. Az `update.sh` nem hardcode-ol ágat:
+  a checkout **aktuális** ágát húzza (`git pull --ff-only origin/$CURRENT_BRANCH`),
+  és a `/home/gg/marveen` checkout `main`-en van.
+
+**Következmény, amin könnyű elcsúszni:** a `develop`-ra mergelt munka **önmagában nem jut
+ki élesbe**. Aki csak a `develop`-ot mergeli, majd frissít, azt látja, hogy „nem történt
+semmi" — mert a szerver a `main`-t húzza, ami közben nem mozdult.
+
+A teljes lánc tehát:
+
+```
+feature branch → develop → main → (szerveren) update.sh
+```
+
+---
+
+## 3. Upstream átvétele
+
+```bash
+git fetch upstream --tags
+git rev-list --left-right --count develop...upstream/develop   # ahead / behind
+git merge-tree --write-tree --name-only develop upstream/develop | head -20  # próba-merge
+git checkout -b chore/merge-upstream-<verzio> develop
+git merge --no-ff upstream/develop
+```
+
+A visszatérő — és tipikusan **egyetlen** — konfliktus a `package.json` és a
+`package-lock.json` verziósora. Ez nem valódi ütközés: a mi verziónkat kell ráemelni az
+új upstream verzióra (lásd a következő pontot). Merge után `npm install`, `npm run
+typecheck`, `npm run build`, `npm test` — mérés nélkül ne állítsd, hogy kész.
+
+---
+
+## 4. Verziószám: `-gg.N` az upstream verzió tetején
+
+A fork verziója mindig az átvett upstream verzió + `-gg.N` semver prerelease suffix:
+`1.25.1-gg.1`, `1.28.0-gg.1`. Ugyanaz az upstream verzió több GG-kiadást is kaphat
+(`-gg.2`, `-gg.3`).
+
+Ez nem kozmetika: a dashboard release-parsere (`src/web/update-checker.ts`) **kifejezetten
+erre az alakra van felkészítve** — nélküle a verzió a csupasz upstream számnak látszott,
+a `-gg.1` pedig beszivárgott a release összefoglalójába.
+
+---
+
+## 5. GitHub-műveletek
+
+- A `gh` CLI ebben a checkoutban **az upstreamet (`Szotasz/marveen`) tekinti alapnak**,
+  ezért minden parancshoz kell a `--repo GuestGuru/marveen`. Enélkül a `gh pr create`
+  idegen repóba nyitna PR-t, és félrevezető hibával hasal el.
+- **A boxon futó ágensnek nincs és ne is legyen `gh`-ja.** A botok GitHub-hozzáférése
+  kizárólag a gg-mcp `github_*` tooljain át mehet, mert a jogosultsági kapu ott van.
+  Ha GitHub-műveletre van szükséged, azt kérd, ne CLI-t telepíts.

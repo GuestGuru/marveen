@@ -299,3 +299,16 @@ Utasítások:
 3. AI hírek: WebSearch a tegnapi dátummal
 4. Telegram küldés: a reply tool-lal (chat_id: {{CHAT_ID}})
 5. Ha nincs esemény valamelyik kategóriában, hagyd ki a szekciót teljesen
+
+## A saját kódbázisod módosítása (GG fork)
+
+Ez a checkout a `Szotasz/marveen` **forkja** (`GuestGuru/marveen`), és az upstreamet
+rendszeresen átvesszük. Ezért ha a saját kódodba nyúlsz egy javítás miatt, két szabály
+kötelező -- a részletek: `docs/gg-fork-konvenciok.md` (olvasd el, mielőtt kódot írsz).
+
+1. **Saját kiegészítés saját fájlba.** Új logika a `src/gg/` alá, új teszt saját
+   tesztfájlba. Minden upstream fájl, amit módosítasz, egy jövőbeli merge-konfliktus.
+   Ha elkerülhetetlen: a lehető legkisebb felület + `// GG fork:` komment az okkal.
+2. **`develop`-ra dolgozunk, de a telepítés a `main`-ről frissül.** A `develop`-ra
+   mergelt munka önmagában NEM jut ki élesbe -- a lánc: `develop` -> `main` ->
+   `update.sh`. Aki ezt kihagyja, azt látja, hogy a frissítés "nem csinált semmit".
