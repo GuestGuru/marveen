@@ -56,6 +56,8 @@ describe('checkAgentPutFields', () => {
     expect([...AGENT_PUT_WRITABLE_FIELDS]).toEqual([
       'claudeMd', 'soulMd', 'mcpJson', 'model',
       'authMode', 'apiKey', 'claudePlan', 'memoryIsolation',
+      // GG fork: per-agent human owner, see src/gg/agent-owner.ts
+      'owner',
     ])
     expect(AGENT_PUT_WRITABLE_FIELDS).not.toContain('securityProfile')
   })
