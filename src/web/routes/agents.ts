@@ -108,6 +108,8 @@ import type { AgentRunState } from '../ssh-tmux.js'
 import { readActiveModelFromProjectDir, readContextTokensFromProjectDir } from '../active-model.js'
 import { detectPaneState, detectPermissionMode } from '../../pane-state.js'
 import { checkAgentPutFields, AGENT_PUT_WRITABLE_FIELDS } from '../agent-put-fields.js'
+// GG fork: per-agent human owner, see src/gg/agent-owner.ts
+import { readAgentOwner, writeAgentOwner } from '../../gg/agent-owner.js'
 import { detectReauthNeeded } from '../reauth-detect.js'
 import { readAutoRestartConfig, writeAutoRestartConfig } from '../auto-restart-store.js'
 import { readContextGuardConfig, writeContextGuardConfig } from '../context-guard-store.js'
@@ -397,6 +399,9 @@ interface AgentSummary {
    *  agent uses the raw claudeConfigDir / default resolution. */
   claudePlan: string | null
   team: TeamConfig
+  /** GG fork: the human this agent belongs to, or null when it inherits the
+   *  operator (OWNER_NAME). See src/gg/agent-owner.ts. */
+  owner: string | null
   hasTelegram: boolean
   telegramBotUsername?: string
   hasDiscord: boolean
@@ -476,6 +481,7 @@ function getAgentSummary(name: string): AgentSummary {
     securityProfile: readAgentSecurityProfile(name),
     claudePlan: readAgentClaudePlan(name),
     team: readAgentTeam(name),
+    owner: readAgentOwner(name), // GG fork, see src/gg/agent-owner.ts
     hasTelegram: tg.hasTelegram,
     telegramBotUsername: tg.botUsername,
     hasDiscord: dc.hasDiscord,
@@ -824,6 +830,10 @@ export async function tryHandleAgents(ctx: RouteContext, webDir: string): Promis
     if (existsSync(agentDir(name))) { json(res, { error: 'Agent already exists' }, 409); return true }
 
     scaffoldAgentDir(name)
+    // GG fork: the owner must be on disk BEFORE the persona is generated --
+    // generateClaudeMd/generateSoulMd read it back to address the right human.
+    // See src/gg/agent-owner.ts.
+    if (typeof data.owner === 'string') writeAgentOwner(name, data.owner)
     writeAgentModel(name, model)
     writeAgentSecurityProfile(name, profileId)
     writeAgentSettingsFromProfile(name, loadProfileTemplate(profileId))
@@ -1999,6 +2009,7 @@ export async function tryHandleAgents(ctx: RouteContext, webDir: string): Promis
       claudeMd?: string; soulMd?: string; mcpJson?: string; model?: string
       authMode?: AuthMode; apiKey?: string; claudePlan?: string; memoryIsolation?: boolean
       modelProfile?: string | null
+      owner?: string | null // GG fork, see src/gg/agent-owner.ts
     }
 
     // Unknown fields are rejected rather than silently dropped -- see
@@ -2027,6 +2038,10 @@ export async function tryHandleAgents(ctx: RouteContext, webDir: string): Promis
       // service runs for weeks between restarts. No-op for sub-agents.
       if (name === MAIN_AGENT_ID) ensureFederationClaudeMdSection()
     }
+    // GG fork: per-agent human owner. Empty string / null clears it, which
+    // falls the agent back to the operator (OWNER_NAME) -- the upstream
+    // behaviour. See src/gg/agent-owner.ts.
+    if (data.owner !== undefined) writeAgentOwner(name, typeof data.owner === 'string' ? data.owner : null)
     if (data.soulMd !== undefined) atomicWriteFileSync(join(agentDir(name), 'SOUL.md'), data.soulMd)
     if (data.mcpJson !== undefined) atomicWriteFileSync(join(agentDir(name), '.mcp.json'), data.mcpJson)
     if (data.model !== undefined) writeAgentModel(name, data.model)

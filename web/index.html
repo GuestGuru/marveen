@@ -2230,6 +2230,12 @@
             <select id="agentProfile"></select>
             <small id="agentProfileDesc" style="display:block;margin-top:6px;color:var(--text-muted);font-size:12px;line-height:1.4"></small>
           </div>
+          <!-- GG fork: per-agent human owner, see src/gg/agent-owner.ts -->
+          <div class="form-group">
+            <label for="agentOwner" data-i18n="agents.owner_label">Gazda</label>
+            <input type="text" id="agentOwner" data-i18n-placeholder="agents.owner_placeholder" placeholder="pl. Péter">
+            <small style="display:block;margin-top:6px;color:var(--text-muted);font-size:12px" data-i18n="agents.owner_hint">Kinek az asszisztense ez az ügynök. Üresen hagyva az üzemeltetőé.</small>
+          </div>
           <button class="btn-primary" id="wizardNextBtn">
             <span class="btn-text" data-i18n="common.btn.next">Tovább</span>
           </button>
@@ -2741,6 +2747,12 @@
 
         <!-- Tab: Team -->
         <div class="tab-panel" id="tabTeam" hidden>
+          <!-- GG fork: per-agent human owner, see src/gg/agent-owner.ts -->
+          <div class="form-group">
+            <label for="editAgentOwner" data-i18n="agents.owner_label">Gazda</label>
+            <input type="text" id="editAgentOwner" data-i18n-placeholder="agents.owner_placeholder" placeholder="pl. Péter">
+            <small style="display:block;margin-top:6px;color:var(--text-muted);font-size:12px" data-i18n="agents.owner_hint">Kinek az asszisztense ez az ügynök. Üresen hagyva az üzemeltetőé.</small>
+          </div>
           <div class="form-group">
             <label for="editTeamRole" data-i18n="agents.team.role_label">Szerep</label>
             <select id="editTeamRole">

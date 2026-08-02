@@ -15,6 +15,8 @@ import {
 import { normalizeKanbanRefs } from '../kanban-ref-normalize.js'
 import { OWNER_NAME, BOT_NAME, MAIN_AGENT_ID, STORE_DIR, WEB_HOST, WEB_PORT, KANBAN_LABEL_COLORS } from '../../config.js'
 import { listAgentNames, readAgentDisplayName } from '../agent-config.js'
+// GG fork: every human on this install, not just the operator. See src/gg/agent-owner.ts
+import { listOwnerNames } from '../../gg/agent-owner.js'
 import { isAgentRunning } from '../agent-process.js'
 import { resolveKanbanDispatchTarget } from '../../kanban-dispatch.js'
 import { generateBreakdown } from '../llm-breakdown.js'
@@ -206,8 +208,13 @@ export async function tryHandleKanban(ctx: RouteContext): Promise<boolean> {
 
   if (path === '/api/kanban/assignees' && method === 'GET') {
     const agents = listAgentNames().map((name) => ({ name, type: 'agent', displayName: readAgentDisplayName(name) || name }))
+    // GG fork: a shared company install has more than one human -- the operator
+    // plus every agent's owner. listOwnerNames() puts the operator first and
+    // returns [OWNER_NAME] alone when nobody set an owner, so a single-person
+    // install produces exactly the upstream list. See src/gg/agent-owner.ts.
+    const owners = listOwnerNames().map((name) => ({ name, type: 'owner' }))
     json(res, [
-      { name: OWNER_NAME, type: 'owner' },
+      ...owners,
       { name: BOT_NAME, type: 'bot' },
       ...agents,
     ])

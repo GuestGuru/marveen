@@ -2730,6 +2730,9 @@ document.getElementById('wizardNextBtn').addEventListener('click', async () => {
         description: desc,
         model: agentModel.value,
         profile: document.getElementById('agentProfile').value,
+        // GG fork: per-agent human owner -- must reach the server BEFORE the
+        // persona is generated. See src/gg/agent-owner.ts.
+        owner: document.getElementById('agentOwner').value.trim(),
       }),
     })
 
@@ -11348,6 +11351,10 @@ document.getElementById('chatRefreshBtn')?.addEventListener('click', () => {
 
 function renderTeamEditor(agent, allAgents) {
   const team = agent.team || { role: 'member', reportsTo: null, delegatesTo: [], autoDelegation: false, trustFrom: [] }
+  // GG fork: per-agent human owner. Empty means "inherits the operator", so an
+  // unset owner must render as an empty box, not as the operator's name --
+  // otherwise saving would pin every agent to the operator. See src/gg/agent-owner.ts.
+  document.getElementById('editAgentOwner').value = agent.owner || ''
   document.getElementById('editTeamRole').value = team.role || 'member'
   const reportsSel = document.getElementById('editTeamReportsTo')
   reportsSel.innerHTML = ''
@@ -11406,6 +11413,16 @@ document.getElementById('saveTeamBtn').addEventListener('click', async () => {
   btn.disabled = true
   btn.textContent = t('team.save_saving')
   try {
+    // GG fork: the owner lives on the agent record, not the team record, so it
+    // needs its own PUT. Done first: if it fails we throw before the team write,
+    // rather than leaving the operator with a half-applied save that reported
+    // success. See src/gg/agent-owner.ts.
+    const ownerRes = await fetch(`/api/agents/${encodeURIComponent(currentAgent.name)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ owner: document.getElementById('editAgentOwner').value.trim() }),
+    })
+    if (!ownerRes.ok) throw new Error()
     const res = await fetch(`/api/agents/${encodeURIComponent(currentAgent.name)}/team`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

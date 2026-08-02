@@ -2,6 +2,8 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, readd
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { PROJECT_ROOT, OWNER_NAME, MAIN_AGENT_ID, BOT_NAME, CHANNEL_PROVIDER, WEB_PORT, OWNER_DRIVE_FOLDER, APP_TZ, DASHBOARD_PUBLIC_URL, STORE_DIR } from '../config.js'
+// GG fork: per-agent owner ("whose assistant is this?"), see src/gg/agent-owner.ts
+import { resolveAgentOwner } from '../gg/agent-owner.js'
 import { channelStateDir } from '../channel-provider.js'
 import { runAgent } from '../agent.js'
 import { atomicWriteFileSync } from './atomic-write.js'
@@ -945,13 +947,17 @@ export function ensureFleetRosterSection(name: string): void {
 }
 
 export async function generateClaudeMd(name: string, description: string, model: string): Promise<string> {
+  // GG fork: whose assistant THIS agent is, which on a shared company install
+  // is not necessarily the operator (see src/gg/agent-owner.ts). Falls back to
+  // OWNER_NAME, so a single-person install is unaffected.
+  const ownerName = resolveAgentOwner(name)
   // Distribution-safe default-drive line: only emit a concrete folder when this
   // install has one configured (OWNER_DRIVE_FOLDER). A fresh install with no
   // configured folder tells the agent to ask the owner instead of baking in
   // some other install's drive id.
   const driveDefault = OWNER_DRIVE_FOLDER
     ? `Ha nincs MÁS kijelölve, az ALAPÉRTELMEZETT közös meghajtó: https://drive.google.com/drive/folders/${OWNER_DRIVE_FOLDER} - ide írj, rendezett almappákba.`
-    : `Ha nincs kijelölt közös meghajtó, MIELŐTT bárhova írsz, kérd el ${OWNER_NAME}-tól a megfelelő Drive mappát.`
+    : `Ha nincs kijelölt közös meghajtó, MIELŐTT bárhova írsz, kérd el ${ownerName}-tól a megfelelő Drive mappát.`
   const prompt = `You are creating the CLAUDE.md (project instructions) file for an AI agent.
 Agent name: ${name}
 Description of what the agent should do: ${description}
@@ -961,11 +967,11 @@ Generate a comprehensive CLAUDE.md that includes:
 - Clear role and responsibilities based on the description above
 - Behavioral guidelines
 - Communication style
-- Language rules (Hungarian with ${OWNER_NAME}, English for code/technical)
+- Language rules (Hungarian with ${ownerName}, English for code/technical)
 - Tool usage guidelines relevant to the agent's role
 - Any domain-specific instructions
 
-The owner's name is ${OWNER_NAME}. Use this exact name everywhere the CLAUDE.md
+The owner's name is ${ownerName}. Use this exact name everywhere the CLAUDE.md
 refers to the owner/user. Do not substitute or invent any other name.
 
 IMPORTANT FORMATTING RULES:
@@ -1126,6 +1132,8 @@ function blockedHint(target: string, reason: string): string {
 }
 
 export async function generateSoulMd(name: string, description: string): Promise<string> {
+  // GG fork: see generateClaudeMd -- the persona addresses THIS agent's owner.
+  const ownerName = resolveAgentOwner(name)
   const prompt = `You are creating the SOUL.md (personality definition) for an AI agent.
 Agent name: ${name}
 Description: ${description}
@@ -1133,7 +1141,7 @@ Description: ${description}
 Generate a personality definition that includes:
 - Core personality traits
 - Communication tone and style
-- How it addresses the user (whose name is ${OWNER_NAME} -- use this name, not any other)
+- How it addresses the user (whose name is ${ownerName} -- use this name, not any other)
 - Unique quirks or characteristics
 - What it should avoid
 

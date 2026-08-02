@@ -426,6 +426,10 @@ window._i18n.hu = {
   'agents.settings.auth_api_desc':        'ANTHROPIC_API_KEY a vault-ból',
   'agents.settings.apply_btn':            'Alkalmazás',
   'agents.settings.login_btn':            'Bejelentkezés',
+  // GG fork: per-agent human owner, see src/gg/agent-owner.ts
+  'agents.owner_label':                   'Gazda',
+  'agents.owner_placeholder':             'pl. Péter',
+  'agents.owner_hint':                    'Kinek az asszisztense ez az ügynök. Üresen hagyva az üzemeltetőé.',
   'agents.team.role_label':               'Szerep',
   'agents.team.member':                   'Beosztott (member)',
   'agents.team.leader':                   'Csapatvezető (leader)',

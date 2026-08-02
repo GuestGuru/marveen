@@ -1011,6 +1011,10 @@ window._i18n.en = {
   'agents.settings.auth_api_desc':        'ANTHROPIC_API_KEY from vault',
   'agents.settings.apply_btn':            'Apply',
   'agents.settings.login_btn':            'Log in',
+  // GG fork: per-agent human owner, see src/gg/agent-owner.ts
+  'agents.owner_label':                   'Owner',
+  'agents.owner_placeholder':             'e.g. Peter',
+  'agents.owner_hint':                    'Whose assistant this agent is. Leave blank to inherit the operator.',
   'agents.team.role_label':               'Role',
   'agents.team.member':                   'Member',
   'agents.team.leader':                   'Team leader',
