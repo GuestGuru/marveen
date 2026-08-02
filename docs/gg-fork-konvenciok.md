@@ -97,3 +97,24 @@ a `-gg.1` pedig beszivárgott a release összefoglalójába.
 - **A boxon futó ágensnek nincs és ne is legyen `gh`-ja.** A botok GitHub-hozzáférése
   kizárólag a gg-mcp `github_*` tooljain át mehet, mert a jogosultsági kapu ott van.
   Ha GitHub-műveletre van szükséged, azt kérd, ne CLI-t telepíts.
+- ✅ **A saját javításodat MA már fel tudod tolni** (IT-461, 2026-08-02). Eddig a lánc
+  első lépése hiányzott: a `github_open_pr` csak LÉTEZŐ remote ághoz tud PR-t nyitni,
+  `git push` pedig nincs (nincs credential helper). A `github_commit` egy hívásból
+  létrehozza az ágat és feltolja a commitot:
+
+  ```
+  github_commit(repo: "GuestGuru/marveen", ag: "fix/valami",
+                uzenet: "fix: …",
+                fajlok: [{ path: "src/x.ts", content: "<a TELJES új tartalom>" }])
+  → { ag, commit, url }   majd:  github_open_pr(repo: …, head: "fix/valami", …)
+  ```
+
+  ⚠️ A fájl **teljes új tartalmát** kell megadni, nem diffet. Az ágnév kötelező
+  előtaggal indul (`fix/`, `feat/`, `chore/`, …), a `main` és a többi védett ág soha
+  nem írható közvetlenül, force push pedig nincs — a meglévő ágra ráfűz.
+  ⚠️ Futtatható fájlnál (szkript) `futtathato: true` kell, különben elveszti a
+  futtatási jogát.
+
+  Ez azt is jelenti, hogy **nem kell lokálisan foltozni**: a `src/update-preflight.ts`
+  dirty-tree ága megtagadná a frissítést, ha el nem kommitolt változás marad a
+  checkoutban.
