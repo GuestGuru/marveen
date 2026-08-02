@@ -50,6 +50,49 @@ fi
 
 SKILL_COUNT=0
 
+# GG fork: description kinyerése a YAML frontmatterből -- kezeli az egysoros,
+# a folded (`>`) és a literal (`|`) formát is, karakter-alapon vág, és escape-eli
+# a markdown tábla-elválasztó pipe-ot.
+extract_desc() {
+  python3 - "$1" <<'PY' 2>/dev/null
+import re, sys
+try:
+    lines = open(sys.argv[1], encoding="utf-8", errors="replace").read().splitlines()
+except OSError:
+    sys.exit(0)
+
+# frontmatter blokk: az első '---' és a lezáró '---' között
+if not lines or lines[0].strip() != "---":
+    sys.exit(0)
+try:
+    end = lines.index("---", 1)
+except ValueError:
+    end = len(lines)
+fm = lines[1:end]
+
+parts = []
+for i, line in enumerate(fm):
+    m = re.match(r"^description:\s*(.*)$", line)
+    if not m:
+        continue
+    head = m.group(1).strip()
+    if head in (">", "|", ">-", "|-", ">+", "|+"):
+        # blokk-scalar: a következő behúzott sorok tartoznak hozzá
+        for cont in fm[i + 1:]:
+            if cont.strip() and not cont.startswith((" ", "\t")):
+                break
+            parts.append(cont.strip())
+    else:
+        parts.append(head)
+    break
+
+desc = " ".join(p for p in parts if p)
+desc = desc.strip().strip("\"'")
+desc = re.sub(r"\s+", " ", desc).replace("|", "\\|")
+print(desc[:120])
+PY
+}
+
 index_skills_dir() {
   local dir="$1"
   local scope="$2"  # only used when MERGED=1
@@ -65,7 +108,10 @@ index_skills_dir() {
     fi
 
     local desc
-    desc=$(grep -m1 "^description:" "$skill_md" 2>/dev/null | sed 's/^description: *//' | tr -d '"' | tr -d "'" | cut -c1-120)
+    # GG fork: a korábbi grep+sed+cut nem kezelte a YAML folded/literal scalart
+    # (`description: >`) -- 6 skill leírása üresen maradt --, és a `cut -c` bájtban
+    # vágott, ami félbevágta az UTF-8 karaktereket (a fájl bináris lett a grep-nek).
+    desc=$(extract_desc "$skill_md")
     if [ -z "$desc" ]; then
       desc="(nincs leírás)"
     fi
