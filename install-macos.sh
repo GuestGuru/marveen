@@ -492,9 +492,21 @@ fi
 # >= 2.1.205 silently drops channel-plugin INBOUND notifications on a team/
 # enterprise org unless managed-settings has channelsEnabled:true (harmless /
 # no-op on a personal org). Idempotent + preserves existing managed keys.
+CHANNELS_GATE_STATE="manual"
 if [ -f "$INSTALL_DIR/scripts/ensure-managed-channels-enabled.sh" ]; then
   echo -e "  Managed-settings channel-kapu ellenorzese..."
-  bash "$INSTALL_DIR/scripts/ensure-managed-channels-enabled.sh" || true
+  # ORGGATESILENT806: the gate script must never fail the install (exit 0 on
+  # every path -- a personal org is a legitimate no-op), but its OUTCOME must
+  # not vanish either: it prints a MARVEEN_CHANNELS_GATE=ok|manual verdict
+  # line, and the final summary below repeats it -- with the exact root
+  # command when manual. Silent skipping was the bug, not skipping.
+  CHANNELS_GATE_OUT="$(bash "$INSTALL_DIR/scripts/ensure-managed-channels-enabled.sh" 2>&1 || true)"
+  # The verdict line is machine-facing; the customer sees only the human lines.
+  echo "$CHANNELS_GATE_OUT" | grep -v "MARVEEN_CHANNELS_GATE=" || true
+  case "$CHANNELS_GATE_OUT" in
+    *MARVEEN_CHANNELS_GATE=ok*) CHANNELS_GATE_STATE="ok" ;;
+    *) CHANNELS_GATE_STATE="manual" ;;
+  esac
 fi
 
 read -rp "$(_t prompt_bot_name)" BOT_NAME
@@ -1008,26 +1020,76 @@ if ! ollama list 2>/dev/null | grep -q "nomic-embed-text"; then
 fi
 echo -e "$(_t macos.ollama_done)"
 
-# Whisper (speech-to-text for video transcription)
+# Whisper (speech-to-text for video transcription) -- OPTIONAL.
+#
+# This block used to end the install. On an Intel Mac the operator saw only
+# "Varatlan hiba a(z) 'configuration' lepesben (sor: 982)" -- 982 being the
+# CLOSING `fi`, where nothing runs. Three defects, all fixed here:
+#
+#  1. macOS ships bash 3.2, where a command that fails inside a `{ ... }` group
+#     on the RHS of `||` STILL reaches the ERR trap, and $LINENO blames the
+#     enclosing `fi`. Same trap-vs-`fi` class as the `claude --print` probe and
+#     the service-auth probe above; same cure: call the work through a function
+#     in an `&& rc=0 || rc=$?` list, which keeps the failure out of the trap and
+#     preserves the status. An OPTIONAL dependency must never abort the install.
+#  2. `2>/dev/null` on every installer hid the reason. The real message here was
+#     "pipx needs uv>=0.9.17, but ... reports 0.5.9" -- actionable, and never
+#     shown. Let stderr through; it is captured in $INSTALL_ERRLOG too.
+#  3. mlx-whisper is MLX-based, i.e. Apple Silicon ONLY. On Intel it can never
+#     install, so the first attempt was guaranteed to fail there. Gate it on the
+#     architecture and fall back to openai-whisper, which runs everywhere.
+#
+# The old fallback also printed "openai-whisper telepítve" unconditionally --
+# after a `brew install` whose status it had just discarded. Each success line
+# now follows the command that actually succeeded.
 echo ""
 echo -e "$(_t macos.whisper_installing)"
-if command -v mlx_whisper &>/dev/null || [ -f "$HOME/.local/bin/mlx_whisper" ]; then
-  echo -e "  ${GREEN}✓${NC} $(_t macos.mlx_whisper_installed)"
-elif command -v whisper &>/dev/null; then
-  echo -e "  ${GREEN}✓${NC} $(_t macos.whisper_installed)"
-  echo -e "  ${DIM}  Tipp: pipx install mlx-whisper gyorsabb Apple Silicon-on${NC}"
-else
-  if command -v pipx &>/dev/null; then
-    pipx install mlx-whisper 2>/dev/null && echo -e "  ${GREEN}✓${NC} mlx-whisper telepítve" || {
-      brew install openai-whisper 2>/dev/null
-      echo -e "  ${GREEN}✓${NC} openai-whisper telepítve"
-    }
-  else
-    brew install pipx 2>/dev/null && pipx install mlx-whisper 2>/dev/null && echo -e "  ${GREEN}✓${NC} mlx-whisper telepítve" || {
-      brew install openai-whisper 2>/dev/null
-      echo -e "  ${GREEN}✓${NC} openai-whisper telepítve"
-    }
+
+install_whisper() {
+  if command -v mlx_whisper &>/dev/null || [ -f "$HOME/.local/bin/mlx_whisper" ]; then
+    echo -e "  ${GREEN}✓${NC} $(_t macos.mlx_whisper_installed)"
+    return 0
   fi
+
+  if command -v whisper &>/dev/null; then
+    echo -e "  ${GREEN}✓${NC} $(_t macos.whisper_installed)"
+    return 0
+  fi
+
+  if ! command -v pipx &>/dev/null; then
+    command -v brew &>/dev/null && brew install pipx
+  fi
+
+  if [ "$(uname -m)" = "arm64" ] && command -v pipx &>/dev/null; then
+    if pipx install mlx-whisper; then
+      echo -e "  ${GREEN}✓${NC} mlx-whisper telepítve"
+      return 0
+    fi
+  fi
+
+  if command -v pipx &>/dev/null; then
+    if pipx install openai-whisper; then
+      echo -e "  ${GREEN}✓${NC} openai-whisper telepítve (pipx)"
+      return 0
+    fi
+  fi
+
+  if command -v brew &>/dev/null; then
+    if brew install openai-whisper; then
+      echo -e "  ${GREEN}✓${NC} openai-whisper telepítve (brew)"
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
+WHISPER_RC=0
+install_whisper || WHISPER_RC=$?
+
+if [ "$WHISPER_RC" -ne 0 ]; then
+  warn "$(_t macos.whisper_skipped)"
+  echo -e "    ${DIM}$(_t macos.whisper_skipped_hint)${NC}"
 fi
 
 # ffmpeg (audio/video processing)
@@ -1361,6 +1423,12 @@ else
   echo -e "  ${DIM}$(_t dash.no_token_hint)${NC}"
 fi
 echo -e "  ${BOLD}Telegram:${NC} $(_t telegram.write_hint)"
+if [ "${CHANNELS_GATE_STATE:-manual}" = "ok" ]; then
+  echo -e "  ${GREEN}✓${NC} Org-szintu channel-kapu: channelsEnabled=true a managed-settings-ben"
+else
+  echo -e "  ${ORANGE}!${NC} Org-szintu channel-kapu NINCS beallitva (team/enterprise orgnal a bejovo uzenetek elakadnak)."
+  echo -e "    Kezi root-lepes: ${BOLD}sudo bash \"$INSTALL_DIR/scripts/ensure-managed-channels-enabled.sh\"${NC}"
+fi
 echo ""
 echo -e "  ${DIM}$(_t next_steps.title)${NC}"
 echo -e "  ${DIM}$(_t next_steps.1)${NC}"
