@@ -75,11 +75,12 @@ import {
   agentChannelDir,
 } from '../channel-invites.js'
 import { hardRestartMarveenChannels } from '../channel-monitor.js'
-import { isMainChannelsAgent, MAIN_CHANNELS_SESSION } from '../main-agent.js'
+import { isMainChannelsAgent, MAIN_CHANNELS_SESSION, withoutMainAgent } from '../main-agent.js'
 import {
   getProvider,
   channelStateDir,
   readChannelToken,
+  checkTelegramTokenBusy,
   generateSlackAppManifest,
   getSlackAppSetupInstructions,
   type ChannelProviderType,
@@ -707,7 +708,7 @@ export async function tryHandleAgents(ctx: RouteContext, webDir: string): Promis
       })
     }
 
-    for (const name of listAgentNames()) {
+    for (const name of withoutMainAgent(listAgentNames())) {
       // Remote agents: resolve run state + pane through the short-TTL caches so
       // this 3s-polled endpoint never blocks the event loop on an ssh timeout.
       const host = readAgentRemoteHost(name)
@@ -791,7 +792,7 @@ export async function tryHandleAgents(ctx: RouteContext, webDir: string): Promis
       } catch { return 0 }
     }
 
-    const names = listAgentNames()
+    const names = withoutMainAgent(listAgentNames())
     const results = [MAIN_AGENT_ID, ...names].map(name => {
       const dir = agentDir(name)
       const claudeMd = readFileOr(join(dir, 'CLAUDE.md'), '')
@@ -1149,6 +1150,20 @@ export async function tryHandleAgents(ctx: RouteContext, webDir: string): Promis
     if (dupeOwner) {
       json(res, { error: `This bot token is already used by agent "${dupeOwner}". Each agent needs its own bot token to avoid getUpdates conflicts.` }, 409)
       return true
+    }
+
+    // MCPTOKEN807: a token reused from a PREVIOUS install (webhook bound, or a
+    // poller still running elsewhere) passes getMe and the local dupe check,
+    // then kills the plugin at runtime with an opaque -32000. Probe at save
+    // time and answer with the remedy. Skipped when re-saving the token this
+    // agent already runs with -- its OWN live poller would read as busy.
+    if (provider === 'telegram') {
+      const preEnvPath = join(isMain ? channelStateDir(provider) : channelStateDir(provider, agentDir(name)), '.env')
+      const currentToken = readChannelToken(provider, preEnvPath)
+      if (botToken.trim() !== currentToken) {
+        const busyCheck = await checkTelegramTokenBusy(botToken.trim())
+        if (busyCheck.busy) { json(res, { error: busyCheck.error }, 409); return true }
+      }
     }
 
     if (provider === 'slack' && !isManagedSettingsReady()) {
@@ -2107,6 +2122,14 @@ export async function tryHandleAgents(ctx: RouteContext, webDir: string): Promis
     if (!existsSync(dir)) { json(res, { error: 'Agent not found' }, 404); return true }
     rmSync(dir, { recursive: true, force: true })
     cleanupTeamReferences(name)
+    // Deleting an agent is at least as strong a statement of intent as stopping
+    // one, so it must clear the desired run-state the same way /stop does.
+    // Without this the name outlives its directory in agents-desired.json, and
+    // the reconciler keeps trying to start something that no longer exists --
+    // a permanent error-level log line for a machine that is behaving
+    // correctly. The sharper hazard is later: create an agent with the same
+    // name again and the stale entry starts it immediately, unasked.
+    removeDesiredAgent(name)
     json(res, { ok: true })
     return true
   }
