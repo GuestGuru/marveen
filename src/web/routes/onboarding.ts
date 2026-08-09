@@ -76,6 +76,29 @@ function fleetTokenPresent(): boolean {
   } catch { return false }
 }
 
+// Behaviour leg (last resort): a RUNNING fleet is authenticated even when none
+// of the storage locations above hold the credential. channels.sh exports the
+// setup-token into the tmux server's GLOBAL environment (`set-environment -g`,
+// verified live 2026-08-09), which is the actual auth source of every session it
+// spawns -- independent of .env, the fleet file, credentials.json or the
+// Keychain. So a fresh install whose token reached the running session by any
+// path (isolated CLAUDE_CONFIG_DIR, an env exported before .env was written, a
+// timing race between the restart and the .env flush) still reads as logged-in.
+// This asks the BEHAVIOUR ("is the running fleet carrying auth?") instead of
+// enumerating storage types -- a storage-only check re-breaks on every new
+// credential path; this one does not. Presence-only: the value is matched with a
+// regex, never captured, returned, or logged. Fails closed on any error (tmux
+// unresolved, session gone), so it can only ever ADD a true, never flip one.
+function runningSessionAuthenticated(): boolean {
+  try {
+    if (!sessionExistsOnHost(null, MAIN_CHANNELS_SESSION)) return false
+    const out = execFileSync(resolveFromPath('tmux'), ['show-environment', '-g'], {
+      timeout: 3000, encoding: 'utf-8',
+    })
+    return /^(CLAUDE_CODE_OAUTH_TOKEN|ANTHROPIC_API_KEY)=.+/m.test(out)
+  } catch { return false }
+}
+
 function claudeAuthPresent(): boolean {
   if (readEnvValue('CLAUDE_CODE_OAUTH_TOKEN')) return true
   if (readEnvValue('ANTHROPIC_API_KEY')) return true
@@ -87,7 +110,8 @@ function claudeAuthPresent(): boolean {
     if (d?.apiKey) return true
   } catch { /* no / unreadable credentials.json */ }
   if (fleetTokenPresent()) return true
-  return keychainHasClaudeCredentials()
+  if (keychainHasClaudeCredentials()) return true
+  return runningSessionAuthenticated()
 }
 
 // Active-channel checks, provider-aware (NOT hardcoded to Telegram). A
