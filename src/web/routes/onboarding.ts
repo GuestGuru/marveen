@@ -86,9 +86,22 @@ function fleetTokenPresent(): boolean {
 // timing race between the restart and the .env flush) still reads as logged-in.
 // This asks the BEHAVIOUR ("is the running fleet carrying auth?") instead of
 // enumerating storage types -- a storage-only check re-breaks on every new
-// credential path; this one does not. Presence-only: the value is matched with a
-// regex, never captured, returned, or logged. Fails closed on any error (tmux
+// credential path; this one does not. Fails closed on any error (tmux
 // unresolved, session gone), so it can only ever ADD a true, never flip one.
+//
+// PRESENCE-ONLY, NOT VALIDITY (read this before hardening): this proves the
+// token is PRESENT in the tmux global env, NOT that it is valid or unexpired. It
+// deliberately does NOT run a live probe (that is the expensive `claude -p` path
+// this status check must avoid). The failure direction therefore INVERTS: before
+// this leg a working install read as logged-out (false negative); with it, a
+// machine still running on an expired/revoked token could read as authenticated
+// (false positive) -- the same class BOOTPASS807 just tightened. Accepted on
+// purpose because the leg is last-resort (only runs when every storage leg is
+// false), and it is cheaper to be wrong this way than to keep telling every new
+// customer their working product failed. A validity check (a cheap liveness
+// signal, or gating on a fresh successful-auth log line) is deferred to a
+// separate hardening card, NOT bolted on here. The token value is matched with a
+// regex only -- never captured, returned, or logged.
 function runningSessionAuthenticated(): boolean {
   try {
     if (!sessionExistsOnHost(null, MAIN_CHANNELS_SESSION)) return false
