@@ -10,6 +10,8 @@ import { atomicWriteFileSync } from './atomic-write.js'
 import { agentDir, agentConfigRoot, listAgentNames, readAgentCapabilities } from './agent-config.js'
 import { resolveProfilePlaceholders, type ProfileTemplate } from './profiles.js'
 import { sanitizeCapabilityTag, CAPABILITY_TAG_MAX_PER_AGENT } from '../prompt-safety.js'
+// GG fork: per-agent gg-mcp identity (see src/gg/mcp-identity.ts)
+import { withOwnGgIdentity } from '../gg/mcp-identity.js'
 
 // Resolve the base URL agents should use to reach the dashboard API.
 // DASHBOARD_PUBLIC_URL wins when set (distributed / k3s deployment); falls
@@ -739,6 +741,16 @@ export function scaffoldAgentDir(name: string) {
     const sharedMcp = join(PROJECT_ROOT, '.mcp.json')
     if (existsSync(sharedMcp)) {
       copyFileSync(sharedMcp, mcpJson)
+      // GG fork: the copy also carries the MAIN agent's gg-mcp identity (token
+      // file + audit label), so a new agent would call GG systems as the owner,
+      // with the owner's rights, unlogged as itself. Rewrite it to its own.
+      // See src/gg/mcp-identity.ts. Failure here must not break scaffolding:
+      // the copied file is still valid, just with the old identity.
+      try {
+        const parsed = JSON.parse(readFileSync(mcpJson, 'utf-8'))
+        const fixed = withOwnGgIdentity(parsed, name)
+        if (fixed !== parsed) atomicWriteFileSync(mcpJson, JSON.stringify(fixed, null, 2) + '\n')
+      } catch { /* keep the plain copy */ }
     } else {
       // Valid empty shape -- `claude /doctor` rejects plain "{}"
       atomicWriteFileSync(mcpJson, JSON.stringify({ mcpServers: {} }, null, 2))
