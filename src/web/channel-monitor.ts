@@ -52,6 +52,8 @@ import { decideDownAgentAction, AGENT_MAX_RESTART_ATTEMPTS, parseEtimeToSeconds 
 // module so the standalone channel-coordinator reuses the exact same probe.
 import { getClaudePidForSession, hasChannelPluginAlive, probeChannelPluginLiveness } from '../channel-coordinator/liveness.js'
 import { getDesiredAgents } from './agent-desired-state.js'
+// GG fork: queue-authoritative rescue for the no-remedy 'hold' branch.
+import { tryQueuedFrameRecovery } from '../gg/stuck-input-queue-reinject.js'
 
 const TMUX = resolveFromPath('tmux')
 const CLAUDE = resolveFromPath('claude')
@@ -418,9 +420,23 @@ async function performStuckInputAction(
         execFileSync(TMUX, ['send-keys', '-t', session, 'Enter'], { timeout: 5000 })
         submitted = true
         break
-      case 'hold':
+      case 'hold': {
+        // GG fork (2026-08-12): 'hold' has no remedy of its own -- it waits for
+        // a keystroke that never comes on an unattended fleet, which is exactly
+        // how agent-jean sat wedged on a 911-char handover until a human sent
+        // one Enter. Before holding, try the ONE move that needs neither the
+        // forbidden bare-Enter nor the lossy screen scrape: re-inject the
+        // message the queue says was delivered into this pane, rebuilt through
+        // the router's own wrapper. Returns false (-> unchanged hold) whenever
+        // the queue cannot explain the parked text. See
+        // src/gg/stuck-input-queue-reinject.ts.
+        if (await tryQueuedFrameRecovery(session, parkedInputText(paneBefore))) {
+          submitted = true
+          break
+        }
         logger.warn({ session, attempt }, 'Stuck input -- multi-row/truncated, holding (no bare-Enter; awaiting keystroke fix)')
         break
+      }
     }
   } catch (err) {
     logger.warn({ err, session, action }, 'Stuck-input recovery action failed')
