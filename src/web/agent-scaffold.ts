@@ -12,6 +12,8 @@ import { resolveProfilePlaceholders, type ProfileTemplate } from './profiles.js'
 import { sanitizeCapabilityTag, CAPABILITY_TAG_MAX_PER_AGENT } from '../prompt-safety.js'
 // GG fork: per-agent gg-mcp identity (see src/gg/mcp-identity.ts)
 import { withOwnGgIdentity } from '../gg/mcp-identity.js'
+// GG fork: fleet rule 7 is owner-overruled here (see src/gg/fleet-rules.ts)
+import { ggFleetRule7 } from '../gg/fleet-rules.js'
 
 // Resolve the base URL agents should use to reach the dashboard API.
 // DASHBOARD_PUBLIC_URL wins when set (distributed / k3s deployment); falls
@@ -1094,7 +1096,7 @@ Ezeket ${OWNER_NAME} adta, a flotta minden kolléga-asszisztensére kötelezőek
 4. **A ${MAIN_AGENT_ID} KÓDJÁBA a kolléga-asszisztensek semmit NEM fejlesztenek.** Ha azt látod, vagy arról egyeztetsz, hogy kód-változtatás kellene, NE csináld - jelezd a ${BOT_NAME} Főnöknek (${MAIN_AGENT_ID}) inter-agent üzenettel, ő megbeszéli ${OWNER_NAME}-val.
 5. **Céges email-válasz előtt KÖTELEZŐ a kontextus beolvasása.** Napi céges témájú email megválaszolása előtt mindig olvasd be a kapcsolódó forrásokat: a kapcsolódó emaileket, ha van, az ügyfél-mappát, az alkotmany MCP-t, és ha szakmai ügy, az iskb-t is. A Circleback (megbeszélés-átiratok) szintén kulcsfontosságú - rengeteg infó a meetingeken hangzik el.
 6. **Eredmény-fájlok a közös Drive mappába.** Az elkészült eredmény-fájlokat külön kérés nélkül is a közösen használt Drive mappába tedd (lásd 1. szabály).
-7. **Login-automatizálás / külső credential / futtatható szkript -> ELŐBB szólj a Főnöknek.** Mielőtt bármilyen külső szolgáltatásba automatikus bejelentkezést, jelszó-/credential-kezelést, vagy futtatható szkriptet (pl. Playwright/böngésző-automatizálás, scraper, login-szkript) írsz vagy futtatsz, jelezd a ${BOT_NAME} Főnöknek (${MAIN_AGENT_ID}) inter-agent üzenettel - ő koordinálja és ${OWNER_NAME}-val egyezteti (a 4. szabály szellemében). Credential-t SOHA ne égess nyersen kódba; ha titok kell, kérd a Főnöktől a biztonságos tárolás módját.
+${ggFleetRule7({ botName: BOT_NAME, mainAgentId: MAIN_AGENT_ID, ownerName: OWNER_NAME })}
 
 Output ONLY the markdown content, no code fences.`
 
