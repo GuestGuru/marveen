@@ -173,6 +173,32 @@ _srv.close()
 check("remote_reachable: closed port is refused",
       ggmcp.remote_reachable(("127.0.0.1", _port)), False)
 
+# --- proxy mode (stdio to the client, HTTP upstream) ------------------------
+# The third shape. Matching only index.js would have called every proxy-mode
+# agent DEAD -- the same false alarm as the remote case, one shape further along.
+check("needle: direct server matches",
+      ggmcp.server_needle_in("node /home/gg/gg-mcp/dist/index.js"), "gg-mcp/dist/index.js")
+check("needle: proxy matches",
+      ggmcp.server_needle_in("node /home/gg/gg-mcp/dist/proxy.js"), "gg-mcp/dist/proxy.js")
+check("needle: unrelated node process does not match",
+      ggmcp.server_needle_in("node /home/gg/marveen/dist/index.js"), None)
+# The legacy name must keep pointing at the direct server, or older callers shift.
+check("needle: legacy constant unchanged", ggmcp.SERVER_NEEDLE, "gg-mcp/dist/index.js")
+
+with tempfile.TemporaryDirectory() as d:
+    proxy = "/home/gg/gg-mcp/dist/proxy.js"
+    with open(os.path.join(d, ".mcp.json"), "w") as fh:
+        json.dump({"mcpServers": {"gg-access": {
+            "command": "node", "args": [proxy],
+            "env": {"GG_MCP_TOKEN_FILE": "/home/gg/gg-mcp/tokens/x.token"}}}}, fh)
+    # Returning the proxy path (not None) is what keeps staleness meaningful: a
+    # rebuilt proxy.js still needs a session restart, exactly like index.js.
+    check("declares: proxy entry yields the proxy path",
+          ggmcp.declares_gg_access(d), (True, proxy))
+    # Proxy config is stdio-shaped, so it must NOT be treated as remote --
+    # otherwise the probe would stop looking for the child that does exist.
+    check("proxy entry is not remote", ggmcp.remote_target(ggmcp.gg_access_config(d)), None)
+
 # --- gg_access_config / config_mtime_after ----------------------------------
 with tempfile.TemporaryDirectory() as d:
     check("gg_access_config: missing file", ggmcp.gg_access_config(d), None)

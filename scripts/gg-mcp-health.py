@@ -54,10 +54,24 @@ import time
 
 PROJECT_ROOT = os.environ.get("MARVEEN_ROOT", "/home/gg/marveen")
 AGENTS_DIR = os.path.join(PROJECT_ROOT, "agents")
-# The server binary every agent's .mcp.json points at. Matched as a substring of
+# The server binaries an agent's .mcp.json may point at. Matched as substrings of
 # the child's cmdline rather than parsed, so a wrapper (nvm shim, `node --flag`)
 # still counts as alive.
-SERVER_NEEDLE = "gg-mcp/dist/index.js"
+#
+# proxy.js is the third shape (2026-08-12): stdio toward Claude Code, HTTP toward
+# the gg-mcp service, per-agent identity from the token FILE. It is a live server
+# child in every sense that matters here, and matching only index.js would report
+# every proxy-mode agent DEAD -- the same false alarm this probe was fixed for
+# hours earlier, one shape further along. Whenever a new way to reach gg-mcp
+# appears, it belongs in this tuple before anyone is switched onto it.
+SERVER_NEEDLES = ("gg-mcp/dist/index.js", "gg-mcp/dist/proxy.js")
+# Kept for callers that predate the tuple; the direct server remains the default.
+SERVER_NEEDLE = SERVER_NEEDLES[0]
+
+
+def server_needle_in(text: str) -> str | None:
+    """The gg-mcp server binary this cmdline/arg refers to, or None."""
+    return next((n for n in SERVER_NEEDLES if n in text), None)
 
 
 def _read(path: str) -> str:
@@ -149,7 +163,7 @@ def declares_gg_access(cwd: str) -> tuple[bool, str | None]:
     if server is None:
         return False, None
     for arg in server.get("args") or []:
-        if SERVER_NEEDLE in str(arg):
+        if server_needle_in(str(arg)):
             return True, str(arg)
     return True, None
 
@@ -288,7 +302,7 @@ def probe() -> dict:
         if not declared:
             continue  # agent legitimately has no gg-access -- not a fault
 
-        alive = [c for c in children.get(pid, []) if SERVER_NEEDLE in procs[c]["cmdline"]]
+        alive = [c for c in children.get(pid, []) if server_needle_in(procs[c]["cmdline"])]
         built = build_mtime(server_path)
         age = time.time() - info["start_ts"]
         target = remote_target(entry)
