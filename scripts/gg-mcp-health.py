@@ -16,11 +16,33 @@ Two independent failure modes, both silent:
             gg-mcp alone cannot fix this: the stdio child is spawned once, at
             session start, and lives as long as the session.)
 
+2026-08-12 -- "no child process" stopped meaning "broken". gg-mcp also runs as a
+Streamable-HTTP service, and an agent pointed at it has NO child by design. The
+probe reported the main agent DEAD while its tools were demonstrably working,
+which is the expensive kind of wrong: a monitor that cries wolf every 30 minutes
+trains everyone to ignore it, and being ignored is exactly how the 2026-08-08
+outage lasted two days. Two blind spots were fixed:
+
+  remote  -- a gg-access entry with `url` (or `type: http|sse`) is checked by
+             asking whether the endpoint accepts a TCP connection, not by
+             hunting for a child that will never exist. NOTE the limit: a live
+             socket proves the SERVICE is up, not that this agent's token is
+             still accepted. Token-level failure is invisible here, and the
+             probe says so rather than implying a clean bill of health.
+  unknown -- .mcp.json changed AFTER the session started, so the file on disk is
+             not what the session loaded. The process table cannot settle that
+             disagreement, so the probe declines to guess instead of reporting a
+             death it cannot substantiate. A session restart resolves it.
+
 Dependency-free on purpose: it must keep working when the dashboard, the
-network, or the MCP layer itself is the thing that is broken.
+network, or the MCP layer itself is the thing that is broken. The remote check
+is a stdlib TCP connect with a short timeout -- deliberately NOT an
+authenticated HTTP request, because a monitoring script should not be reading
+tokens out of configs and putting them on the wire.
 
 Output: JSON on stdout. Exit 0 = every configured agent healthy, 1 = at least
-one DEAD or STALE agent, 2 = the probe itself could not run.
+one DEAD or STALE agent, 2 = the probe itself could not run. `starting`,
+`remote` and `unknown` are not faults and do not affect the exit code.
 """
 
 from __future__ import annotations
@@ -101,20 +123,91 @@ def agent_name_for(cwd: str) -> str | None:
     return None
 
 
-def declares_gg_access(cwd: str) -> tuple[bool, str | None]:
-    """Does this workdir configure a gg-access stdio server? -> (yes, server path)"""
+def gg_access_config(cwd: str) -> dict | None:
+    """The raw gg-access entry from this workdir's .mcp.json, or None.
+
+    A malformed or missing file is deliberately not a fault: the probe reports on
+    agents it can read, and an unreadable config is the operator's problem, not a
+    dead server.
+    """
     try:
         with open(os.path.join(cwd, ".mcp.json")) as fh:
             cfg = json.load(fh)
     except (OSError, ValueError):
-        return False, None
+        return None
     server = (cfg.get("mcpServers") or {}).get("gg-access")
-    if not isinstance(server, dict):
+    return server if isinstance(server, dict) else None
+
+
+def declares_gg_access(cwd: str) -> tuple[bool, str | None]:
+    """Does this workdir configure a gg-access server? -> (yes, stdio server path)
+
+    The path is None for a remote entry (there is no local binary to stat), which
+    is also why staleness cannot be computed for one.
+    """
+    server = gg_access_config(cwd)
+    if server is None:
         return False, None
     for arg in server.get("args") or []:
         if SERVER_NEEDLE in str(arg):
             return True, str(arg)
     return True, None
+
+
+def remote_target(server: dict | None) -> tuple[str, int] | None:
+    """(host, port) if this gg-access entry talks to a remote endpoint, else None.
+
+    Mirrors src/gg/mcp-identity.ts `isRemoteEntry`: a `url` is enough on its own,
+    whatever `type` claims. Kept deliberately broad for the same reason -- the
+    cost of misreading a remote entry as stdio is a false death report.
+    """
+    if not isinstance(server, dict):
+        return None
+    url = server.get("url")
+    if not isinstance(url, str) or not url:
+        return ("", 0) if server.get("type") in ("http", "sse") else None
+    from urllib.parse import urlsplit
+    parts = urlsplit(url)
+    if not parts.hostname:
+        return ("", 0)
+    return parts.hostname, parts.port or (443 if parts.scheme == "https" else 80)
+
+
+# A monitor must not hang on a wedged endpoint: the whole point is to report.
+REMOTE_PROBE_TIMEOUT_S = 2.0
+
+
+def remote_reachable(target: tuple[str, int] | None) -> bool | None:
+    """True = the endpoint accepts connections, False = refused, None = can't tell.
+
+    A refused connection is a real, actionable fault (the service is down). A
+    timeout or DNS failure is NOT reported as death: the fault may be this box's
+    network, and a monitor that turns its own blind spot into an alarm is worse
+    than one that admits it cannot see.
+    """
+    import socket
+    if not target or not target[0] or not target[1]:
+        return None
+    try:
+        with socket.create_connection(target, timeout=REMOTE_PROBE_TIMEOUT_S):
+            return True
+    except ConnectionRefusedError:
+        return False
+    except OSError:
+        return None
+
+
+def config_mtime_after(cwd: str, session_start_ts: float) -> bool:
+    """Was .mcp.json last written AFTER this session started?
+
+    If so, the declaration on disk is not what the session loaded, and no
+    conclusion about the running process can be drawn from it. A missing or
+    unreadable file answers False: absence of evidence is not a config change.
+    """
+    try:
+        return os.stat(os.path.join(cwd, ".mcp.json")).st_mtime > session_start_ts
+    except OSError:
+        return False
 
 
 def build_mtime(server_path: str | None) -> float | None:
@@ -132,16 +225,36 @@ STARTUP_GRACE_S = 180
 
 
 def classify(has_live_server: bool, session_age_s: float, session_start_ts: float,
-             build_ts: float | None) -> tuple[str, str | None]:
+             build_ts: float | None, *, is_remote: bool = False,
+             remote_ok: bool | None = None,
+             config_changed_after_start: bool = False) -> tuple[str, str | None]:
     """Pure status decision -> (status, detail).
 
-    Kept free of /proc, the clock and the filesystem so the two failure modes
-    that matter can be tested without staging a dead MCP server. Same rationale
-    as src/auto-restart.ts keeping its due-decision dependency-free.
+    Kept free of /proc, the clock and the filesystem so the failure modes that
+    matter can be tested without staging a dead MCP server. Same rationale as
+    src/auto-restart.ts keeping its due-decision dependency-free.
+
+    The 2026-08-12 additions are keyword-only with safe defaults, so the original
+    four-argument stdio call keeps its exact meaning.
     """
+    # Remote: no child is expected, and staleness does not apply -- the service
+    # is restarted independently of the session, which is the entire reason to
+    # run it this way.
+    if is_remote:
+        if remote_ok is False:
+            return "DEAD", "remote gg-access endpoint refused the connection; the service is down"
+        if remote_ok is None:
+            return "remote", "remote gg-access; endpoint could not be probed from here"
+        return "ok", "remote gg-access; socket is up (does NOT prove the token is still accepted)"
+
     if not has_live_server:
         if session_age_s < STARTUP_GRACE_S:
             return "starting", None
+        # The file on disk is not what this session loaded, so its declaration
+        # proves nothing about the running process. Reporting death here is how
+        # the probe cried wolf at itself on 2026-08-12.
+        if config_changed_after_start:
+            return "unknown", ".mcp.json changed after this session started; restart to settle it"
         return "DEAD", "declares gg-access but has no live server child"
     if build_ts is not None and session_start_ts < build_ts:
         return "STALE", "session predates the current gg-mcp build; restart to pick it up"
@@ -170,6 +283,7 @@ def probe() -> dict:
         name = agent_name_for(cwd)
         if not name:
             continue
+        entry = gg_access_config(cwd)
         declared, server_path = declares_gg_access(cwd)
         if not declared:
             continue  # agent legitimately has no gg-access -- not a fault
@@ -177,7 +291,16 @@ def probe() -> dict:
         alive = [c for c in children.get(pid, []) if SERVER_NEEDLE in procs[c]["cmdline"]]
         built = build_mtime(server_path)
         age = time.time() - info["start_ts"]
-        status, detail = classify(bool(alive), age, info["start_ts"], built)
+        target = remote_target(entry)
+        # A live child settles it: the session is demonstrably on stdio, whatever
+        # the file says now. Only trust the file when there is nothing to observe.
+        is_remote = target is not None and not alive
+        status, detail = classify(
+            bool(alive), age, info["start_ts"], built,
+            is_remote=is_remote,
+            remote_ok=remote_reachable(target) if is_remote else None,
+            config_changed_after_start=config_mtime_after(cwd, info["start_ts"]),
+        )
         row = {
             "agent": name,
             "pid": pid,
@@ -186,6 +309,8 @@ def probe() -> dict:
             "server_path": server_path,
             "status": status,
         }
+        if is_remote and target:
+            row["remote_endpoint"] = f"{target[0]}:{target[1]}"
         if alive:
             row["mcp_pid"] = alive[0]
         if built is not None:
