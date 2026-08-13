@@ -335,11 +335,63 @@ def probe() -> dict:
 
     findings.sort(key=lambda r: (r["status"] == "ok", r["agent"]))
     bad = [r for r in findings if r["status"] in ("DEAD", "STALE")]
-    return {
+    result = {
         "checked_at": time.strftime("%F %T %Z"),
         "agents_checked": len(findings),
         "problems": len(bad),
         "findings": findings,
+    }
+
+    trap = ambient_token_trap()
+    if trap:
+        result["ambient_token_trap"] = trap
+        result["problems"] += 1
+    return result
+
+
+# The proxy's own fallback, when nobody sets GG_MCP_TOKEN_FILE. On a
+# single-user client machine this is correct -- it is that user's own token,
+# written there by scripts/install-proxy.mjs (CEL_DIR = ~/.gg-mcp). On THIS
+# machine, where several agents share one POSIX user, it would be an ambient
+# identity: every agent that invoked the bundle directly would silently become
+# whoever that token belongs to.
+AMBIENT_TOKEN_PATH = os.path.join(os.path.expanduser("~"), ".gg-mcp", "token")
+
+
+def ambient_token_trap() -> dict | None:
+    """Report the proxy's HOME-default token file if it ever appears.
+
+    Why this check exists (2026-08-13). The identity leak fixed that day lived
+    in the `gg-mcp-proxy` wrapper, which is now fail-closed. But the wrapper is
+    only one of the two ways in: `node .../dist/proxy.js exec` skips it, and
+    proxy.ts still falls back to this path (src/proxy.ts, proxyDepsFromEnv).
+
+    Today that fallback is harmless ONLY because the file does not exist -- a
+    direct call without GG_MCP_TOKEN_FILE gets a quiet 401 instead of someone
+    else's rights. That is luck, not a defence: the day this file appears (a
+    stray `gg-mcp pair` as the `gg` user, a copied client install), the hole
+    reopens silently and with no error message to warn the caller.
+
+    marlenka spotted the gap and measured it; this turns the luck into an
+    alarm. Deliberately NOT a fix: removing the proxy's default would break the
+    documented one-step client install, where it is the right behaviour.
+    """
+    if not os.path.exists(AMBIENT_TOKEN_PATH):
+        return None
+    return {
+        "path": AMBIENT_TOKEN_PATH,
+        "why": (
+            "A proxy HOME-alapertelmezese. Ezen a tobb-agenses gepen ez KOZOS "
+            "identitas: barmelyik agens, aki GG_MCP_TOKEN_FILE nelkul hivja "
+            "kozvetlenul a dist/proxy.js-t, ennek a tokennek a nevesben es "
+            "jogaval fut. A wrapper (gg-mcp-proxy) fail-closed, de a kozvetlen "
+            "hivas megkeruli."
+        ),
+        "teendo": (
+            "Ellenorizd, ki hozta letre es mire kell. Ha nem kell, toroljed. "
+            "Amig letezik, minden shell-uti hivas ADJA MEG expliciten a sajat "
+            "GG_MCP_TOKEN_FILE-jat."
+        ),
     }
 
 
