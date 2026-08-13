@@ -197,23 +197,23 @@ Disk usage: {size}
 
 ## Skill Index Regeneration
 
-When skills are created, patched, or deleted, regenerate the index:
+When skills are created, patched, or deleted, regenerate the index with the
+canonical generator — do NOT hand-roll a `sed`/`grep` loop (see Pitfalls):
 
 ```bash
-INDEX_FILE="${HOME}/.claude/skills/.skill-index.md"
-echo "# Skill Index" > "$INDEX_FILE"
-echo "" >> "$INDEX_FILE"
-echo "Auto-generated. Do not edit manually." >> "$INDEX_FILE"
-echo "" >> "$INDEX_FILE"
+# $INSTALL: a marveen checkout gyökere.
+# Szándékosan változó: ez a skill MINDEN telepítésre kimegy, beégetett út
+# egy másik gépen némán rossz parancsot adna.
+INSTALL="${MARVEEN_ROOT:-$HOME/marveen}"
+bash "$INSTALL/scripts/skill-index.sh"            # global index
+bash "$INSTALL/scripts/skill-index.sh" "$(pwd)"   # agent-specific merged index
+```
 
-for dir in ~/.claude/skills/*/; do
-  skill_file="$dir/SKILL.md"
-  if [ -f "$skill_file" ]; then
-    name=$(basename "$dir")
-    desc=$(sed -n '/^description:/{ s/^description: *//; p; q; }' "$skill_file")
-    echo "- **$name**: $desc" >> "$INDEX_FILE"
-  fi
-done
+Verify afterwards — both checks must pass:
+
+```bash
+file ~/.claude/skills/.skill-index.md      # must say "UTF-8 text", not "extended-ASCII"
+grep -a '| >' ~/.claude/skills/.skill-index.md   # must return nothing
 ```
 
 ## Pitfalls
@@ -222,8 +222,57 @@ done
 - Do NOT create skills for one-off tasks (check the 2+ occurrence rule)
 - Audit results are advisory, not auto-executed
 - The `.skill-index.md` is for L0 matching only; the full SKILL.md is L1
+- **Never extract `description:` with a one-line `grep`/`sed`.** A YAML folded or
+  literal scalar (`description: >` / `description: |`) puts the text on the
+  *following* indented lines, so the one-liner yields a bare `>` and the skill
+  becomes invisible at L0. This silently hid 6 skills (2026-08-01). The
+  generator's `extract_desc()` handles all three forms.
+- **The index shows only the FIRST 120 CHARACTERS of `description:` — put the
+  most distinctive trigger there.** `skill-index.sh` does `print(desc[:120])`,
+  so anything past that is invisible at L0 matching, even though it is in the
+  SKILL.md. 2026-08-09: `gg-mcp-iras-proxy` carried "git push GG repóba" late in
+  its description; at L0 it read as a Linear-issue skill, so a 97 KB file was
+  pushed the expensive way through `github_commit` and two fork hunks were
+  reported as "cannot be uploaded" — the right tool was one index row away.
+  Rule of thumb: first clause = what it does + the rarest keyword someone would
+  type; the "Triggerelődik" list comes after.
+- **Truncate by character, not by byte.** `cut -c` cuts bytes, which splits
+  multi-byte UTF-8 mid-character; the index then reads as a binary file and
+  `grep` returns *nothing at all* — looking exactly like "no such skill exists"
+  rather than an error. Check with `file` after every regeneration.
 - On macOS, `stat` syntax differs from Linux; the audit commands handle both
 - If a skill references external APIs or tokens, never include the actual values
+- **A helyben patchelt skill NEM vész el, de elszakad a repótól — és ez a
+  csendesebb baj.** 2026-08-13-án négy SKILL.md-t írtam (`fleet-helper`,
+  `gg-mcp-iras-proxy`, plusz a `reggeli-napindito` és a `gg-mcp-health`
+  ütemezett feladat), és utólag mértem le, mi történik velük egy frissítéskor.
+  A jó hír: az `update.sh` `refresh_untouched_seeds()`-e a
+  `seed_copy_is_untouched()`-csel megnézi, hogy a telepített fájl hash-e
+  megegyezik-e a repo utolsó 25 revíziójának valamelyikével; ha nem, **KEPT** —
+  tehát a kézi javítást nem írja felül. A rossz hír: attól még csak ITT létezik.
+  Konkrétan aznap: a `seed-skills/fleet-helper` és a
+  `scheduled-tasks/reggeli-napindito` repo-másolata már ELTÉRT az élőtől, a
+  `gg-mcp-iras-proxy` skillnek és a `gg-mcp-health` feladatnak pedig
+  **egyáltalán nincs repo-másolata**. Egy friss telepítés tehát egyik mai
+  tanulságot sem kapná meg.
+  **Ezért patch után KÉRDEZD MEG magadtól: van-e ennek repo-párja?** ⚠️ KÉT helye
+  lehet, és a választás nem ízlés kérdése: a `seed-skills/` **verbatim** megy ki
+  minden telepítésre, tehát oda csak gép-független skill kerülhet; a gép- vagy
+  GG-specifikus a `gg-skills/` alá való (verziózva, de nem seedelve). A teljes
+  táblázat: `docs/gg-fork-konvenciok.md` 4b. szakasz.
+  ```bash
+  cd "${MARVEEN_ROOT:-$HOME/marveen}"
+  N=<nev>
+  for R in "seed-skills/$N/SKILL.md" "gg-skills/$N/SKILL.md"; do
+    [ -f "$R" ] && { diff -q "$R" ~/.claude/skills/$N/SKILL.md >/dev/null \
+      && echo "szinkronban: $R" || echo "ELTER -> felvinni: $R"; }
+  done
+  ```
+  Ha egyik sem létezik, a skill SEHOL nincs a repóban. 2026-08-13-án három
+  ágens-specifikus skill volt pont ilyen (a `.gitignore` 15. sora zárta ki a
+  `.claude/skills/`-t), és egyikük sem létezett egyetlen lemezen kívül.
+  A felvitel a `gg-fork-push-lanc` szerint megy. Ha a gazda nem kéri, legalább
+  **JELEZD** — a hallgatás azt üzeni, hogy a javítás a repóban van, pedig nincs.
 
 ## Relation to other mechanisms
 
