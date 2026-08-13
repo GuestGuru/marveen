@@ -34,6 +34,18 @@ Ott már régebb óta él, csak nem volt kimondva:
 
 A `gg-skills/` a `scheduled-tasks/` párja a skillek oldalán.
 
+## Mi van itt
+
+| skill | eredeti helye a gépen | miért nem seed |
+|---|---|---|
+| `gg-mcp-iras-proxy` | `~/.claude/skills/` (globális) | 11 hivatkozás a `/home/gg/gg-mcp`-re |
+| `gg-fork-push-lanc` | `.claude/skills/` (marveen ágens-specifikus) | a fork push-lánca, 9 gép-specifikus útvonal |
+| `marveen-kod-teszteles-worktreeben` | `.claude/skills/` | ennek a checkoutnak a teszt-guardja |
+| `fo-agens-modell-valtas` | `.claude/skills/` | ennek a telepítésnek a modell-konfigja |
+
+Az utóbbi három az **ágens-specifikus** `.claude/skills/` alatt él, amit a
+`.gitignore` 15. sora kizár — tehát a repóban eddig egyikük sem létezett.
+
 ## Visszaállítás
 
 Kézzel, mert szándékosan nincs automatizmus:
