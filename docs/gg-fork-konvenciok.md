@@ -89,6 +89,41 @@ a `-gg.1` pedig beszivárgott a release összefoglalójába.
 
 ---
 
+## 4b. Skillek és ütemezett feladatok: hova kerül a repóban
+
+Ez 2026-08-13-ig kimondatlan volt, és emiatt két skill meg egy feladat **sehol nem
+létezett a lemezen kívül**. A szétválasztás elve: *kimehet-e egy idegen
+telepítésre anélkül, hogy hazudna?*
+
+| könyvtár | kinek | mód |
+|---|---|---|
+| `seed-skills/` | minden telepítésnek | **verbatim** (nincs placeholder!) |
+| `seed-scheduled-tasks/` | minden telepítésnek | template (`{{INSTALL_DIR}}`, `{{MAIN_AGENT_ID}}`, …) |
+| `templates/scheduled-tasks/` | telepítéskori scaffold, csak ha a cél még nem létezik | template |
+| `scheduled-tasks/` | **ennek** a telepítésnek a saját feladatai | template, de nem seedeli semmi |
+| `gg-skills/` | **ennek** a telepítésnek a GG-specifikus skilljei | verzió, nem seed |
+
+Két buktató, mindkettő mérve:
+
+1. **A `seed-skills/` verbatim másol**, tehát oda `{{...}}` placeholdert TENNI
+   ÉRTELMETLEN — literálisan menne ki. Ezért oda csak olyan skill kerülhet,
+   amiben nincs gép-specifikus útvonal. 2026-08-13-i mérés: egyetlen ottani
+   SKILL.md sem említi a `gg-mcp`-t vagy a `guest.guru`-t, és ez szándékos
+   (IT-451: a GG-tudás a `gg_knowledge_*` toolokba került, nem skillbe).
+   A `gg-mcp-iras-proxy` tizenegy helyen hivatkozik a `/home/gg/gg-mcp`-re,
+   amire nincs is placeholder — ezért `gg-skills/`, nem `seed-skills/`.
+2. **A helyben patchelt seed nem vész el, de elszakad.** Az `update.sh`
+   `seed_copy_is_untouched()`-e megnézi, hogy a telepített fájl egyezik-e a repo
+   utolsó 25 revíziójának valamelyikével; ha nem, MEGTARTJA a helyi változatot.
+   Vagyis a kézi javítás túléli a frissítést, de **csak azon az egy gépen
+   létezik**, amíg valaki át nem vezeti ide. Skill-patch után ezért ellenőrizd:
+
+   ```bash
+   diff seed-skills/<nev>/SKILL.md ~/.claude/skills/<nev>/SKILL.md
+   ```
+
+---
+
 ## 5. GitHub-műveletek
 
 - A `gh` CLI ebben a checkoutban **az upstreamet (`Szotasz/marveen`) tekinti alapnak**,
