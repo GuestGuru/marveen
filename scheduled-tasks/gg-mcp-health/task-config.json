@@ -1,0 +1,10 @@
+{
+  "schedule": "0 */2 * * *",
+  "agent": "{{MAIN_AGENT_ID}}",
+  "enabled": true,
+  "type": "heartbeat",
+  "skipIfBusy": false,
+  "forceSend": false,
+  "description": "Flotta gg-mcp liveness es staleness ellenorzes (csendes MCP-halal detektalas)",
+  "createdAt": 1786342990
+}
