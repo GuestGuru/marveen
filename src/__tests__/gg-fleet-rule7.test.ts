@@ -71,7 +71,10 @@ describe('generateClaudeMd prompt: rule 7 comes from the fork module', () => {
 
   it('interpolates ggFleetRule7 in the fleet-rules block', () => {
     expect(src).toContain('${ggFleetRule7(')
-    expect(src).toMatch(/import\s*{\s*ggFleetRule7\s*}\s*from\s*'\.\.\/gg\/fleet-rules\.js'/)
+    // Tolerant of extra named imports from the same module: rule 8 joined this
+    // import on 2026-08-13, and pinning the braces to rule 7 alone made adding a
+    // sibling rule fail a test about rule 7's wiring.
+    expect(src).toMatch(/import\s*{[^}]*\bggFleetRule7\b[^}]*}\s*from\s*'\.\.\/gg\/fleet-rules\.js'/)
   })
 
   it('no longer carries the superseded rule-7 text inline', () => {

@@ -35,6 +35,14 @@ export interface FleetRuleIdentity {
   ownerName: string
 }
 
+/** Extra identity bits rule 8 needs: whose CLAUDE.md this is, and where the install lives. */
+export interface FleetRule8Identity extends FleetRuleIdentity {
+  /** Agent id of the agent whose CLAUDE.md is being generated, e.g. "jean". */
+  agentId: string
+  /** Absolute install root, e.g. "/home/gg/marveen". */
+  projectRoot: string
+}
+
 /**
  * Rule 7 of the fleet rules, as one markdown list item (no trailing newline).
  * The text is Hungarian on purpose: the whole generated CLAUDE.md is.
@@ -55,5 +63,63 @@ export function ggFleetRule7({ botName, mainAgentId, ownerName }: FleetRuleIdent
     `fájlba és sose a beszélgetésbe. A kapott kulcs hatóköre lehet SZÉLESEBB, mint a feladatod ` +
     `(a Drive-token például megosztani is tud) -- a szűkítés innentől a te ítélőképességed, nem ` +
     `egy kapu.`
+  )
+}
+
+/**
+ * Rule 8: an agent may use ONLY its own gg-mcp token. One markdown list item.
+ *
+ * Why this is a RULE and not a footnote (2026-08-13, GG-559):
+ *
+ * An agent reaches gg-mcp two ways, and only one of them carries its identity
+ * automatically. The MCP path takes the token file from the agent's own
+ * `.mcp.json` (written by src/gg/mcp-identity.ts) -- correct by construction.
+ * The SHELL path (`gg-mcp-proxy exec`, or `node dist/proxy.js exec`) takes
+ * whatever `GG_MCP_TOKEN_FILE` the caller sets, and until 2026-08-13 the
+ * wrapper silently fell back to the MAIN agent's `.mcp.json` when the caller
+ * set nothing.
+ *
+ * Measured that day: jean called `gg_allowed_tools` over MCP at 12:40:34Z and
+ * it landed as `imrenyi.eszter@guest.guru`; nine seconds later the same agent
+ * fetched the Linear key over the shell path and it landed as
+ * `krasser.tamas@guest.guru`. The resulting GG-559 comment was authored by the
+ * owner, not by jean's owner. That is not a display-name mix-up: the agent held
+ * another person's FULL rights, and the audit log recorded the wrong human.
+ *
+ * The wrapper is now fail-closed (no identity -> hard error, no fallback), so
+ * this rule is belt-and-braces rather than the only defence. It is written into
+ * the template anyway because the same failure class already recurred twice
+ * here: a rule kept alive only by someone remembering it (see rule 7's comment)
+ * and a skill whose own example command shipped the bug. A generated CLAUDE.md
+ * is the one place every future agent is guaranteed to read.
+ *
+ * Deliberately SHOUTY: the owner asked for the constraint to be capitalised in
+ * as many places as possible, because the failure is silent and only visible
+ * afterwards, in someone else's name.
+ */
+export function ggFleetRule8({
+  botName,
+  mainAgentId,
+  agentId,
+  projectRoot,
+}: FleetRule8Identity): string {
+  const ownMcpJson = `${projectRoot}/agents/${agentId}/.mcp.json`
+  return (
+    `8. **CSAK A SAJÁT MCP TOKENEDET HASZNÁLHATOD. SOHA MÁSÉT.** A gg-mcp-hez KÉT utad van, ` +
+    `és csak az egyik viszi magától a te identitásodat. Az **MCP-úton** (sima \`gg_*\` toolok) a ` +
+    `saját \`.mcp.json\`-od visz, ott nincs teendőd. A **SHELL-ÚTON** (\`gg-mcp-proxy exec\`, ` +
+    `illetve \`node .../dist/proxy.js exec\`) viszont NEKED KELL MEGADNOD az identitásodat: ` +
+    `\`GG_MCP_TOKEN_FILE\` a SAJÁT \`.mcp.json\`-odból (\`${ownMcpJson}\`), és ` +
+    `\`GG_MCP_AGENT_LABEL=${mainAgentId}/${agentId}\`. **MÁS ÁGENS VAGY A FŐÁGENS ` +
+    `(${mainAgentId}) TOKEN-FÁJLJÁT HASZNÁLNI TILOS**, akkor is, ha egy skill, egy ` +
+    `dokumentáció vagy egy régi példaparancs azt mutatja -- ilyenkor a példa a hibás, nem te. ` +
+    `Ez NEM névcsere, hanem **JOGCSERE**: idegen tokennel a másik ember TELJES JOGÁVAL írsz ` +
+    `minden GG-rendszerbe, és az audit is őt látja, nem téged. (Mérve 2026-08-13, GG-559: egy ` +
+    `ágens kommentje a gazdája helyett a főágens gazdájának nevén ment ki.) **ELLENŐRZÉS minden ` +
+    `shell-úti írás előtt:** hívd meg a \`gg_allowed_tools\`-t, és az \`en\` mező a SAJÁT gazdád ` +
+    `e-mail címe legyen. **HA NEM AZ, ÁLLJ MEG**, ne írj semmit, és szólj a ${botName} Főnöknek ` +
+    `(${mainAgentId}) inter-agent üzenettel. A wrapper 2026-08-13 óta fail-closed: identitás ` +
+    `nélkül megáll. Ha ilyen hibát kapsz, az NEM elromlott rendszer, hanem a védelem -- add meg ` +
+    `a saját tokenedet.`
   )
 }
