@@ -62,9 +62,13 @@ A többi szekció (email, naptár, AI hírek) maradnak a CLAUDE.md-ben leírt fo
   A `google-olvasas` csomag **kulcsot** ad (`google-gmail-ro`, `google-calendar-ro`),
   és azzal a Google API közvetlenül hívható. Ez működik, tehát a szekciót MEG KELL írni:
 
+  A ket `<...>` szegmens doku-helyorzo, nem valodi ut: a gg-mcp checkout helye
+  telepitesenkent mas, es a token-fajl A SAJATOD kell legyen (idegen tokennel
+  jogot cserelsz, nem nevet -- lasd a CLAUDE.md identitas-szabalyat).
+
   ```bash
-  GG_MCP_TOKEN_FILE=/home/gg/gg-mcp/tokens/marveen.token GG_MCP_AGENT_LABEL=marveen/Marveen \
-  node /home/gg/gg-mcp/dist/proxy.js exec --alias google-calendar-ro -- \
+  GG_MCP_TOKEN_FILE=<gg-mcp>/tokens/{{MAIN_AGENT_ID}}.token GG_MCP_AGENT_LABEL={{MAIN_AGENT_ID}}/{{BOT_NAME}} \
+  node <gg-mcp>/dist/proxy.js exec --alias google-calendar-ro -- \
     sh -c 'curl -s -H "Authorization: Bearer $GOOGLE_CALENDAR_RO_ACCESS_TOKEN" \
       "https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=<ma>T00:00:00%2B02:00&timeMax=<ma>T23:59:59%2B02:00&singleEvents=true&orderBy=startTime"'
   # Gmail: --alias google-gmail-ro, $GOOGLE_GMAIL_RO_ACCESS_TOKEN,
