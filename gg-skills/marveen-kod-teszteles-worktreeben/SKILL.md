@@ -72,6 +72,23 @@ amiben fut — vagyis a saját éles memóriádat és kanban-adatbázisodat írn
   hook-command-quoting, hook-path-guard, installer-start-and-fallback), és pontosan
   ugyanaz a 20 bukott az érintetlen HEAD-en is — enélkül a mérés használhatatlan
   lett volna.
+- 🔴 **De a baseline nem felmentés: egy ÚJ fájl a bukó listában a TE dolgod, akkor
+  is, ha a baseline-on is bukik.** A baseline azt méri, „ehhez képest rontottam-e",
+  nem azt, hogy „ez rendben van". A kettő különbözik, ha a hibát egy KORÁBBI, már
+  mergelt köröd vitte be — akkor a baseline is bukik rá, tehát „preexistáló"-nak
+  látszik, közben a saját tegnapi regressziód. 2026-08-14: a fenti öt fájl mellett
+  hatodikként a `template-identity-hygiene` is bukott, `/home/gg/gg-mcp` beégetett
+  útvonalakra a `scheduled-tasks/reggeli-napindito/SKILL.md`-ben — amit az előző
+  napi PR \#34/\#35-ben én vittem fel. Nulla új bukás volt, és mégis javítanom
+  kellett.
+  **Ezért a bukó fájlok listáját HASONLÍTSD ÖSSZE a fenti ismert ötössel**, és
+  minden újonnan belépő fájlnál nézd meg, mióta bukik:
+  ```bash
+  git log --oneline -3 -- <a bukast okozo fajl>   # az en mult heti commitom?
+  ```
+  Ami az ötösön kívül van, azt vagy javítsd ugyanabban a PR-ban, vagy nevezd meg a
+  jelentésben. A puszta „a baseline is bukik rá" mondat itt elfedte volna egy
+  gépfüggetlenségi szabály megsértését, amit pont egy teszt őriz.
 - **A `git worktree list` idegen worktree-ket is mutathat** korábbi sessionök
   scratchpadjéből. Csak azt takarítsd, amit te hoztál létre; a `prune` viszont
   biztonságos, ha a könyvtár már nem létezik.
