@@ -95,6 +95,14 @@ A többi szekció (email, naptár, AI hírek) maradnak a CLAUDE.md-ben leírt fo
   mappában (ott csak SKILL.md van). 2026-07-30-án emiatt írtam helyette sajátot.
   Ha mégis magad escapelsz, a félbehagyott escape nem hibaüzenetet ad, hanem a
   Telegram elutasítja a teljes üzenetet, tehát a napindító NÉMÁN elmarad.
+  ⚠️ **De a helper a TELJES stringet escapeli, a szánt `*bold*` jelölőket is.**
+  2026-08-14-én lemérve: `fleet.py mdv2 "*Bold* és sima."` -> `\*Bold\* és sima\.`,
+  vagyis a napindító szekciócímei sima szövegként mennének ki. A napindító
+  MINDIG tartalmaz boldot, tehát a helyes minta: a nyers szöveget írd meg
+  placeholderrel a boldnak (pl. `«...»`), és egy eldobható szkript escapelje a
+  NEM-bold részeket, majd a placeholdert cserélje `*`-ra. Így ment ki a
+  2026-08-14-i napindító, elsőre. A helper továbbra is jó EGY rövid,
+  bold-mentes sorra, csak a teljes üzenetre nem.
 - **Mindkét csatorna lehet egyszerre aktív.** 2026-07-30-án a `telegram@claude-plugins-official`
   ÉS a `discord@claude-plugins-official` is `true` volt. Ilyenkor a napindító a
   Telegram DM-be megy (az a gazda személyes csatornája), nem a Discord fórumba.
