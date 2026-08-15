@@ -128,3 +128,16 @@ A többi szekció (email, naptár, AI hírek) maradnak a CLAUDE.md-ben leírt fo
   Ilyenkor NE küldd újra az egészet: nézd meg, mi hiányzik az elsőből (aznap a Dream
   Engine szekció), és csak azt pótold külön üzenetben, egy sorral jelezve, hogy a többi
   fent már kiment.
+- 🔴 **ELSŐ LÉPÉS: `tail {{INSTALL_DIR}}/store/morning.log`.** 2026-08-15-én az
+  ütemezett `-p` session 07:27--07:30 között MÁR kiküldte a napindítót (msg 572), és
+  hozzám csak 07:30-kor ért a wrapper. A log tetején látszott, mi ment ki és mi
+  maradt le (a Dream Engine 5 bucketje), tehát elég volt azt pótolni (msg 573).
+  Ha ezt kihagyod, dupla napindítót küldesz. A log a leggyorsabb és egyetlen
+  megbízható forrás, mert a Telegram Bot API nem ad előzményt.
+- **A "nincs reply tool" NEM session-független tény.** A DREAM.md 08-15-én azt írta,
+  hogy `enabledPlugins: telegram=false`, tehát a rendes reply tool le van tiltva --
+  az interaktív sessionben viszont a `mcp__plugin_telegram_telegram__reply` LÉTEZETT
+  és elsőre kiment vele az üzenet. A tiltás a `-p --channels` sessionre igaz, arra,
+  amelyik a Bot API fallbackre kényszerül. Mérd le a saját sessionödben
+  (`ToolSearch("select:mcp__plugin_telegram_telegram__reply")`), ne a DREAM.md-ből
+  vagy a naplóból vedd át.

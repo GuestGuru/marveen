@@ -7,12 +7,30 @@ Futtasd le a flotta gg-mcp egészségellenőrzését:
 
 python3 scripts/gg-mcp-health.py
 
-A script minden futó ágenst megnéz, aki a .mcp.json-jában deklarál gg-access szervert, és három állapotot ad:
+A script minden futó ágenst megnéz, aki a .mcp.json-jában deklarál gg-access szervert, és az alábbi állapotokat adja:
 
-- "ok": él a szerver-gyerekprocessz, és a session frissebb a gg-mcp buildnél. Nincs teendő.
+- "ok": él a szerver-gyerekprocessz, van betölthető token, és a session frissebb a gg-mcp buildnél. Nincs teendő.
 - "starting": friss session, még nem indult el az MCP gyereke. NEM hiba, hagyd békén.
 - "DEAD": deklarál gg-access-t, de nincs élő szerver-gyerekprocessze. Az ágens ilyenkor egyetlen gg_* toolt sem tud hívni, és erről ő maga nem tud. Ez a 2026-08-08-i salesninja-eset.
 - "STALE": él a szerver, de a session régebbi a gg-mcp buildnél, tehát felülírt kódot futtat. Csak session-restart javítja, az MCP önmagában nem újraindítható.
+- "NO_TOKEN" (2026-08-15 óta): él a proxy, de nincs identitása -- a `GG_MCP_TOKEN_FILE`
+  nincs deklarálva, vagy a fájl hiányzik/üres. Az ágens ilyenkor login-módban fut:
+  a login toolon kívül MINDEN gg_* hívása elszáll, és ő ezt nem hibaüzenetként
+  látja, hanem egy megkurtított tool-listaként. **A javítás párosítás, nem restart.**
+  Miért került be: 08-14-én 14:00-kor a szonda `ok`-ot írt brokermarcsira, miközben
+  az ágens saját memóriája szerint egyetlen GG-rendszert sem ért el (13:51-kor indult,
+  a token-fájlja 13:59-kor jött létre). Élő gyerekprocessz = processz, nem jogosultság.
+
+**Amit a NO_TOKEN sem mér:** a token LÉTEZÉSÉT nézi, nem az érvényességét. Egy lejárt
+vagy visszavont token ugyanígy `ok`. Ha egy ágens azt jelzi, hogy 401-et kap, a zöld
+szonda nem cáfolja őt.
+
+Két tájékoztató mező a sorokban, ezek NEM hibák: `token_file` (melyik fájl adja az
+identitást) és `token_written_after_session_start` (a token a session indulása UTÁN
+íródott). Az utóbbi kétféleképp olvasható -- vagy maga a session párosított be
+(normál onboarding, rendben van), vagy valaki kívülről írta a fájlt, és akkor ez a
+session sosem töltötte be. A processztáblából a kettő nem különböztethető meg, ezért
+a szonda kimondja a tényt és nem tippel.
 
 Ha a "problems" 0, NE írj sehova, csak állj le csendben. Ez heartbeat.
 
@@ -29,6 +47,11 @@ gyökerében, ÉS megnöveli a "problems"-et:
   hogy megjelent a fájl, mikor (`stat`), és hogy amíg ott van, minden shell-úti
   hívásnak explicit saját tokent kell adnia. A fájlt NE töröld magadtól, mert
   nem tudod, ki hozta létre és mire kell -- ez `data_delete`, Tamás döntése.
+
+Ha van NO_TOKEN: ne restartot javasolj, hanem párosítást. Írd meg Tamásnak, melyik
+ágens az, mióta fut identitás nélkül, és hogy addig egyetlen GG-rendszert sem ér el.
+Ha az ágensnek van tulajdonosa (agent-config.json -> owner), a párosítást ő tudja
+elvégezni a saját belépésével -- a restart ezen nem segít, mert nem a processz hiányzik.
 
 Ha van DEAD vagy STALE:
 1. NE indítsd újra magadtól az ágenst. Egy restart munkát szakít meg, és sub-ágensnél idegen tulajdonos (pl. Péter) munkáját viszi el.
