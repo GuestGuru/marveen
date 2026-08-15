@@ -7,14 +7,21 @@ invisible: Claude Code does not restart it, writes no further log line, and the
 agent itself cannot tell -- it just stops seeing the tools. The only reliable
 signal is the process table, so that is what this probes.
 
-Two independent failure modes, both silent:
+Three independent failure modes, all silent:
 
-  DEAD   -- the agent declares gg-access in .mcp.json but has no live
-            `<node> <gg-mcp>/dist/index.js` child under its claude process.
-  STALE  -- the server IS alive, but the claude session started before the
-            current gg-mcp build, so it is running superseded code. (Restarting
-            gg-mcp alone cannot fix this: the stdio child is spawned once, at
-            session start, and lives as long as the session.)
+  DEAD     -- the agent declares gg-access in .mcp.json but has no live
+              `<node> <gg-mcp>/dist/index.js` child under its claude process.
+  STALE    -- the server IS alive, but the claude session started before the
+              current gg-mcp build, so it is running superseded code. (Restarting
+              gg-mcp alone cannot fix this: the stdio child is spawned once, at
+              session start, and lives as long as the session.)
+  NO_TOKEN -- the proxy is alive but has no identity, so every gg_* call fails
+              except the login tool. Added 2026-08-15, after the probe reported
+              a clean `ok` for brokermarcsi at 14:00 on 08-14 while that agent's
+              own memory recorded that it could reach no GG system at all: it
+              had started at 13:51 and its token file was not written until
+              13:59. A live child proved only that a process exists, and this
+              probe was reporting exactly that while implying more.
 
 2026-08-12 -- "no child process" stopped meaning "broken". gg-mcp also runs as a
 Streamable-HTTP service, and an agent pointed at it has NO child by design. The
@@ -41,8 +48,9 @@ authenticated HTTP request, because a monitoring script should not be reading
 tokens out of configs and putting them on the wire.
 
 Output: JSON on stdout. Exit 0 = every configured agent healthy, 1 = at least
-one DEAD or STALE agent, 2 = the probe itself could not run. `starting`,
-`remote` and `unknown` are not faults and do not affect the exit code.
+one DEAD, STALE or NO_TOKEN agent, 2 = the probe itself could not run.
+`starting`, `remote` and `unknown` are not faults and do not affect the exit
+code.
 """
 
 from __future__ import annotations
@@ -224,6 +232,48 @@ def config_mtime_after(cwd: str, session_start_ts: float) -> bool:
         return False
 
 
+def token_file_for(entry: dict | None) -> str | None:
+    """The token file this gg-access entry pins its identity to, or None.
+
+    Proxy mode carries identity in exactly one place: the file named by
+    GG_MCP_TOKEN_FILE (src/proxy.ts, proxyDepsFromEnv). No env, no file, no
+    identity -- and the proxy falls back to the HOME default, which on this
+    multi-agent box is the ambient identity the trap check below warns about.
+    """
+    if not isinstance(entry, dict):
+        return None
+    env = entry.get("env")
+    if not isinstance(env, dict):
+        return None
+    path = env.get("GG_MCP_TOKEN_FILE")
+    return str(path) if isinstance(path, str) and path else None
+
+
+def token_state(server_path: str | None, entry: dict | None) -> tuple[str | None, str | None, float | None]:
+    """(state, path, mtime) of this agent's proxy identity.
+
+    state is None for anything that is not proxy mode -- the direct server
+    (index.js) takes its caller token from its own config, so a missing
+    GG_MCP_TOKEN_FILE there proves nothing and must not be reported as a fault.
+
+    Only existence and non-emptiness are measured. An expired or revoked token
+    is a live file and looks identical from here; the detail text says so rather
+    than letting `ok` be read as "the token still works".
+    """
+    if not server_path or "proxy.js" not in server_path:
+        return None, None, None
+    path = token_file_for(entry)
+    if not path:
+        return "undeclared", None, None
+    try:
+        st = os.stat(path)
+    except OSError:
+        return "missing_file", path, None
+    if st.st_size == 0:
+        return "missing_file", path, st.st_mtime
+    return "ok", path, st.st_mtime
+
+
 def build_mtime(server_path: str | None) -> float | None:
     if not server_path:
         return None
@@ -241,7 +291,8 @@ STARTUP_GRACE_S = 180
 def classify(has_live_server: bool, session_age_s: float, session_start_ts: float,
              build_ts: float | None, *, is_remote: bool = False,
              remote_ok: bool | None = None,
-             config_changed_after_start: bool = False) -> tuple[str, str | None]:
+             config_changed_after_start: bool = False,
+             token: str | None = None) -> tuple[str, str | None]:
     """Pure status decision -> (status, detail).
 
     Kept free of /proc, the clock and the filesystem so the failure modes that
@@ -270,6 +321,19 @@ def classify(has_live_server: bool, session_age_s: float, session_start_ts: floa
         if config_changed_after_start:
             return "unknown", ".mcp.json changed after this session started; restart to settle it"
         return "DEAD", "declares gg-access but has no live server child"
+    # A live child is a process, not an identity. The proxy reads its token file
+    # ONCE, at startup, so a session that came up without one stays blind until
+    # somebody logs in through it -- and the agent cannot tell, because it sees a
+    # shrunken tool list rather than an error. Ranked below DEAD (no process is
+    # worse than no rights) and above STALE (running old code still beats
+    # reaching nothing at all).
+    if token == "undeclared":
+        return "NO_TOKEN", ("proxy mode with no GG_MCP_TOKEN_FILE: identity falls back to the "
+                            "HOME default (~/.gg-mcp/token), which is ambient on this box")
+    if token == "missing_file":
+        return "NO_TOKEN", ("the declared token file is missing or empty; this agent runs in "
+                            "login mode and reaches NO GG system. Fix by pairing it -- a "
+                            "restart alone will not help")
     if build_ts is not None and session_start_ts < build_ts:
         return "STALE", "session predates the current gg-mcp build; restart to pick it up"
     return "ok", None
@@ -309,11 +373,13 @@ def probe() -> dict:
         # A live child settles it: the session is demonstrably on stdio, whatever
         # the file says now. Only trust the file when there is nothing to observe.
         is_remote = target is not None and not alive
+        tok_state, tok_path, tok_mtime = token_state(server_path, entry)
         status, detail = classify(
             bool(alive), age, info["start_ts"], built,
             is_remote=is_remote,
             remote_ok=remote_reachable(target) if is_remote else None,
             config_changed_after_start=config_mtime_after(cwd, info["start_ts"]),
+            token=None if is_remote else tok_state,
         )
         row = {
             "agent": name,
@@ -329,12 +395,23 @@ def probe() -> dict:
             row["mcp_pid"] = alive[0]
         if built is not None:
             row["build_time"] = time.strftime("%F %T", time.localtime(built))
+        if tok_path:
+            row["token_file"] = tok_path
+        if tok_mtime is not None:
+            row["token_mtime"] = time.strftime("%F %T", time.localtime(tok_mtime))
+            # Informational, never a fault. Two readings fit: the session paired
+            # itself (normal onboarding -- it holds the token in memory and is
+            # fine), or somebody wrote the file out of band, in which case this
+            # session never loaded it. The process table cannot separate the two,
+            # so the probe states the fact and declines to guess.
+            if tok_mtime > info["start_ts"]:
+                row["token_written_after_session_start"] = True
         if detail:
             row["detail"] = detail
         findings.append(row)
 
     findings.sort(key=lambda r: (r["status"] == "ok", r["agent"]))
-    bad = [r for r in findings if r["status"] in ("DEAD", "STALE")]
+    bad = [r for r in findings if r["status"] in ("DEAD", "STALE", "NO_TOKEN")]
     result = {
         "checked_at": time.strftime("%F %T %Z"),
         "agents_checked": len(findings),

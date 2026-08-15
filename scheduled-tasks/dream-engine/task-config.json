@@ -2,7 +2,8 @@
   "schedule": "7 2 * * *",
   "agent": "marveen",
   "enabled": true,
-  "type": "dream-engine",
+  "type": "heartbeat",
+  "catchUpMaxAgeMinutes": 180,
   "skipIfBusy": false,
   "createdAt": 1778480400
 }
