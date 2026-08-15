@@ -220,6 +220,91 @@ with tempfile.TemporaryDirectory() as d:
     os.utime(p, (NOW + HOUR, NOW + HOUR))
     check("config_mtime_after: written after start", ggmcp.config_mtime_after(d, NOW), True)
 
+# --- 2026-08-15: the token blind spot --------------------------------------
+# The probe said `ok` for brokermarcsi at 14:00 on 08-14 while the agent could
+# reach no GG system: it had started at 13:51 with no token file (written 13:59).
+# A live child was all the probe ever measured.
+
+# --- token_file_for ---------------------------------------------------------
+check("token_file_for: reads the env entry",
+      ggmcp.token_file_for({"env": {"GG_MCP_TOKEN_FILE": "/t/x.token"}}), "/t/x.token")
+check("token_file_for: no env", ggmcp.token_file_for({"command": "node"}), None)
+check("token_file_for: empty string is not a path",
+      ggmcp.token_file_for({"env": {"GG_MCP_TOKEN_FILE": ""}}), None)
+check("token_file_for: not a dict", ggmcp.token_file_for(None), None)
+
+# --- token_state ------------------------------------------------------------
+PROXY = "/home/gg/gg-mcp/dist/proxy.js"
+DIRECT = "/home/gg/gg-mcp/dist/index.js"
+# The direct server takes its caller token from its own config, so silence here
+# is correct: inventing a fault for it would be the cry-wolf failure again.
+check("token_state: direct server is not judged",
+      ggmcp.token_state(DIRECT, {"env": {}})[0], None)
+check("token_state: remote entry (no stdio path) is not judged",
+      ggmcp.token_state(None, {"url": "http://127.0.0.1:3450/mcp"})[0], None)
+check("token_state: proxy without the env var",
+      ggmcp.token_state(PROXY, {"command": "node"})[0], "undeclared")
+check("token_state: declared but absent file",
+      ggmcp.token_state(PROXY, {"env": {"GG_MCP_TOKEN_FILE": "/nonexistent/x.token"}})[0],
+      "missing_file")
+with tempfile.TemporaryDirectory() as d:
+    empty = os.path.join(d, "empty.token")
+    open(empty, "w").close()
+    # A zero-byte file is what a half-finished pairing leaves behind, and the
+    # proxy treats it as no token at all (`.trim() || null`).
+    check("token_state: empty file counts as missing",
+          ggmcp.token_state(PROXY, {"env": {"GG_MCP_TOKEN_FILE": empty}})[0], "missing_file")
+
+    good = os.path.join(d, "good.token")
+    with open(good, "w") as fh:
+        fh.write("gg_live_token\n")
+    state, path, mtime = ggmcp.token_state(PROXY, {"env": {"GG_MCP_TOKEN_FILE": good}})
+    check("token_state: non-empty file is ok", state, "ok")
+    check("token_state: returns the path", path, good)
+    check("token_state: returns an mtime", mtime is not None and mtime > 0, True)
+
+# --- classify: NO_TOKEN -----------------------------------------------------
+# Exactly the 08-14 brokermarcsi window: server child alive, session past the
+# grace period, no identity. This is the case that used to read `ok`.
+check("no_token: live child without a token is not ok",
+      ggmcp.classify(True, 2 * HOUR, NOW - 2 * HOUR, NOW - 30 * HOUR,
+                     token="missing_file")[0], "NO_TOKEN")
+check("no_token: undeclared env is its own fault",
+      ggmcp.classify(True, 2 * HOUR, NOW - 2 * HOUR, None, token="undeclared")[0], "NO_TOKEN")
+check("no_token: detail names the fix",
+      "pairing" in (ggmcp.classify(True, 2 * HOUR, NOW - 2 * HOUR, None,
+                                   token="missing_file")[1] or ""), True)
+check("no_token: undeclared detail names the ambient fallback",
+      "ambient" in (ggmcp.classify(True, 2 * HOUR, NOW - 2 * HOUR, None,
+                                   token="undeclared")[1] or ""), True)
+check("no_token: a usable token stays ok",
+      ggmcp.classify(True, 2 * HOUR, NOW - 2 * HOUR, NOW - 30 * HOUR, token="ok")[0], "ok")
+# Ranking, both directions: no process beats no rights, no rights beats old code.
+check("no_token: DEAD outranks it",
+      ggmcp.classify(False, 38 * HOUR, NOW - 38 * HOUR, None, token="missing_file")[0], "DEAD")
+check("no_token: outranks STALE",
+      ggmcp.classify(True, 38 * HOUR, NOW - 38 * HOUR, NOW - HOUR, token="missing_file")[0],
+      "NO_TOKEN")
+# A session seconds old has not been paired yet either; the grace period covers
+# the whole startup, not just the child process.
+check("no_token: startup grace still wins",
+      ggmcp.classify(False, 30.0, NOW, None, token="missing_file")[0], "starting")
+# Remote agents are never token-judged from here (probe() passes token=None).
+check("no_token: remote is unaffected",
+      ggmcp.classify(False, 38 * HOUR, NOW - 38 * HOUR, None,
+                     is_remote=True, remote_ok=True, token=None)[0], "ok")
+# Default off, so every pre-existing caller keeps its exact meaning.
+check("no_token: defaults off -> unchanged verdict",
+      ggmcp.classify(True, 2 * HOUR, NOW - 2 * HOUR, NOW - 30 * HOUR)[0], "ok")
+
+# --- the live fleet ---------------------------------------------------------
+# The regression that matters in practice: every agent on this box is proxy-mode,
+# so a bug in the new branch would turn the whole fleet red at once.
+_live = ggmcp.probe()
+_no_token = [r["agent"] for r in _live["findings"] if r["status"] == "NO_TOKEN"]
+check("live fleet: probe still runs and sees agents", _live["agents_checked"] > 0, True)
+check(f"live fleet: no false NO_TOKEN (got {_no_token})", _no_token, [])
+
 if failures:
     print(f"FAIL ({len(failures)}):")
     for f in failures:
