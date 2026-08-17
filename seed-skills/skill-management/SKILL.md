@@ -218,6 +218,25 @@ grep -a '| >' ~/.claude/skills/.skill-index.md   # must return nothing
 
 ## Pitfalls
 
+- **Never conclude "this skill is unversioned" from a single directory.** A
+  versioned copy can live in any of several places, and this install has five:
+  `seed-skills/` (goes to every install), `gg-skills/` (machine/org-specific,
+  never seeded), `skills/`, plus `seed-scheduled-tasks/` and
+  `templates/scheduled-tasks/` on the scheduled-task side. Measure with a full
+  set difference — live set minus ALL of them — never by the absence of one:
+  ```bash
+  for s in $(ls ~/.claude/skills/); do
+    git ls-files --error-unmatch "gg-skills/$s/SKILL.md" >/dev/null 2>&1 ||
+    git ls-files --error-unmatch "seed-skills/$s/SKILL.md" >/dev/null 2>&1 ||
+    git ls-files --error-unmatch "skills/$s/SKILL.md" >/dev/null 2>&1 ||
+    echo "MISSING: $s"
+  done
+  ```
+  2026-08-17: two separate false alarms in one morning from the one-directory
+  shortcut — "7 unversioned scheduled tasks" (all seven were in
+  `seed-scheduled-tasks/` / `templates/scheduled-tasks/`) and a miscount that
+  swept in `skill-factory`, which lives under `skills/`. Both were reported
+  before being measured, and one reached the owner.
 - Do NOT auto-delete skills without user confirmation
 - Do NOT create skills for one-off tasks (check the 2+ occurrence rule)
 - Audit results are advisory, not auto-executed
