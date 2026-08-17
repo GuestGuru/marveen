@@ -90,6 +90,28 @@ for c in rows:
   látszik. Élő gépen mérve 2026-08-04: két külön Linux telepítésen `sqlite3` és `jq`
   egyaránt hiányzott, `python3` mindkettőn ott volt. A macOS gépeken azért nem tűnt fel,
   mert ott a `sqlite3` gyárilag van.
+- **A level 1 jelzési kötelezettség csak akkor él, ha VAN mit jelezni.** A CLAUDE.md
+  szerint level 1 = "küldj inter-agent értesítést, majd állj meg", de ez arra vonatkozik,
+  amikor egy műveletet AKARTÁL elvégezni és a szint tiltja. Ha a lekérdezés 0 archiválandót
+  és 0 beakadt taskot ad, nincs visszatartott művelet, tehát NE küldj [FELHÍVÁS] üzenetet
+  magadnak -- az csak zajt csinál négyóránként. (2026-08-01 12:00: mindkét kategória
+  level 1, a kanban 0 sor, jelzés nem ment.)
+- **A level 1 [FELHÍVÁS] ugyanarról a kártyáról EGYSZER menjen, ne négyóránként.** A level 1
+  nem archivál, tehát a kártya a következő auditon is ott lesz, és a jelzés magától
+  ismétlődne a végtelenségig. A state-fájlba írd a már jelzett kártya-id-ket
+  (`"archive_flagged": ["73864b26", ...]`), és csak az ÚJONNAN belépőkről jelezz. Ha a lista
+  kiürül vagy a szint 3-ra megy, töröld a mezőt. (2026-08-12 12:00: két 7+ napos done
+  kártya, level 1, a jelzés elment -- a másodiktól már ismétlés lett volna.)
+  ⚠️ **A magadnak küldött [FELHÍVÁS] KÉT extra fordulót visz el, nem egyet** (2026-08-17-én
+  mérve): előbb `[inbox-wakeup]`-ként érkezik vissza még a FUTÓ körön belül (a következő
+  tool-eredmény mellé), majd külön `[Inbox]` promptként is, `<untrusted source="agent:...">`
+  blokkban. Egyik sem új munka: a jelzés MAGA volt a level 1 művelet. Ne kezdj miatta újra
+  auditálni, és ne válaszolj rá inter-agent üzenettel -- egy sorban nyugtázd, hogy a sajátod,
+  és zárd a kört.
+- **Az üres kanban nem hiba, de nézd meg kétszer.** Ha a lekérdezés nulla kártyát ad (nem
+  csak nulla aktívat), előbb ellenőrizd, hogy a jó forrást kérdezted-e: rossz porton vagy
+  rossz tokennel a hívás nem feltétlenül hibázik látványosan, és az audit némán
+  "minden rendben"-t jelent.
 - Az "előző audit óta nem mozdult" feltétel azt jelenti: `updated_at < last_audit_at`. NE használj abszolút 24h-os küszöböt.
 - Ne archiválj done-t ha <7 nap (a felhasználó még látni akarja).
 - NE pingelj saját magadat (skip ha assignee='{{MAIN_AGENT_ID}}').
