@@ -36,15 +36,44 @@ A `gg-skills/` a `scheduled-tasks/` párja a skillek oldalán.
 
 ## Mi van itt
 
+**19 skill, 2026-08-17 óta a teljes GG-készlet.** Addig csak az első négy volt itt,
+a többi tizenöt kizárólag egyetlen gép lemezén létezett.
+
+### Gép- vagy GG-specifikus (verbatim seedként működésképtelen lenne)
+
 | skill | eredeti helye a gépen | miért nem seed |
 |---|---|---|
 | `gg-mcp-iras-proxy` | `~/.claude/skills/` (globális) | 11 hivatkozás a `/home/gg/gg-mcp`-re |
 | `gg-fork-push-lanc` | `.claude/skills/` (marveen ágens-specifikus) | a fork push-lánca, 9 gép-specifikus útvonal |
 | `marveen-kod-teszteles-worktreeben` | `.claude/skills/` | ennek a checkoutnak a teszt-guardja |
 | `fo-agens-modell-valtas` | `.claude/skills/` | ennek a telepítésnek a modell-konfigja |
+| `gg-mcp-verzio-ellenorzes` | `~/.claude/skills/` | 25 GG-hivatkozás, a gg-mcp checkout útvonala |
+| `uj-agent-onboarding` | `~/.claude/skills/` | 22 GG-hivatkozás, per-user gg-mcp token-kiosztás |
+| `gg-mcp-transport-atallitas` | `~/.claude/skills/` | 14 GG-hivatkozás, `.mcp.json` a flottán |
+| `gg3-inspections-lekerdezes` | `~/.claude/skills/` | GG3 éles adatbázis-séma |
+| `tulaj-arazasi-kerdes-kivizsgalas` | `~/.claude/skills/` | GG árazási és HelpScout folyamat |
+| `vip-tulaj-adatreview` | `~/.claude/skills/` | GG piaci és takarítási adatforrások |
+| `flotta-hasznalat-riport` | `.claude/skills/` (ágens-specifikus) | ennek a flottának az ágens-nevei |
+| `fo-agens-restart-kontextus` | `.claude/skills/` (ágens-specifikus) | ennek a telepítésnek a restart-konfigja |
 
-Az utóbbi három az **ágens-specifikus** `.claude/skills/` alatt él, amit a
-`.gitignore` 15. sora kizár — tehát a repóban eddig egyikük sem létezett.
+### Általános, de még nem seed (promóció-jelöltek)
+
+Ezek elvben kimehetnének a `seed-skills/` alá, mert nincs bennük beégetett
+GG-útvonal — de a seed-készlet bővítése minden telepítést érint, tehát külön
+döntés. Addig itt vannak, hogy legalább verziózva legyenek.
+
+| skill | mit tud |
+|---|---|
+| `ai-szoveg-audit-hu` | magyar szöveg AI-fordulat-auditja |
+| `beragadt-agens-panel` | beragadt ágens-bemenet diagnózisa |
+| `channel-access-audit` | csatorna-allowlist auditálása |
+| `channel-ledger-provider` | a ledger bővítése új csatorna-szolgáltatóra |
+| `google-docs-biztonsagos-szerkesztes` | Docs API adatvesztés nélkül |
+| `google-sheets-biztonsagos-iras` | Sheets append adatvesztés nélkül |
+| `telegram-hang-atirat` | hangüzenet átirat, ha a csatorna nem adott |
+
+Az ágens-specifikus skillek a `.claude/skills/` alatt élnek, amit a
+`.gitignore` 15. sora kizár — tehát a repóban egyikük sem létezne enélkül.
 
 ## Visszaállítás
 
