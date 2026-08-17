@@ -134,6 +134,21 @@ A többi szekció (email, naptár, AI hírek) maradnak a CLAUDE.md-ben leírt fo
   maradt le (a Dream Engine 5 bucketje), tehát elég volt azt pótolni (msg 573).
   Ha ezt kihagyod, dupla napindítót küldesz. A log a leggyorsabb és egyetlen
   megbízható forrás, mert a Telegram Bot API nem ad előzményt.
+  ⚠️ **A tail HÁROMFÉLE kimenetet ad, és a különbség dönti el a teendőt:**
+  (a) a `=== Reggeli napindító <ma> ===` fejléc alatt ÉRDEMI sor áll (msg id,
+  összefoglaló) -> a `-p` session kiküldte, csak a hiányzó szekciót pótold;
+  (b) a fejléc alatt közvetlenül `Execution error` áll, majd a `=== Kész ===`
+  sor -> a `-p` futás elhasalt, **semmi nem ment ki**, a TELJES napindítót
+  neked kell kiküldeni. 2026-08-16 a (b) eset volt (Execution error 07:30:15-kor,
+  a teljes napindító 07:35-kor ment ki, msg 587). Az `Execution error` a `-p`
+  session visszatérő hibája (08-11 és 08-16 is), tehát a (b) ág nem kivétel.
+  (c) 2026-08-17-től egy HARMADIK kimenet is van: a fejléc alatt egy prózai
+  bejelentés áll, hogy „nincs Gmail-, Naptár- vagy Telegram-küldő eszközöm ebben a
+  sessionben", és hogy a napindító emiatt elmaradt. Ez **ugyanaz, mint a (b)**:
+  semmi nem ment ki, a TELJES napindító a tiéd. Ne vedd át a diagnózisát -- a
+  `.mcp.json`-ra és az `enabledPlugins`-re tett állítása a `-p` sessionre igaz,
+  a tiédre nem; ugyanabban a percben nálam a `gg-napi-forras.sh` és a
+  `mcp__plugin_telegram_telegram__reply` is hibátlanul ment (msg 588).
 - **A "nincs reply tool" NEM session-független tény.** A DREAM.md 08-15-én azt írta,
   hogy `enabledPlugins: telegram=false`, tehát a rendes reply tool le van tiltva --
   az interaktív sessionben viszont a `mcp__plugin_telegram_telegram__reply` LÉTEZETT
