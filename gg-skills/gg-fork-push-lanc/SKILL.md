@@ -32,6 +32,24 @@ kör helyett kettőből. **Nagy fájlnál a proxy az ELSŐ gondolat, ne a fallba
 A tool-oldali hiányosságok külön issue-ban: IT-482.
 
 ## Eljárás
+
+⚠️ **2026-08-17 óta a lánc szkriptben van, ne csináld kézzel:**
+
+```bash
+scripts/gg-push-lanc.sh <ag> "<commit uzenet>" [fajl ...]   # ag, push, PR develop, merge, PR main, merge, lokalis ff
+scripts/gg-push-lanc.sh --resume <ag>                       # az ag mar fent van, csak a PR-lanc kell
+DRY_RUN=1 scripts/gg-push-lanc.sh ...                       # semmit nem nyul, csak megmutatja
+```
+
+A szkript az identitást a checkout **saját `.mcp.json`-jából** olvassa (felülírható
+`GG_MCP_TOKEN_FILE`-lal), push előtt megnézi, nincs-e élő token-prefix a stagelt
+fájlokban, feltöltés után a **remote** oldalon is ellenőrzi, és csak `fix/ feat/
+chore/ docs/` előtagú ágat enged. Első éles futása: 2026-08-17, PR #50 és #51,
+20 fájl -- elsőre végigment.
+
+A lenti kézi lépések akkor kellenek, ha a szkript elhasal, vagy ha a munka nem fér
+bele (upstream-merge, >100 KB fájl -- lásd a következő szekciót).
+
 1. **Előbb auditáld a felküldendő commiteket, ne vakon push.** Egy régi ág premisszái elavulhattak (lásd Buktatók). `git log --oneline main..<ag>` + `git show <sha>` minden commitra.
 2. Ág + commit egy hívásból (a fájl **teljes új tartalmával**, nem diffel):
    ```
