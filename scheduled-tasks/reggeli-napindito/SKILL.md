@@ -142,7 +142,12 @@ A többi szekció (email, naptár, AI hírek) maradnak a CLAUDE.md-ben leírt fo
   neked kell kiküldeni. 2026-08-16 a (b) eset volt (Execution error 07:30:15-kor,
   a teljes napindító 07:35-kor ment ki, msg 587). Az `Execution error` a `-p`
   session visszatérő hibája (08-11 és 08-16 is), tehát a (b) ág nem kivétel.
-  (c) 2026-08-17-től egy HARMADIK kimenet is van: a fejléc alatt egy prózai
+  (c) 2026-08-17-től egy HARMADIK kimenet is van, és 2026-08-19-re ez lett a
+  GYAKORIBB: négy egymást követő napon (08-16 a (b) ágon, majd 08-17, 08-18,
+  08-19 a (c) ágon) a `-p`
+  futás EGYSZER SEM küldött ki napindítót. Vagyis ne (a)-ra készülj: alapból
+  számíts rá, hogy a teljes napindító a tiéd, és a tail csak azt dönti el,
+  hogy kell-e pótolni valamit. A fejléc alatt egy prózai
   bejelentés áll, hogy „nincs Gmail-, Naptár- vagy Telegram-küldő eszközöm ebben a
   sessionben", és hogy a napindító emiatt elmaradt. Ez **ugyanaz, mint a (b)**:
   semmi nem ment ki, a TELJES napindító a tiéd. Ne vedd át a diagnózisát -- a
@@ -156,3 +161,16 @@ A többi szekció (email, naptár, AI hírek) maradnak a CLAUDE.md-ben leírt fo
   amelyik a Bot API fallbackre kényszerül. Mérd le a saját sessionödben
   (`ToolSearch("select:mcp__plugin_telegram_telegram__reply")`), ne a DREAM.md-ből
   vagy a naplóból vedd át.
+- **A napindító után a wrapper MÉG EGYSZER beeshet ugyanabban a percben.** 2026-08-18:
+  a `-p` futás 07:27-kor a (c) ágon elhasalt és inter-agent üzenetben adta át az adatot,
+  én 07:31-kor kiküldtem a teljes napindítót (msg 592), és 07:32-kor megérkezett hozzám
+  maga az ütemezett feladat szövege is. Ilyenkor a `morning.log` SAJÁT bejegyzése a
+  bizonyíték, hogy már kiment -- ne küldd újra, csak nyugtázd a transzkriptben.
+- 🔴 **A naplóba SOHA ne írj kézzel becsült időpontot.** Ugyanaznap `07:37`-et írtam a
+  `morning.log`-ba, miközben a `date` `07:32:38`-at adott: öt perccel a jövőbe naplóztam
+  a küldést. A naplót holnap a saját buktató-eljárásom bizonyítékként olvassa, tehát egy
+  találgatott időbélyeg később hamis rekonstrukciót ad. A CLAUDE.md „Időkezelés" szabálya
+  (`date` az első lépés) a NAPLÓZÁSRA is vonatkozik, nem csak az elemzésre.
+- **A `-p` session nyugtázását ne inter-agent üzenetben küldd vissza.** A delegáló
+  `to: marveen`-t ad meg, ami a FŐ-ágens, vagyis a nyugta saját magamhoz ér vissza és
+  egy fölösleges ébresztést okoz. A visszajelzés helye a `morning.log`.
