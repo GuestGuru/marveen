@@ -46,8 +46,12 @@ taskstate-be.
    az azonosítás `/proc/<pid>/cwd` alapján (lásd `fo-agens-modell-valtas`).
 
 ## Buktatók
-- **Ne ígérd, hogy "continue módban indulsz újra".** 2026-08-14: ezt állítottam a
-  config alapján, aztán a kódolvasás cáfolta. A config a fő-ágensnél nem forrás.
+- **A `mode: continue` 2026-08-19 ÓTA ÉRVÉNYES a fő-ágensnél is** (PR #56/#57,
+  `9e557d0`). Előtte nem volt az: 2026-08-14-én a config alapján ígértem
+  continue-t, és a kódolvasás cáfolta. A tanulság maradjon meg: **a config
+  önmagában sosem forrás, a lefordított `dist/` a forrás.** Restart-ígéret előtt
+  a `dist/web/auto-restart-runner.js`-ben nézd meg a `cfg.mode === 'continue'`
+  ágat, ne a `store/auto-restart.json`-t és ne a dashboard kijelzését.
 - **Ne írj taskstate-et magadnak.** Ugyanaznap megírtam, majd törölnöm kellett:
   a hook szándékosan kilép a fő-ágensnél. Hamis biztonságérzet.
 - **Restart után a `chat_id: 0` NEM működik proaktív üzenetnél.** 2026-08-15: az
@@ -57,14 +61,26 @@ taskstate-be.
   blokk a kontextusban; friss sessionben nincs. A valódi chat-id az allowlistából
   jön:
   `python3 -c "import json;print(json.load(open('$HOME/.claude/channels/telegram/access.json'))['allowFrom'])"`
-- **A tartós javítás nem a kijelzés elrejtése.** Két opció van: (a) a
-  `respawnMainSessionFresh` kapjon `continueSession` paramétert és a
-  `performRestart` adja át a mode-ot; (b) a dashboard ne mutasson continue-t a
-  fő-ágensnél. Az (a) a helyes -- a (b) a valódi képességet dobja el a hazug
-  kijelzés helyett. Ha (b) mellett döntenek, mondd ki, hogy tapasz.
+- **A javítás egyik tervezett opció sem lett -- és jó okból.** 2026-08-19:
+  eredetileg azt terveztem, hogy a `respawnMainSessionFresh` kap egy
+  `continueSession` paramétert. Ez félkész continue-t adott volna: a `--continue`
+  indulásnak kell a resume-summary modal elutasítása ÉS a post-resume plugin
+  guard is, amit az a helper SZÁNDÉKOSAN kihagy (le is van írva a fejlécében).
+  Bare `continueSession: true` ott vagy a modalon parkol, vagy `--channels`
+  plugin nélkül jön fel. A tényleges javítás: `cfg.mode === 'continue'` a
+  meglévő, tesztelt `resumeMarveenSession()`-re ágazik el. Tanulság: ha egy
+  helper fejlécében az áll, hogy valamit direkt nem csinál, az nem hiányosság,
+  hanem a hatókör deklarációja -- ne flaggel told át a határán.
+- **A macOS launchd-ág fresh-only marad.** A `kickstart` a plist parancsot
+  futtatja újra, nincs mit átadni neki. Linuxon a respawn-pane-leg követi a
+  mode-ot, macOS-en nem -- ezt az `effectiveMode()` log-sora mondja meg.
 
 ## Ellenőrzés
-- `grep -n "continueSession" src/web/channel-monitor.ts` -> ha még mindig fix
-  `false` a respawn-helperben, a fenti tény érvényes.
+- `grep -n "cfg.mode === 'continue'" dist/web/auto-restart-runner.js` -> ha
+  MEGVAN, a `continue` mód élesben is érvényes. Ha nincs, a telepített build régi
+  (`update.sh` nem futott le, vagy a lánc `develop`-nál megállt) -- a `src/`-ben
+  meglévő javítás önmagában semmit nem ér.
+- A friss `dist` bizonyítéka a fájl mtime-ja, nem a `git log`:
+  `ls -la dist/web/auto-restart-runner.js`.
 - `grep -n "not a sub-agent" scripts/hooks/taskstate-replay.py` -> ha megvan, a
   taskstate továbbra sem véd engem.
