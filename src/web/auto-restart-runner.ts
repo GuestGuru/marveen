@@ -10,7 +10,9 @@ import {
   capturePane,
 } from './agent-process.js'
 import { MAIN_CHANNELS_SESSION } from './main-agent.js'
-import { respawnMainSessionFresh } from './channel-monitor.js'
+// GG fork: resumeMarveenSession is imported so the main agent's cfg.mode can
+// actually reach the restart path (see restartMainChannelsSession below).
+import { respawnMainSessionFresh, resumeMarveenSession } from './channel-monitor.js'
 import { paneLooksIdle } from '../pane-state.js'
 import { readAutoRestartConfig } from './auto-restart-store.js'
 import { restartDue, dailyDueAtMs, parseHHMM, mainRestartMechanism, type AutoRestartConfig } from '../auto-restart.js'
@@ -64,9 +66,12 @@ function paneIsIdle(session: string, host: string | null): boolean {
   return paneLooksIdle(pane)
 }
 
-// The main channels session always comes back as a FRESH conversation, so
-// cfg.mode ('continue') never applies to it -- see buildMainSessionRespawnCmd's
-// continueSession: false below and the launchd kickstart on macOS.
+// GG fork: upstream ignores cfg.mode for the main channels session -- it always
+// came back FRESH, while store/auto-restart.json and the dashboard could show
+// "continue". That is a silent lie on our own surface: the operator picks a mode
+// that never takes effect. We honour it on the respawn-pane (Linux) leg below.
+// The launchd leg cannot: `launchctl kickstart` re-runs the plist command, which
+// has no --continue to give it, so on macOS the main agent stays fresh-only.
 //
 // Two platforms, two mechanisms. Splitting on the launchctl BINARY rather than
 // process.platform is deliberate: the failure we hit was not "wrong OS" but
@@ -79,7 +84,7 @@ function paneIsIdle(session: string, host: string | null): boolean {
 // point, the main agent's nightly restart had NEVER run on this host. The
 // symptom was invisible: a log line nobody reads, while the dashboard showed
 // auto-restart as enabled and correctly scheduled.
-function restartMainChannelsSession(): void {
+function restartMainChannelsSession(cfg: AutoRestartConfig): void {
   if (mainRestartMechanism(existsSync('/bin/launchctl')) === 'launchd') {
     const uid = typeof process.getuid === 'function' ? process.getuid() : ''
     // Label keys off SERVICE_ID (defaults to MAIN_AGENT_ID) so it matches the
@@ -92,12 +97,35 @@ function restartMainChannelsSession(): void {
   // command. That helper already carries the MCP startup env, the extra
   // channel plugins, the isolated config dir, the fleet token and the two
   // orphan reaps -- a bespoke command here would silently drift from it.
+  //
+  // GG fork: 'continue' routes to resumeMarveenSession() rather than flipping a
+  // flag on the fresh helper. The --continue start also needs the resume-summary
+  // modal dismissal and the post-resume plugin guard, both of which
+  // respawnMainSessionFresh deliberately omits (see its header comment) -- a
+  // bare continueSession: true there would park on the modal or come up without
+  // the --channels plugin. resumeMarveenSession never throws; it logs and
+  // returns false, so a failed resume does not re-arm the due-tick retry loop.
+  if (cfg.mode === 'continue') {
+    void resumeMarveenSession().then((ok) => {
+      if (!ok) logger.error({ name: MAIN_AGENT_ID }, 'auto-restart: --continue respawn of the main session failed')
+    })
+    return
+  }
   respawnMainSessionFresh()
+}
+
+// GG fork: what the restart ACTUALLY did, for the log line. Sub-agents follow
+// cfg.mode; the main agent follows it too on Linux, but the launchd leg can only
+// re-run the plist command, so there it is fresh whatever the config says.
+function effectiveMode(name: string, cfg: AutoRestartConfig): string {
+  if (name !== MAIN_AGENT_ID) return cfg.mode
+  if (mainRestartMechanism(existsSync('/bin/launchctl')) === 'launchd') return 'fresh(main/launchd)'
+  return `${cfg.mode}(main)`
 }
 
 function performRestart(name: string, cfg: AutoRestartConfig): void {
   if (name === MAIN_AGENT_ID) {
-    restartMainChannelsSession()
+    restartMainChannelsSession(cfg)
   } else {
     restartAgentProcess(name, { fresh: cfg.mode === 'fresh' })
   }
@@ -140,7 +168,10 @@ function checkAgent(name: string, nowMs: number): void {
   try {
     performRestart(name, cfg)
     lastRestart.set(name, nowMs)
-    logger.info({ name, mode: name === MAIN_AGENT_ID ? 'fresh(main)' : cfg.mode }, 'auto-restart: restarted session')
+    // GG fork: the main agent now follows cfg.mode on the respawn-pane leg, so
+    // the logged mode must be measured, not assumed -- 'fresh(main)' for every
+    // main restart is exactly the lie this change removes.
+    logger.info({ name, mode: effectiveMode(name, cfg) }, 'auto-restart: restarted session')
   } catch (err) {
     logger.warn({ err, name }, 'auto-restart: restart failed')
   }
