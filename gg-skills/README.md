@@ -71,6 +71,7 @@ döntés. Addig itt vannak, hogy legalább verziózva legyenek.
 | `google-docs-biztonsagos-szerkesztes` | Docs API adatvesztés nélkül |
 | `google-sheets-biztonsagos-iras` | Sheets append adatvesztés nélkül |
 | `telegram-hang-atirat` | hangüzenet átirat, ha a csatorna nem adott |
+| `youtube-video-tartalom` | YouTube-videó címe, leírása, fejezetei bot-ellenőrzés mellett |
 
 Az ágens-specifikus skillek a `.claude/skills/` alatt élnek, amit a
 `.gitignore` 15. sora kizár — tehát a repóban egyikük sem létezne enélkül.
