@@ -74,8 +74,32 @@ taskstate-be.
 - **A macOS launchd-ág fresh-only marad.** A `kickstart` a plist parancsot
   futtatja újra, nincs mit átadni neki. Linuxon a respawn-pane-leg követi a
   mode-ot, macOS-en nem -- ezt az `effectiveMode()` log-sora mondja meg.
+- 🔴 **A `store/dashboard.log` soraiban NINCS DÁTUM, csak `[HH:MM:SS.mmm]` -- egy
+  időpont-grep a TEGNAPI napot adja vissza.** 2026-08-20 03:01: a `grep '^\[03:0'`
+  a 08-19-i restart sorait hozta, köztük a `Main session respawned FRESH` WARN-t,
+  ami akkor HELYES volt (még a régi kód futott). Pár percig úgy nézett ki, hogy a
+  javítás elbukott, és majdnem így is jelentettem. **Dátumot csak három forrás ad:**
+  a napló VÉGE (`tail`, a mai sorok ott vannak), a `ps -eo pid,lstart,args` (az
+  `lstart` teljes dátumot ír), és a `tmux ls` `created` mezője. Általánosan:
+  időpont-alapú grep csak akkor bizonyíték, ha a sor tartalmazza a dátumot is.
 
 ## Ellenőrzés
+- **Az ÉLES continue négy egymástól független jele** (2026-08-20 03:02-03:04,
+  az első valódi próba):
+  ```bash
+  ps -eo pid,lstart,args | grep -- '--channels' | grep -- '--continue'   # a flag ott van-e, DATUMMAL
+  tail -40 store/dashboard.log | grep -E 'mode|--continue|Post-resume'
+  ```
+  Amit látnod kell: `auto-restart: restarted session  mode: "continue(main)"`,
+  `Marveen session respawned with --continue`, és a záró
+  `Post-resume guard: channel plugin attached after --continue -- context preserved,
+  no escalation`. Ez a HARMADIK a döntő: a `--continue` indulás akkor sikeres, ha a
+  csatorna-plugin utána is fent van.
+- **A `due but pane is busy, deferring to next tick` NEM hiba, hanem a helyes
+  viselkedés.** Ha a 03:00-s tick akkor esedékes, amikor épp dolgozol (pl. a
+  dream-engine kör fut), a runner NEM szakít félbe, hanem a következő tickben
+  indít. 2026-08-20-án emiatt 03:02:59-kor jött a restart 03:00 helyett -- ez
+  nem csúszás, hanem a munkád megvédése.
 - `grep -n "cfg.mode === 'continue'" dist/web/auto-restart-runner.js` -> ha
   MEGVAN, a `continue` mód élesben is érvényes. Ha nincs, a telepített build régi
   (`update.sh` nem futott le, vagy a lánc `develop`-nál megállt) -- a `src/`-ben
