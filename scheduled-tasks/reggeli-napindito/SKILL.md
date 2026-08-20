@@ -142,10 +142,11 @@ A többi szekció (email, naptár, AI hírek) maradnak a CLAUDE.md-ben leírt fo
   neked kell kiküldeni. 2026-08-16 a (b) eset volt (Execution error 07:30:15-kor,
   a teljes napindító 07:35-kor ment ki, msg 587). Az `Execution error` a `-p`
   session visszatérő hibája (08-11 és 08-16 is), tehát a (b) ág nem kivétel.
-  (c) 2026-08-17-től egy HARMADIK kimenet is van, és 2026-08-19-re ez lett a
-  GYAKORIBB: négy egymást követő napon (08-16 a (b) ágon, majd 08-17, 08-18,
-  08-19 a (c) ágon) a `-p`
-  futás EGYSZER SEM küldött ki napindítót. Vagyis ne (a)-ra készülj: alapból
+  (c) 2026-08-17-től egy HARMADIK kimenet is van, és 2026-08-20-ra ez lett az
+  ALAPESET: ÖT egymást követő napon (08-16 a (b) ágon, majd 08-17, 08-18,
+  08-19, 08-20 a (c) ágon) a `-p`
+  futás EGYSZER SEM küldött ki napindítót. Az (a) eset -- amikor a `-p` tényleg
+  kiküldi és neked csak pótolni kell -- 08-15 óta NEM fordult elő. Vagyis ne (a)-ra készülj: alapból
   számíts rá, hogy a teljes napindító a tiéd, és a tail csak azt dönti el,
   hogy kell-e pótolni valamit. A fejléc alatt egy prózai
   bejelentés áll, hogy „nincs Gmail-, Naptár- vagy Telegram-küldő eszközöm ebben a
