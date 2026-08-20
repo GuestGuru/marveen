@@ -160,3 +160,17 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
   A ket irany osszefoglalva: `<` sor (csak az elo peldanyban) = valoszinuleg verziozatlan tudas, ird vissza. `>` sor (csak a sablonban) = eloszor gondold vegig, mert lehet a sablon sajat magyarazata.
 - 🔴 **A tegnapi „lezártnak jelentett" drift MÁSNAP újranyílhat, es tipikusan TE nyitod ki.** Ne vedd at a tegnapi DREAM.md „nulla elteres" allitasat: mérd újra minden éjjel. 2026-08-19: elozo nap ide azt irtam, hogy a scheduled-task szivargas lezarult, es ugyanaznap 07:35-kor harom buktatot irtam a `reggeli-napindito` SKILL.md-be -- kizarolag az ELO peldanyba. A helyorzo-tudatos diff masnap 16 csak-elo sort adott, ebbol 13 valodi tudas. **A `git ls-files | grep -c SKILL.md` erre VAK** (39 maradt), mert a sablon-fajl letezik, csak elavult -- a skill-fajlok szama es a sablonok tartalma ket kulon allitas. A buktato-iras utolso lepese ezert MINDIG a repo-sablon visszairasa, ugyanabban a korben.
 - 🔴 **A drift VISSZAFELÉ is mutathat: a sablon frissebb, az élő példány elavult, és a különbség lehet EGYETLEN SZÓ, nem hiányzó blokk.** 2026-08-19: a `reggeli-napindito` élő példánya azt írta, hogy a `morning.log` tail „KÉTFÉLE kimenetet ad", miközben alatta három ág van felsorolva ((a)(b)(c)); a repo-sablonban már helyesen HÁROMFÉLE állt. Vagyis a `<` és a `>` sorok nem oszthatók fel úgy, hogy „`<` = pótlandó tudás, `>` = sablon-magyarázat": egy `>` sor lehet ELMARADT szinkron is. **Az ilyen egyszavas ellentmondás a legveszélyesebb**, mert nem hiányzik semmi, csak hazudik a szám, és a diff-átfutás könnyen átsiklik rajta. Ellenőrzés: ahol a szöveg DARABSZÁMOT mond (kétféle, három lépés, öt bucket), számold meg a felsorolást alatta -- mindkét példányban.
+- 🔴 **A helyorzo-tudatos diff KET tovabbi csapdat rejt, es mindketto HAMIS HIANYT ad.**
+  2026-08-20-an egymas utan futottam bele mindkettobe. (1) **A helyorzo-keszlet nem csak
+  `{{INSTALL_DIR}}` es `{{OWNER_NAME}}`**: a `{{MAIN_AGENT_ID}}`, a `{{BOT_NAME}}` es a
+  `{{WEB_PORT}}` ugyanugy kell, kulonben olyan sorok latszanak driftnek, mint
+  `skip ha assignee='<agens>'`. A `kanban-audit` igy adott 20 csak-elo sort, amibol nulla
+  volt valodi. (2) **A kulcsszavas grep parity-meresre alkalmatlan.** Ket buktatora
+  rakeresve (`"fel is ebreszt"`, `"ures tabla nem hiba"`) a seed 0 talalatot adott,
+  vagyis ket verziozatlan tanulsagnak latszottak -- kozben MINDKETTO bent volt, mas
+  szavakkal (*"a magadnak kuldott [FELHIVAS] KET extra fordulot visz el"*, *"az ures
+  kanban nem hiba"*). Az atfogalmazas szandekos, mert a seed eljarasa is mas (hordozhato
+  API-hivas az `sqlite3`+`jq` helyett).
+  **A szabaly: a diff es a grep megmondja, HOL nezz -- a "hianyzik-e" kerdesre csak a ket
+  szekcio ELOLVASASA valaszol.** Visszairas elott mindig keresd meg a masik peldany
+  megfelelo szekciojaban a TARTALMAT, ne a szot.
