@@ -174,3 +174,14 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
   **A szabaly: a diff es a grep megmondja, HOL nezz -- a "hianyzik-e" kerdesre csak a ket
   szekcio ELOLVASASA valaszol.** Visszairas elott mindig keresd meg a masik peldany
   megfelelo szekciojaban a TARTALMAT, ne a szot.
+- 🔴 **A `/api/daily-log` MINDIG a MAI napra ir -- visszamenoleg naplozni nem lehet.**
+  Az `appendDailyLog` (`src/db.ts:1384`) a Budapest-naptar aznapjat teszi a `date`
+  mezobe, es a POST **nem fogad** `date` parametert; csak a GET tud
+  `?date=YYYY-MM-DD`-vel visszaolvasni. 2026-08-21 00:15-kor harom hianyzo
+  08-20-i bejegyzest potoltam, es mind a HARMADIKAI naploba kerult, `date=2026-08-21`
+  ertekkel. Ez nem hiba, de csapda: a holnaputani olvaso a datum-mezot latja, nem a
+  szoveget. **Ezert a potolt bejegyzes elso sora mondja ki, MELYIK napra vonatkozik,
+  es a vegen alljon ott, hogy utolag kerult be es mibol jon az idobelyeg** (git-commit,
+  Telegram msg-id, naplo-sor -- soha nem becsles, lasd a kezzel-becsult-ido buktatot).
+  A kovetkezmeny a bucket 2-re: ha egy nap naploja hianyosnak latszik, elobb nezd meg
+  a KOVETKEZO nap bejegyzeseit is -- lehet, hogy ott van potolva.
