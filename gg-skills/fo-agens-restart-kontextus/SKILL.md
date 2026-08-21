@@ -61,6 +61,14 @@ taskstate-be.
   blokk a kontextusban; friss sessionben nincs. A valódi chat-id az allowlistából
   jön:
   `python3 -c "import json;print(json.load(open('$HOME/.claude/channels/telegram/access.json'))['allowFrom'])"`
+  **A gyökérok 2026-08-21-en kerult elo, es meg is szunt.** A CLAUDE.md nem
+  veletlenul irt `0`-t: a `templates/CLAUDE.md.template` `{{CHAT_ID}}` helyorzoje
+  rendereleskor ures/`0` erteket kapott, mert az `update.sh --regen-claudemd`
+  csak a `CHAT_ID=` kulcsot olvasta a `.env`-bol, a telepiteseken viszont
+  `ALLOWED_CHAT_ID=` all. A feloldas most `CHAT_ID` -> `ALLOWED_CHAT_ID` ->
+  figyelmeztetes (PR #83/#84), a helyi CLAUDE.md pedig a valodi id-t viszi.
+  Regi installon vagy regi CLAUDE.md-vel a bukta tovabbra is el: ha `chat_id: 0`-t
+  latsz egy prompt szovegeben, az allowlistabol old fel, ne hidd el.
 - **A javítás egyik tervezett opció sem lett -- és jó okból.** 2026-08-19:
   eredetileg azt terveztem, hogy a `respawnMainSessionFresh` kap egy
   `continueSession` paramétert. Ez félkész continue-t adott volna: a `--continue`
