@@ -196,10 +196,16 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   egy uj `secret-gate.yml` workflow-t hozott, es a push ezzel szallt el:
   `! [remote rejected] ... (refusing to allow a Personal Access Token to create or
   update workflow .github/workflows/secret-gate.yml without `workflow` scope)`.
-  **A cross-fork PR NEM kerulo ut ra:** a PR `mergeable: true` / `clean` allapotba
+  **A cross-fork PR merge-e sem megy:** a PR `mergeable: true` / `clean` allapotba
   kerult, de a `github_merge_pr` 403-at adott
-  (`Resource not accessible by personal access token`) -- ugyanaz a kapu, csak masik
-  hibaszoveggel. Vagyis ket kulonbozo uton futottam ugyanabba a falba.
+  (`Resource not accessible by personal access token`) -- ugyanaz a kapu, masik
+  hibaszoveggel.
+  ⚠️ **DE a fal CSAK az ELSO atvetelnel van, amikor a workflow-fajl UJONNAN kerul a
+  repoba.** Miutan a gazda egyszer atengedte, a BELSO PR-ek (ag -> develop -> main)
+  mar simán mennek a sajat tokennel: 2026-08-21-en a #79 es a #80 elsore mergelodott,
+  pedig mindketto vitte ugyanazt a `secret-gate.yml`-t. A kulonbseg: ott a fajl mar
+  LETEZIK a celon, tehat a muvelet nem "create or update workflow". Vagyis egy
+  kattintast kell kerni, nem az egesz lancot.
   **Ellenorzes ELOTTE, ne utana** (egy sor, es megsporol egy fel orat):
   ```bash
   git diff --name-only HEAD upstream/develop | grep '^.github/workflows/'
