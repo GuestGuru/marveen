@@ -191,6 +191,27 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
 - **Egy commit-üzenet állítása nem bizonyíték.** Ugyanaz a commit "nem használt channel pluginok" indokkal kapcsolta volna ki a Discordot, holott a `~/.claude/channels/discord/` alatt bot-token, egy párosított DM és két csoport volt. Config-kikapcsolás előtt KÖTELEZŐ ellenőrizni az adott csatorna `access.json`-ját és a futó `--channels` processzeket.
 - Az egész-fájlos újraformázás (pl. JSON pretty-print) fölösleges merge-konfliktus-felület az upstream felé. Csak a tartalmilag szükséges sorokat vidd.
 
+- 🔴 **A `.github/workflows/` ALATTI FAJL MINDKET UTAT ELZARJA -- a proxy-pusht ES a
+  cross-fork PR merge-et is.** 2026-08-21, az upstream v1.33.0 behuzasanal: az upstream
+  egy uj `secret-gate.yml` workflow-t hozott, es a push ezzel szallt el:
+  `! [remote rejected] ... (refusing to allow a Personal Access Token to create or
+  update workflow .github/workflows/secret-gate.yml without `workflow` scope)`.
+  **A cross-fork PR NEM kerulo ut ra:** a PR `mergeable: true` / `clean` allapotba
+  kerult, de a `github_merge_pr` 403-at adott
+  (`Resource not accessible by personal access token`) -- ugyanaz a kapu, csak masik
+  hibaszoveggel. Vagyis ket kulonbozo uton futottam ugyanabba a falba.
+  **Ellenorzes ELOTTE, ne utana** (egy sor, es megsporol egy fel orat):
+  ```bash
+  git diff --name-only HEAD upstream/develop | grep '^.github/workflows/'
+  ```
+  Ha ad talalatot, a kijuttatas EMBERI dontest kivan, es ezt a merge-munka ELEJEN
+  mondd meg, ne a vegen. Ket ut van, es a valasztas a gazdae:
+  (a) o mergeli a PR-t a GitHubon -- egyszeri, nem terjeszkedik;
+  (b) `workflow` scope a tokenre -- kenyelmesebb, de TARTOS jogkiterjesztes minden
+  jovobeli futasra. Alapbol az (a)-t javasold.
+  A feloldott merge-commit addig is elhet a worktree-ben; a munka NEM vesz el,
+  csak a kijuttatas var.
+
 ## Ág-takarítás merge után
 Törlés ELŐTT mindig két külön kérdés, mert a commit-szám félrevezet:
 ```bash
