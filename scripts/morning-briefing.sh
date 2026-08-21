@@ -33,17 +33,56 @@ echo "=== Reggeli napindító $(date) ===" >> "$LOG"
 
 cd "$INSTALL_DIR"
 
+# 2026-08-21: a prompt HAT napig nem letezo toolokat kert (search_emails,
+# list-events), ezert a -p futas minden reggel azzal hasalt el, hogy "nincs
+# email/naptar eszkozom" -- es a napindito az interaktiv sessionre maradt. A
+# SKILL.md-ben ez mar 08-12 ota javitva volt (gg-napi-forras.sh), csak ebbe a
+# szkriptbe nem irta vissza senki. Ket valtozas:
+#   1. a prompt a gg-napi-forras.sh kimenetere epul, nem talalgat toolokat;
+#   2. a KULDES nem a -p sessione: az csak a SZOVEGET adja vissza, es a
+#      kikuldes innen megy Bot API-val. A -p session ugyanis nem latja a
+#      channel-plugin reply tooljat (merve 08-16 ... 08-21, hat reggel).
+BRIEF_OUT="$(mktemp)"
 if $CLAUDE --dangerously-skip-permissions \
   --channels plugin:telegram@claude-plugins-official \
-  -p "Reggeli napindító - készítsd el és küld el Telegramra (chat_id: $CHAT_ID).
+  -p "Reggeli napindito. NE kuldj semmit sehova -- csak ird ki a KESZ SZOVEGET a valaszodban, mast ne.
 
-1. Email check: search_emails az elmúlt 12 órából, szűrd ki a spam/promo emaileket
-2. Naptár: list-events a mai napra a $CALENDAR_ID naptárból (Europe/Budapest timezone)
-3. AI hírek: WebSearch \"AI news [tegnapi dátum]\"
-4. Küld el Telegramra a reply tool-lal (chat_id: $CHAT_ID)
+1. Email es naptar EGY parancsbol: bash $INSTALL_DIR/scripts/gg-napi-forras.sh
+   (Ez kiirja a mai naptarat es az elmult 24 ora leveleit. NE keress
+   search_emails / list-events / gg_gmail_* toolt: nincsenek, sosem voltak.
+   Ha a szkript HIBA: sort ad, azt jelentsd, ne azt hogy nem elerheto.)
+2. Dream Engine: ha letezik es nem ures a $INSTALL_DIR/DREAM.md, annak az ot
+   bucketje kerul a szoveg ELEJERE (Skill-javaslatok, Memoria-egeszseg, Top-3,
+   External opportunity, Skill-flotta health).
+3. AI hirek: WebSearch a tegnapi datummal.
+4. A vegen az email es naptar szekcio. Ha egy kategoria ures, hagyd ki.
 
-Tömör, lényegre törő. Ékezetesen írj magyarul." >> "$LOG" 2>&1; then
-  echo "$TODAY" > "$STAMP"
+Formatum: sima szoveg, ekezetesen, magyarul, tomoren. NE hasznalj MarkdownV2
+escape-eket es NE tegyel koré kodblokkot -- a kikuldes innen tortenik." \
+  > "$BRIEF_OUT" 2>>"$LOG"; then
+  cat "$BRIEF_OUT" >> "$LOG"
+  # MORNING_DRY_RUN=1 -> nincs kikuldes, csak a szoveg a naploba (teszteleshez).
+  if [ "${MORNING_DRY_RUN:-0}" = "1" ]; then
+    echo "DRY RUN: nem kuldtem ki, a szoveg $(wc -c < "$BRIEF_OUT") bajt" >> "$LOG"
+    rm -f "$BRIEF_OUT"
+    echo "=== Kesz $(date) -- DRY RUN ===" >> "$LOG"
+    exit 0
+  fi
+  # A kuldes a szkriptbol megy, hogy ne fuggjon a -p session tool-keszletetol.
+  TG_TOKEN="$(grep -oP '(?<=^TELEGRAM_BOT_TOKEN=).*' "$HOME/.claude/channels/telegram/.env" 2>/dev/null | tr -d "\"'" | head -1)"
+  if [ -n "$TG_TOKEN" ] && [ -s "$BRIEF_OUT" ]; then
+    SEND_RES="$(curl -s -X POST "https://api.telegram.org/bot$TG_TOKEN/sendMessage" \
+      -d chat_id="$CHAT_ID" --data-urlencode "text=$(cat "$BRIEF_OUT")")"
+    if printf '%s' "$SEND_RES" | grep -q '"ok":true'; then
+      echo "$TODAY" > "$STAMP"
+      echo "KIKULDVE Bot API-val: $(printf '%s' "$SEND_RES" | grep -oP '(?<="message_id":)[0-9]+' | head -1)" >> "$LOG"
+    else
+      echo "KULDESI HIBA: $SEND_RES" >> "$LOG"
+    fi
+  else
+    echo "KULDES KIMARADT: token vagy szoveg hianyzik (token=${TG_TOKEN:+van}, meret=$(wc -c < "$BRIEF_OUT"))" >> "$LOG"
+  fi
 fi
+rm -f "$BRIEF_OUT"
 
 echo "=== Kész $(date) ===" >> "$LOG"
