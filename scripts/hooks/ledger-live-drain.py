@@ -71,7 +71,7 @@ def main():
         sys.exit(0)  # ledger unavailable -> silent no-op
     if not oq:
         sys.exit(0)  # nothing open (none, or already answered)
-    chat_id, message_id, text, ts, created_at = oq
+    chat_id, message_id, text, ts, created_at, att_kind, att_file_id = oq
 
     # GRACE: skip a fresh inbound the agent may be answering right now.
     try:
@@ -87,6 +87,12 @@ def main():
 
     snippet = (text or "").strip()
     provider, bare_chat = ledger_lib.split_chat(chat_id)
+    if att_file_id:
+        snippet += (
+            f'\n[Ez egy {att_kind or "voice"} csatolmány átirat nélkül: töltsd le '
+            f'és írasd át (voice-message-transcribe skill, '
+            f'attachment_file_id="{att_file_id}") mielőtt válaszolsz.]'
+        )
     sys.stdout.write(
         f"OPEN_QUESTION provider={provider} chat_id={bare_chat} "
         f"message_id={message_id}\n{snippet}\n"
