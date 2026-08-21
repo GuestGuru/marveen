@@ -141,7 +141,7 @@ def _build_output(transcript, open_q, owner):
         "betöltött kontextusból folytass, ne kezdd elölről."
     ]
     if open_q:
-        chat_id, message_id, text, ts = open_q
+        chat_id, message_id, text, ts, att_kind, att_file_id = open_q
         # The ledger namespaces non-Telegram chats as "<provider>:<id>"; the reply
         # tool needs the BARE id and the provider decides WHICH tool to call.
         provider, bare_chat = ledger_lib.split_chat(chat_id)
@@ -161,6 +161,14 @@ def _build_output(transcript, open_q, owner):
             f'Válaszolj rá MOST {hogyan} a(z) {bare_chat} '
             f'chat_id-re, a lenti kontextusból folytatva.'
         )
+        if att_file_id:
+            parts.append(
+                f'A nyitott kérdés egy {att_kind or "voice"} csatolmány, aminek '
+                f'a TARTALMA nem veszett el: töltsd le és írasd át MIELŐTT '
+                f'válaszolsz (voice-message-transcribe skill; '
+                f'attachment_file_id="{att_file_id}"). NE kérd a küldőtől hogy '
+                f'ismételje meg.'
+            )
     if recent:
         parts.append(
             "LEGFRISSEBB FORDULÓK (időrendben, a beszélgetés vége -- innen "
@@ -222,7 +230,7 @@ def main():
 
     max_snippet = _max_snippet()
     transcript = []
-    for direction, chat_id, text, ts in rows:
+    for direction, chat_id, text, ts, att_kind, att_file_id in rows:
         who = owner if direction == "in" else "Te"
         snippet = _snippet(text, max_snippet)
         # Several providers share one ledger, so label the non-default ones:
@@ -230,6 +238,11 @@ def main():
         # fresh session would answer in the wrong place.
         provider, _bare = ledger_lib.split_chat(chat_id)
         tag = "" if provider == ledger_lib.DEFAULT_PROVIDER else f" ({provider})"
+        # A transcript-less voice turn carries its file_id so the fresh session
+        # can still fetch the audio content instead of seeing an opaque
+        # "(voice message)" placeholder.
+        if att_file_id:
+            snippet = f'{snippet} [{att_kind or "voice"} file_id={att_file_id}]'
         transcript.append(f'  [{ts}]{tag} {who}: "{snippet}"')
 
     # Coarse char pre-trim (cheap): drop the OLDEST turns until the transcript
