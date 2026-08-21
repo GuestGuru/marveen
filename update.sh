@@ -840,8 +840,19 @@ if [ "$RESEED_FLEET" = "1" ] || [ "$REGEN_CLAUDEMD" = "1" ]; then
     # Opt-in: re-render from the canonical template with this install's identity.
     # Back up first -- the operator may have hand-edited CLAUDE.md.
     [ -f "$CLAUDE_MD" ] && cp "$CLAUDE_MD" "$CLAUDE_MD.backup-$(date +%Y%m%d-%H%M%S)"
+    # GG fork (bugfix): a .env-ben a bevett kulcs ALLOWED_CHAT_ID -- a CHAT_ID
+    # sok telepitesen egyszeruen nem letezik. A csak-CHAT_ID olvasas ilyenkor
+    # ures stringet adott, es a sablon {{CHAT_ID}} helyorzoi ures ertekre
+    # renderelodtek ("reply tool, chat_id: "), ami hasznalhatatlan utasitas.
+    # Sorrend: CHAT_ID -> ALLOWED_CHAT_ID -> (nincs) figyelmeztetes.
     REGEN_CHAT_ID=""
-    [ -f "$INSTALL_DIR/.env" ] && REGEN_CHAT_ID=$(grep '^CHAT_ID=' "$INSTALL_DIR/.env" | cut -d= -f2-)
+    if [ -f "$INSTALL_DIR/.env" ]; then
+      REGEN_CHAT_ID=$(grep -m1 '^CHAT_ID=' "$INSTALL_DIR/.env" | cut -d= -f2- | tr -d '"'"'"' \t\r')
+      [ -z "$REGEN_CHAT_ID" ] && REGEN_CHAT_ID=$(grep -m1 '^ALLOWED_CHAT_ID=' "$INSTALL_DIR/.env" | cut -d= -f2- | tr -d '"'"'"' \t\r')
+    fi
+    if [ -z "$REGEN_CHAT_ID" ]; then
+      echo -e "  ${ORANGE}!${NC} Nincs CHAT_ID/ALLOWED_CHAT_ID a .env-ben -- a CLAUDE.md chat_id helyorzoi uresen maradnak, told ki kezzel."
+    fi
     sed -e "s/{{OWNER_NAME}}/$OWNER_NAME/g" \
         -e "s|{{INSTALL_DIR}}|$INSTALL_DIR|g" \
         -e "s/{{CHAT_ID}}/$REGEN_CHAT_ID/g" \
