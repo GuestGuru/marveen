@@ -28,74 +28,22 @@ CREATE TABLE IF NOT EXISTS conversation_log (
   text TEXT,
   ts TEXT,
   created_at INTEGER NOT NULL,
+  attachment_kind TEXT,
+  attachment_file_id TEXT,
   UNIQUE(agent_id, chat_id, direction, message_id)
 )
 """
 INDEX = "CREATE INDEX IF NOT EXISTS idx_convlog_agent ON conversation_log(agent_id, created_at)"
 
+# Columns added after the initial schema shipped. connect() retrofits them onto
+# existing DBs with idempotent ALTERs (CREATE TABLE IF NOT EXISTS is a no-op on
+# an already-created table, so the SCHEMA text alone never upgrades old DBs).
+_MIGRATION_COLUMNS = (
+    ("attachment_kind", "TEXT"),
+    ("attachment_file_id", "TEXT"),
+)
+
 RECENT_LIMIT = 20
-
-# --- provider namespacing -------------------------------------------------
-# The ledger predates multi-channel support: every chat_id in conversation_log
-# was a bare Telegram chat id. Rather than migrating the schema (it is asserted
-# identical to db.ts initDatabase() by a contract test), non-Telegram providers
-# namespace their chat ids as "<provider>:<chat_id>". Telegram stays BARE so the
-# rows written before this change, the live-drain statefiles and the chat_id=0
-# owner-chat shorthand all keep working unchanged.
-DEFAULT_PROVIDER = "telegram"
-
-# Channel plugins expose their reply tool as mcp__plugin_<pkg>_<slug>__reply,
-# derived from the provider's pluginPaneId in src/channel-provider.ts.
-#
-# ⚠️ The "<provider>_<provider>" convention does NOT hold: two of the five
-# registered providers name the MCP server after the MARKETPLACE, not the
-# plugin (slack -> plugin:slack-channel:marveen-marketplace, teams ->
-# plugin:teams:marveen-marketplace). An earlier version of this map only listed
-# telegram and discord and fell back to the convention, which produced a
-# non-existent tool name for slack and teams — the replay would have asked the
-# model to call a tool that does not exist.
-#
-# Keep this table in sync with src/channel-provider.ts (pluginPaneId).
-REPLY_TOOLS = {
-    "telegram": "mcp__plugin_telegram_telegram__reply",
-    "discord": "mcp__plugin_discord_discord__reply",
-    "slack": "mcp__plugin_slack-channel_marveen-marketplace__reply",
-    "slack-channel": "mcp__plugin_slack-channel_marveen-marketplace__reply",
-    "googlechat": "mcp__plugin_googlechat_googlechat__reply",
-    "teams": "mcp__plugin_teams_marveen-marketplace__reply",
-}
-
-
-def qualify_chat(provider, chat_id):
-    """Namespaced ledger key for a chat: bare for Telegram, "<provider>:<id>"
-    for everything else."""
-    p = (provider or DEFAULT_PROVIDER).strip().lower()
-    cid = str(chat_id).strip()
-    if p in ("", DEFAULT_PROVIDER):
-        return cid
-    return f"{p}:{cid}"
-
-
-def split_chat(chat_id):
-    """Inverse of qualify_chat: (provider, bare_chat_id). An unprefixed value is
-    Telegram (the historical format). Discord/Slack ids are pure digits or
-    snowflakes, so a ":" can only be the provider separator."""
-    cid = str(chat_id or "").strip()
-    provider, sep, rest = cid.partition(":")
-    if sep and provider and rest:
-        return provider.lower(), rest
-    return DEFAULT_PROVIDER, cid
-
-
-def reply_tool(provider):
-    """The reply tool name to call for a provider, or None if unknown.
-
-    Returns None rather than guessing: a guessed name that does not exist is
-    worse than no name at all, because the model would call it, fail, and have
-    no idea why. The caller renders a provider-only hint in that case.
-    """
-    p = (provider or DEFAULT_PROVIDER).strip().lower()
-    return REPLY_TOOLS.get(p)
 
 
 def db_path():
@@ -176,18 +124,29 @@ def connect():
     con.execute("PRAGMA busy_timeout=10000")
     con.execute(SCHEMA)
     con.execute(INDEX)
+    existing = {row[1] for row in con.execute("PRAGMA table_info(conversation_log)")}
+    for col, coltype in _MIGRATION_COLUMNS:
+        if col not in existing:
+            con.execute(f"ALTER TABLE conversation_log ADD COLUMN {col} {coltype}")
     return con
 
 
-def log_inbound(agent_id, chat_id, message_id, text, ts):
-    """Record an inbound user message. Idempotent on (agent_id, chat_id, in, message_id)."""
+def log_inbound(agent_id, chat_id, message_id, text, ts,
+                attachment_kind=None, attachment_file_id=None):
+    """Record an inbound user message. Idempotent on (agent_id, chat_id, in, message_id).
+
+    attachment_kind/file_id: set for voice / video_note messages that arrived
+    WITHOUT a transcript, so a respawned session can still download and
+    transcribe the audio instead of losing the message content forever."""
     con = connect()
     try:
         con.execute(
             "INSERT OR IGNORE INTO conversation_log"
-            " (agent_id, chat_id, direction, message_id, text, ts, created_at)"
-            " VALUES (?, ?, 'in', ?, ?, ?, ?)",
-            (str(agent_id), str(chat_id), str(message_id), text, ts, int(time.time())),
+            " (agent_id, chat_id, direction, message_id, text, ts, created_at,"
+            "  attachment_kind, attachment_file_id)"
+            " VALUES (?, ?, 'in', ?, ?, ?, ?, ?, ?)",
+            (str(agent_id), str(chat_id), str(message_id), text, ts, int(time.time()),
+             attachment_kind, attachment_file_id),
         )
         con.commit()
     finally:
@@ -223,11 +182,13 @@ def log_outbound(agent_id, chat_id, text, message_id=None):
 
 
 def recent(agent_id, limit=RECENT_LIMIT):
-    """The last `limit` turns for this agent, oldest-first. Rows: (direction, chat_id, text, ts)."""
+    """The last `limit` turns for this agent, oldest-first.
+    Rows: (direction, chat_id, text, ts, attachment_kind, attachment_file_id)."""
     con = connect()
     try:
         rows = con.execute(
-            "SELECT direction, chat_id, text, ts FROM conversation_log"
+            "SELECT direction, chat_id, text, ts, attachment_kind, attachment_file_id"
+            " FROM conversation_log"
             " WHERE agent_id=? ORDER BY created_at DESC, id DESC LIMIT ?",
             (str(agent_id), int(limit)),
         ).fetchall()
@@ -238,38 +199,40 @@ def recent(agent_id, limit=RECENT_LIMIT):
 
 def open_question_with_age(agent_id):
     """Like open_question() but also returns the open inbound's created_at (unix
-    epoch). Returns (chat_id, message_id, text, ts, created_at) or None. Used by
-    the live-drain hook, which needs the age for its grace window."""
+    epoch). Returns (chat_id, message_id, text, ts, created_at, attachment_kind,
+    attachment_file_id) or None. Used by the live-drain hook, which needs the
+    age for its grace window."""
     con = connect()
     try:
         row = con.execute(
-            "SELECT chat_id, message_id, text, ts, created_at, id FROM conversation_log"
+            "SELECT chat_id, message_id, text, ts, created_at, id,"
+            "       attachment_kind, attachment_file_id"
+            " FROM conversation_log"
             " WHERE agent_id=? AND direction='in' ORDER BY created_at DESC, id DESC LIMIT 1",
             (str(agent_id),),
         ).fetchone()
         if not row:
             return None
-        chat_id, message_id, text, ts, created_at, rid = row
-        # ⚠️ The chat_id filter is NOT optional. Without it a reply sent on ANY
-        # channel closes the open question of EVERY channel — which defeats the
-        # whole point of multi-provider support: a Discord answer would silently
-        # discard an unanswered Telegram question. (Measured before the fix:
-        # telegram-in, discord-in, discord-reply left open_question() = None.)
+        chat_id, message_id, text, ts, created_at, rid, att_kind, att_file_id = row
         later_out = con.execute(
             "SELECT 1 FROM conversation_log"
-            " WHERE agent_id=? AND direction='out' AND chat_id=?"
+            " WHERE agent_id=? AND direction='out'"
             "   AND (created_at > ? OR (created_at = ? AND id > ?)) LIMIT 1",
-            (str(agent_id), chat_id, created_at, created_at, rid),
+            (str(agent_id), created_at, created_at, rid),
         ).fetchone()
         if later_out:
             return None  # the last inbound has already been answered
-        return (chat_id, message_id, text, ts, created_at)
+        return (chat_id, message_id, text, ts, created_at, att_kind, att_file_id)
     finally:
         con.close()
 
 
 def open_question(agent_id):
     """The most recent inbound with NO later outbound (the unanswered question),
-    or None. Returns (chat_id, message_id, text, ts)."""
+    or None. Returns (chat_id, message_id, text, ts, attachment_kind,
+    attachment_file_id)."""
     oq = open_question_with_age(agent_id)
-    return oq[:4] if oq else None
+    if not oq:
+        return None
+    chat_id, message_id, text, ts, _created_at, att_kind, att_file_id = oq
+    return (chat_id, message_id, text, ts, att_kind, att_file_id)

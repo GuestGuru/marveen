@@ -49,8 +49,8 @@ import {
 import { MAIN_CHANNELS_SESSION } from './main-agent.js'
 import { sendTelegramMessage } from './telegram.js'
 import { runCommandTask } from './command-task.js'
-// GG fork: progress-based stall rule for the post-fire watchdog.
-import { trackPaneProgress } from '../gg/task-progress.js'
+import { decideQuotaAction, type QuotaWorkClass } from '../quota-gate.js'
+import { readQuotaSnapshot } from '../quota-snapshot.js'
 import { paneShowsContextSaturation, detectsFirstRunGate, detectPaneState, type PaneState } from '../pane-state.js'
 import { withSessionSendLock } from './session-send-lock.js'
 
@@ -105,11 +105,6 @@ export interface TaskInflightEntry {
   // during the sweep so an edit to the schedule mid-run cannot move the
   // goalposts under an already-running injection.
   timeoutMs: number
-  // GG fork: progress tracking for the stall rule. The timeout is measured from
-  // the last time the pane visibly MOVED, not from injection -- see
-  // src/gg/task-progress.ts for why duration alone was the wrong premise.
-  progressSig: string | null
-  lastProgressAt: number
 }
 
 // How long a fired task may stay busy before the watchdog calls it stuck.
@@ -158,15 +153,8 @@ export type TaskTimeoutDecision = 'clear' | 'alert' | 'hold'
 //   - 'typing': post-send resubmit loop is already active.
 // Clearing on these states would drop the entry before the 300s timeout can
 // fire, producing false-negative coverage for genuinely stuck tasks.
-//
-// GG fork: the alert clock runs from `stalledSince` -- the last sweep at which
-// the pane visibly moved -- not from injection. Busy-for-N is not evidence of a
-// hang; busy-AND-FROZEN-for-N is. Omitting stalledSince falls back to
-// injectedAt, i.e. the original duration-only rule, so upstream callers and
-// tests are unaffected. Eviction and the grace window still run off injectedAt:
-// those are about the age of the tracking entry, not about progress.
 export function decideTaskTimeout(
-  entry: Pick<TaskInflightEntry, 'injectedAt' | 'alerted'> & { stalledSince?: number },
+  entry: Pick<TaskInflightEntry, 'injectedAt' | 'alerted'>,
   paneState: PaneState | null,
   now: number,
   opts: { graceMs: number; timeoutMs: number; maxTrackMs: number },
@@ -176,8 +164,7 @@ export function decideTaskTimeout(
   if (paneState === 'idle') return 'clear'
   if (entry.alerted) return 'hold'
   if (elapsed < opts.graceMs) return 'hold'
-  const stalledFor = now - (entry.stalledSince ?? entry.injectedAt)
-  if (paneState === 'busy' && stalledFor >= opts.timeoutMs) return 'alert'
+  if (paneState === 'busy' && elapsed >= opts.timeoutMs) return 'alert'
   return 'hold'
 }
 
@@ -224,6 +211,28 @@ export function decideScheduledResubmitAction(
 //      OWN scheduled prompt, never an unrelated message that happened to park
 //      (an unrelated parked message has no marker in the input region, so no
 //      keystroke fires at all).
+// SCHEDPARK814: how long a retry row must have been waiting before the
+// stale-parked-input janitor is allowed to touch the target session.
+//
+// The post-send ladder above (decideScheduledResubmitAction) only covers the
+// seconds right after OUR injection, and only when the marker is parked in the
+// input region. It is blind to the other way a session pins itself busy: a
+// FRAGMENT of an earlier prompt left in the box after that turn was interrupted
+// (observed 2026-08-14 on a two-hourly mailbox heartbeat: 277 consecutive
+// 'busy' retries over 69 minutes, cleared by hand with C-c/C-u and delivered on
+// the next tick). No marker in the input region, no in-flight entry, so nothing
+// in the runner ever looked. The message-router already runs exactly this janitor
+// on its own queue (JANITOR_PARKED_MIN_AGE_MS, 45s); the schedule queue gets
+// the same treatment on a longer fuse, because a deferred heartbeat is less
+// urgent than a stranded message and an ordinary long turn must never be
+// mistaken for a wedge.
+//
+// The safety lives in clearStaleParkedInput itself: it acts only on the idle
+// 'typing' state, only when the dim-stripped text is unchanged across a settle,
+// never on the main agent's box, and at most once per cooldown window per
+// session. This threshold only decides WHEN the runner is allowed to ask.
+export const SCHEDULE_JANITOR_PARKED_MIN_AGE_MS = 120_000
+
 export function isScheduledPromptStuck(pane: string | null, marker: string): boolean {
   if (!pane || !pane.trim()) return false
   if (detectPaneState(pane) === 'busy') return false
@@ -446,6 +455,17 @@ export function resolveBoundChatId(agentName: string): string | null {
   } catch { return null }
 }
 
+// What a scheduled task costs the shared quota pool, for the gate in
+// quota-gate.ts. `command` tasks run a raw shell command with no model call at
+// all; heartbeats are background checks nobody is waiting for; everything else
+// (task, dream-engine, unknown future types) reports to the owner and is never
+// held back.
+export function quotaWorkClass(task: Pick<ScheduledTask, 'type'>): QuotaWorkClass {
+  if (task.type === 'command') return 'free'
+  if (task.type === 'heartbeat') return 'background'
+  return 'owner-facing'
+}
+
 export function runPreCheck(task: ScheduledTask): { skip: boolean; prefix?: string } {
   if (!task.preCheck) return { skip: false }
   const scriptPath = isAbsolute(task.preCheck)
@@ -505,13 +525,15 @@ function mcpMissingReason(taskName: string, agentName: string): string {
 // task missed its normal tick and is only firing now as a catch-up; it is
 // recorded as a distinct 'fired_late' run status further down instead of
 // silently folding into 'fired'.
-async function attemptFireTask(
-  task: ScheduledTask,
+// Where a task's prompt is delivered: tmux session + (for a remote sub-agent)
+// the host its session lives on. Split out of attemptFireTask so the retry-queue
+// janitor targets the SAME pane the fire path would have written to -- a second
+// copy of this derivation would drift, and a janitor aimed at the wrong session
+// is worse than no janitor at all.
+export function resolveTaskTarget(
+  task: Pick<ScheduledTask, 'targetSession'>,
   agentName: string,
-  now: number,
-  preCheckPrefix?: string,
-  lateCatchUpMs?: number,
-): Promise<'fired' | 'busy' | 'missing' | 'starting' | 'error' | 'mcp-missing' | 'first-run'> {
+): { session: string; host: string | null } {
   const isMainAgent = agentName === MAIN_AGENT_ID
   // Allow per-task session override via targetSession config field.
   // Falls back to the standard agent session name derivation.
@@ -523,6 +545,17 @@ async function attemptFireTask(
   // existence/readiness checks and the send cross the ssh boundary. A custom
   // targetSession override and the main channels agent stay local (host=null).
   const host = (task.targetSession || isMainAgent) ? null : readAgentRemoteHost(agentName)
+  return { session, host }
+}
+
+async function attemptFireTask(
+  task: ScheduledTask,
+  agentName: string,
+  now: number,
+  preCheckPrefix?: string,
+  lateCatchUpMs?: number,
+): Promise<'fired' | 'busy' | 'missing' | 'starting' | 'error' | 'mcp-missing' | 'first-run'> {
+  const { session, host } = resolveTaskTarget(task, agentName)
 
   if (!sessionExistsOnHost(host, session)) {
     // Auto-start the agent, then deliver on a later tick. A daily batch agent
@@ -721,11 +754,6 @@ async function attemptFireTask(
       injectedAt: now,
       alerted: false,
       timeoutMs: resolveStuckTimeoutMs(task),
-      // GG fork: seeded on the first sweep, not here -- we have no pane sample
-      // at injection time, and claiming one would start the stall clock from a
-      // signature we never observed.
-      progressSig: null,
-      lastProgressAt: now,
     })
 
     // Post-send verify: if the agent started a new turn during our chunk
@@ -1153,14 +1181,7 @@ export function startScheduleRunner(): NodeJS.Timeout {
     for (const [key, entry] of taskInflightMap) {
       const pane = capturePane(entry.session, entry.host)
       const state = pane != null ? detectPaneState(pane) : null
-      // GG fork: fold this sweep's pane into the entry's progress state BEFORE
-      // deciding, so a session that is visibly working keeps resetting its own
-      // stall clock. Mutating the entry in place is deliberate -- the map holds
-      // the same object the next sweep reads.
-      const progressed = trackPaneProgress(entry, pane, now)
-      entry.progressSig = progressed.progressSig
-      entry.lastProgressAt = progressed.lastProgressAt
-      const decision = decideTaskTimeout({ ...entry, stalledSince: entry.lastProgressAt }, state, now, {
+      const decision = decideTaskTimeout(entry, state, now, {
         graceMs: TASK_FIRE_GRACE_MS,
         timeoutMs: entry.timeoutMs,
         maxTrackMs: TASK_FIRE_MAX_TRACK_MS,
@@ -1238,6 +1259,25 @@ export function startScheduleRunner(): NodeJS.Timeout {
       const reason = result === 'mcp-missing' ? mcpMissingReason(row.task_name, row.agent_name) : result
       const stillPresent = updatePendingTaskRetry(row.task_name, row.agent_name, now, reason)
       if (stillPresent && view.alertDue) sendPendingRetryAlert(view, now)
+
+      // SCHEDPARK814 stale-parked-input janitor. A 'busy' verdict that keeps
+      // repeating past the threshold is the one case worth a second look: the
+      // pane may not be working at all, just holding an unsubmitted line that
+      // pins isSessionReadyForPrompt false forever (see the constant's note).
+      // Only 'busy' qualifies -- 'starting', 'missing', 'first-run' and
+      // 'mcp-missing' each have their own owner, and none of them is fixed by
+      // emptying the input box. clearStaleParkedInput does the identifying and
+      // refuses anything that is genuinely mid-turn; if it clears, the next
+      // tick's retry delivers on its own.
+      if (stillPresent && result === 'busy' && view.ageMs > SCHEDULE_JANITOR_PARKED_MIN_AGE_MS) {
+        const { session, host } = resolveTaskTarget(taskDef, row.agent_name)
+        if (await clearStaleParkedInput(session, host)) {
+          logger.warn(
+            { task: row.task_name, agent: row.agent_name, session, waitingMs: view.ageMs, attempts: row.attempt_count },
+            'schedule-runner: cleared stale parked input on a long-deferred retry target; delivery resumes next tick',
+          )
+        }
+      }
     }
 
     // Fire in injection-priority order, not directory order: with several
@@ -1246,6 +1286,12 @@ export function startScheduleRunner(): NodeJS.Timeout {
     // routine heartbeats (see taskInjectionRank). listScheduledTasks() builds
     // a fresh array every tick, so the in-place sort leaks nowhere.
     tasks.sort((a, b) => taskInjectionRank(a) - taskInjectionRank(b))
+
+    // One read per tick, shared by every task the loop considers: the whole
+    // fleet draws on ONE subscription quota pool, so the gate below asks the
+    // same snapshot about all of them.
+    const quotaSnapshot = readQuotaSnapshot()
+
     for (const task of tasks) {
       if (!task.enabled) continue
       const occurrenceMs = cronPrevOccurrence(task.schedule, fromMs, now)
@@ -1300,6 +1346,30 @@ export function startScheduleRunner(): NodeJS.Timeout {
         targetAgents = [MAIN_AGENT_ID, ...running]
       } else {
         targetAgents = [task.agent || MAIN_AGENT_ID]
+      }
+
+      // Quota gate. Every heartbeat across the fleet spends from the same
+      // subscription pool as the owner's own turns, so a routine background
+      // check must not burn the tail of a window minutes before real work
+      // needs it. Only background work is ever held back, and only on fresh
+      // authoritative evidence -- an unknown quota state runs (quota-gate.ts).
+      // A held-back occurrence is recorded like a pre-check skip: the tick is
+      // marked as run so the catch-up window does not fire it later, and the
+      // next scheduled occurrence is evaluated on its own merits.
+      const quota = decideQuotaAction({
+        snapshot: quotaSnapshot,
+        nowMs: now,
+        workClass: quotaWorkClass(task),
+      })
+      if (quota.action === 'defer') {
+        logger.info(
+          { task: task.name, reason: quota.reason, pressure: quota.pressure },
+          'Quota gate: holding back a background task until the window recovers',
+        )
+        scheduleLastRun.set(task.name, now)
+        persistScheduleLastRun()
+        for (const agentName of targetAgents) appendTaskRun(task.name, agentName, 'skipped')
+        continue
       }
 
       // Run pre-check once per task (not per agent) since it queries shared
