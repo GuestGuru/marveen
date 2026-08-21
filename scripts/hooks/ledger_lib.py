@@ -45,6 +45,68 @@ _MIGRATION_COLUMNS = (
 
 RECENT_LIMIT = 20
 
+# --- provider namespacing -------------------------------------------------
+# The ledger predates multi-channel support: every chat_id in conversation_log
+# was a bare Telegram chat id. Rather than migrating the schema (it is asserted
+# identical to db.ts initDatabase() by a contract test), non-Telegram providers
+# namespace their chat ids as "<provider>:<chat_id>". Telegram stays BARE so the
+# rows written before this change, the live-drain statefiles and the chat_id=0
+# owner-chat shorthand all keep working unchanged.
+DEFAULT_PROVIDER = "telegram"
+
+# Channel plugins expose their reply tool as mcp__plugin_<pkg>_<slug>__reply,
+# derived from the provider's pluginPaneId in src/channel-provider.ts.
+#
+# ⚠️ The "<provider>_<provider>" convention does NOT hold: two of the five
+# registered providers name the MCP server after the MARKETPLACE, not the
+# plugin (slack -> plugin:slack-channel:marveen-marketplace, teams ->
+# plugin:teams:marveen-marketplace). An earlier version of this map only listed
+# telegram and discord and fell back to the convention, which produced a
+# non-existent tool name for slack and teams — the replay would have asked the
+# model to call a tool that does not exist.
+#
+# Keep this table in sync with src/channel-provider.ts (pluginPaneId).
+REPLY_TOOLS = {
+    "telegram": "mcp__plugin_telegram_telegram__reply",
+    "discord": "mcp__plugin_discord_discord__reply",
+    "slack": "mcp__plugin_slack-channel_marveen-marketplace__reply",
+    "slack-channel": "mcp__plugin_slack-channel_marveen-marketplace__reply",
+    "googlechat": "mcp__plugin_googlechat_googlechat__reply",
+    "teams": "mcp__plugin_teams_marveen-marketplace__reply",
+}
+
+
+def qualify_chat(provider, chat_id):
+    """Namespaced ledger key for a chat: bare for Telegram, "<provider>:<id>"
+    for everything else."""
+    p = (provider or DEFAULT_PROVIDER).strip().lower()
+    cid = str(chat_id).strip()
+    if p in ("", DEFAULT_PROVIDER):
+        return cid
+    return f"{p}:{cid}"
+
+
+def split_chat(chat_id):
+    """Inverse of qualify_chat: (provider, bare_chat_id). An unprefixed value is
+    Telegram (the historical format). Discord/Slack ids are pure digits or
+    snowflakes, so a ":" can only be the provider separator."""
+    cid = str(chat_id or "").strip()
+    provider, sep, rest = cid.partition(":")
+    if sep and provider and rest:
+        return provider.lower(), rest
+    return DEFAULT_PROVIDER, cid
+
+
+def reply_tool(provider):
+    """The reply tool name to call for a provider, or None if unknown.
+
+    Returns None rather than guessing: a guessed name that does not exist is
+    worse than no name at all, because the model would call it, fail, and have
+    no idea why. The caller renders a provider-only hint in that case.
+    """
+    p = (provider or DEFAULT_PROVIDER).strip().lower()
+    return REPLY_TOOLS.get(p)
+
 
 def db_path():
     # Hooks live in <install>/scripts/hooks/; the ledger is <install>/store/.
@@ -214,11 +276,16 @@ def open_question_with_age(agent_id):
         if not row:
             return None
         chat_id, message_id, text, ts, created_at, rid, att_kind, att_file_id = row
+        # ⚠️ The chat_id filter is NOT optional. Without it a reply sent on ANY
+        # channel closes the open question of EVERY channel — which defeats the
+        # whole point of multi-provider support: a Discord answer would silently
+        # discard an unanswered Telegram question. (Measured before the fix:
+        # telegram-in, discord-in, discord-reply left open_question() = None.)
         later_out = con.execute(
             "SELECT 1 FROM conversation_log"
-            " WHERE agent_id=? AND direction='out'"
+            " WHERE agent_id=? AND direction='out' AND chat_id=?"
             "   AND (created_at > ? OR (created_at = ? AND id > ?)) LIMIT 1",
-            (str(agent_id), created_at, created_at, rid),
+            (str(agent_id), chat_id, created_at, created_at, rid),
         ).fetchone()
         if later_out:
             return None  # the last inbound has already been answered

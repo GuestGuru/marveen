@@ -49,6 +49,8 @@ import {
 import { MAIN_CHANNELS_SESSION } from './main-agent.js'
 import { sendTelegramMessage } from './telegram.js'
 import { runCommandTask } from './command-task.js'
+// GG fork: progress-based stall rule for the post-fire watchdog.
+import { trackPaneProgress } from '../gg/task-progress.js'
 import { decideQuotaAction, type QuotaWorkClass } from '../quota-gate.js'
 import { readQuotaSnapshot } from '../quota-snapshot.js'
 import { paneShowsContextSaturation, detectsFirstRunGate, detectPaneState, type PaneState } from '../pane-state.js'
@@ -105,6 +107,11 @@ export interface TaskInflightEntry {
   // during the sweep so an edit to the schedule mid-run cannot move the
   // goalposts under an already-running injection.
   timeoutMs: number
+  // GG fork: progress tracking for the stall rule. The timeout is measured from
+  // the last time the pane visibly MOVED, not from injection -- see
+  // src/gg/task-progress.ts for why duration alone was the wrong premise.
+  progressSig: string | null
+  lastProgressAt: number
 }
 
 // How long a fired task may stay busy before the watchdog calls it stuck.
@@ -153,8 +160,15 @@ export type TaskTimeoutDecision = 'clear' | 'alert' | 'hold'
 //   - 'typing': post-send resubmit loop is already active.
 // Clearing on these states would drop the entry before the 300s timeout can
 // fire, producing false-negative coverage for genuinely stuck tasks.
+//
+// GG fork: the alert clock runs from `stalledSince` -- the last sweep at which
+// the pane visibly moved -- not from injection. Busy-for-N is not evidence of a
+// hang; busy-AND-FROZEN-for-N is. Omitting stalledSince falls back to
+// injectedAt, i.e. the original duration-only rule, so upstream callers and
+// tests are unaffected. Eviction and the grace window still run off injectedAt:
+// those are about the age of the tracking entry, not about progress.
 export function decideTaskTimeout(
-  entry: Pick<TaskInflightEntry, 'injectedAt' | 'alerted'>,
+  entry: Pick<TaskInflightEntry, 'injectedAt' | 'alerted'> & { stalledSince?: number },
   paneState: PaneState | null,
   now: number,
   opts: { graceMs: number; timeoutMs: number; maxTrackMs: number },
@@ -164,7 +178,8 @@ export function decideTaskTimeout(
   if (paneState === 'idle') return 'clear'
   if (entry.alerted) return 'hold'
   if (elapsed < opts.graceMs) return 'hold'
-  if (paneState === 'busy' && elapsed >= opts.timeoutMs) return 'alert'
+  const stalledFor = now - (entry.stalledSince ?? entry.injectedAt)
+  if (paneState === 'busy' && stalledFor >= opts.timeoutMs) return 'alert'
   return 'hold'
 }
 
@@ -754,6 +769,11 @@ async function attemptFireTask(
       injectedAt: now,
       alerted: false,
       timeoutMs: resolveStuckTimeoutMs(task),
+      // GG fork: seeded on the first sweep, not here -- we have no pane sample
+      // at injection time, and claiming one would start the stall clock from a
+      // signature we never observed.
+      progressSig: null,
+      lastProgressAt: now,
     })
 
     // Post-send verify: if the agent started a new turn during our chunk
@@ -1181,7 +1201,14 @@ export function startScheduleRunner(): NodeJS.Timeout {
     for (const [key, entry] of taskInflightMap) {
       const pane = capturePane(entry.session, entry.host)
       const state = pane != null ? detectPaneState(pane) : null
-      const decision = decideTaskTimeout(entry, state, now, {
+      // GG fork: fold this sweep's pane into the entry's progress state BEFORE
+      // deciding, so a session that is visibly working keeps resetting its own
+      // stall clock. Mutating the entry in place is deliberate -- the map holds
+      // the same object the next sweep reads.
+      const progressed = trackPaneProgress(entry, pane, now)
+      entry.progressSig = progressed.progressSig
+      entry.lastProgressAt = progressed.lastProgressAt
+      const decision = decideTaskTimeout({ ...entry, stalledSince: entry.lastProgressAt }, state, now, {
         graceMs: TASK_FIRE_GRACE_MS,
         timeoutMs: entry.timeoutMs,
         maxTrackMs: TASK_FIRE_MAX_TRACK_MS,

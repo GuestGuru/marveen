@@ -142,12 +142,24 @@ def _build_output(transcript, open_q, owner):
     ]
     if open_q:
         chat_id, message_id, text, ts, att_kind, att_file_id = open_q
+        # The ledger namespaces non-Telegram chats as "<provider>:<id>"; the reply
+        # tool needs the BARE id and the provider decides WHICH tool to call.
+        provider, bare_chat = ledger_lib.split_chat(chat_id)
         snippet = _snippet(text, _max_snippet())
+        # An unknown provider yields no tool name. Naming a tool that does not
+        # exist would send the model down a dead end, so we describe the channel
+        # instead and let it pick the right reply tool from what it has.
+        tool = ledger_lib.reply_tool(provider)
+        hogyan = (
+            f'a {provider} reply tool ({tool}) meghívásával'
+            if tool
+            else f'a(z) {provider} csatorna reply tooljával'
+        )
         parts.append(
             f'NYITOTT KÉRDÉS (még NEM válaszoltad meg): {owner} utolsó üzenete '
-            f'(chat {chat_id}, message_id {message_id}): "{snippet}". Válaszolj rá '
-            f'MOST a telegram reply tool (mcp__plugin_telegram_telegram__reply) '
-            f'meghívásával a megfelelő chat_id-re, a lenti kontextusból folytatva.'
+            f'({provider}, chat {bare_chat}, message_id {message_id}): "{snippet}". '
+            f'Válaszolj rá MOST {hogyan} a(z) {bare_chat} '
+            f'chat_id-re, a lenti kontextusból folytatva.'
         )
         if att_file_id:
             parts.append(
@@ -221,12 +233,17 @@ def main():
     for direction, chat_id, text, ts, att_kind, att_file_id in rows:
         who = owner if direction == "in" else "Te"
         snippet = _snippet(text, max_snippet)
+        # Several providers share one ledger, so label the non-default ones:
+        # without it a replayed Discord turn looks like a Telegram one and the
+        # fresh session would answer in the wrong place.
+        provider, _bare = ledger_lib.split_chat(chat_id)
+        tag = "" if provider == ledger_lib.DEFAULT_PROVIDER else f" ({provider})"
         # A transcript-less voice turn carries its file_id so the fresh session
         # can still fetch the audio content instead of seeing an opaque
         # "(voice message)" placeholder.
         if att_file_id:
             snippet = f'{snippet} [{att_kind or "voice"} file_id={att_file_id}]'
-        transcript.append(f'  [{ts}] {who}: "{snippet}"')
+        transcript.append(f'  [{ts}]{tag} {who}: "{snippet}"')
 
     # Coarse char pre-trim (cheap): drop the OLDEST turns until the transcript
     # roughly fits the char budget, so the authoritative byte-fit loop below has
