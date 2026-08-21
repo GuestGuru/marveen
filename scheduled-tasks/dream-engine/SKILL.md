@@ -185,3 +185,14 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
   Telegram msg-id, naplo-sor -- soha nem becsles, lasd a kezzel-becsult-ido buktatot).
   A kovetkezmeny a bucket 2-re: ha egy nap naploja hianyosnak latszik, elobb nezd meg
   a KOVETKEZO nap bejegyzeseit is -- lehet, hogy ott van potolva.
+- ✅ **A drift-merest 2026-08-21 ota SZKRIPT vegzi, ne kezzel rakd ossze.**
+  `scripts/scheduled-task-drift.sh` -- vegigmegy a `~/.claude/scheduled-tasks/`
+  minden feladatan, megkeresi a sablont (`scheduled-tasks/`, `seed-scheduled-tasks/`
+  vagy `templates/scheduled-tasks/`), normalizalja mind az OT helyorzot, es
+  taskonkent kiirja a `csak-elo` / `csak-sablon` sorszamot; `-v` kapcsoloval a
+  sorokat is, `-v <nev>` egyetlen feladatra. Ezt futtasd a bucket 1 elejen.
+  **A szkript SZANDEKOSAN nem dont:** a szamok megmondjak, HOL nezz, de hogy egy
+  elteres drift-e, azt tovabbra is a ket szekcio ELOLVASASA donti el (lasd a ket
+  hamis-hiany buktatot fentebb). Ha a szkript hianyzik vagy hibazik, a fenti kezi
+  `diff` parancsok tovabbra is ervenyesek -- de akkor ne felejtsd az osszes
+  helyorzot, ne csak az `{{INSTALL_DIR}}`-t.
