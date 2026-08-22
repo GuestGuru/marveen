@@ -28,6 +28,7 @@ mean "let it through". The block message says how to make it inspectable.
 Contract: PreToolUse. Reads the hook payload on stdin, exit 0 = allow,
 exit 2 = block (stderr goes back to the model).
 """
+import io
 import json
 import os
 import re
@@ -493,7 +494,34 @@ def audit(text: str):
     return problems
 
 
+def check_file_mode(path):
+    """CLI-mod (2026-08-22): egy KESZ szoveg-fajl atvizsgalasa, hook nelkul.
+
+    Miert kell: a reggeli napindito kikuldese 08-21 ota NEM tool-hivas, hanem
+    egy systemd-bol futo szkript curl-je (scripts/morning-briefing.sh), tehat
+    egyetlen PreToolUse matcher sem latja. Az elso eles futasan (08-22 07:27,
+    msg 621) ekezet nelkuli magyar szoveg ment ki a gazdanak -- pontosan az,
+    amit ez a kapu 08-10 ota tilt a tobbi uton.
+
+    Kimenet: a problemak stderr-re, exit 1 ha van, 0 ha nincs. A HIVO donti el,
+    mit kezd vele; a napindito FAIL-OPEN (naploz es kuld), mert ott a nemulas
+    a dragabb -- ugyanaz az indoklas, mint a telegram-agnal lentebb.
+    """
+    try:
+        text = io.open(path, encoding="utf-8").read()
+    except Exception as exc:
+        sys.stderr.write(f"KAPU: a fajl nem olvashato ({path}): {exc}\n")
+        return 1
+    problems = audit(text)
+    if problems:
+        sys.stderr.write("\n".join(f"  - {p}" for p in problems) + "\n")
+        return 1
+    return 0
+
+
 def main():
+    if len(sys.argv) > 2 and sys.argv[1] == "--check-file":
+        sys.exit(check_file_mode(sys.argv[2]))
     try:
         payload = json.load(sys.stdin)
     except Exception:
