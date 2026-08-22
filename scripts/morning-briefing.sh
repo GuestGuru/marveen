@@ -57,10 +57,32 @@ if $CLAUDE --dangerously-skip-permissions \
 3. AI hirek: WebSearch a tegnapi datummal.
 4. A vegen az email es naptar szekcio. Ha egy kategoria ures, hagyd ki.
 
-Formatum: sima szoveg, ekezetesen, magyarul, tomoren. NE hasznalj MarkdownV2
-escape-eket es NE tegyel koré kodblokkot -- a kikuldes innen tortenik." \
+Formatum: sima szoveg, magyarul, tomoren. NE hasznalj MarkdownV2
+escape-eket es NE tegyel koré kodblokkot -- a kikuldes innen tortenik.
+
+KET SZABALY, amit a gazda kifejezetten szamon ker, es amit a 08-22-i elso eles
+futas MEGSZEGETT (12 ekezet nelkuli szo ment ki hozza):
+  1. MINDEN magyar szo EKEZETES. Nem stiluskerdes. Ha a szoveged tartalmaz
+     olyat, hogy \"sajat\", \"ket\", \"kozott\", \"harom\", \"kovetkezo\", akkor
+     rossz -- olvasd vissza es javitsd, mielott visszaadod.
+  2. NINCS gondolatjel, es a \" -- \" (dupla kotojel) sem helyettesitheti.
+     Hasznalj kettospontot, zarojelet vagy uj mondatot." \
   > "$BRIEF_OUT" 2>>"$LOG"; then
   cat "$BRIEF_OUT" >> "$LOG"
+  # KIMENO-SZOVEG KAPU (2026-08-22). Ez az ut NEM tool-hivas, tehat egyetlen
+  # PreToolUse matcher sem latja -- az elso eles futason (07:27, msg 621) emiatt
+  # ment ki ekezet nelkuli magyar szoveg. FAIL-OPEN: a problemakat naplozzuk,
+  # de kuldunk, mert a felugyeleti csatornan a nemulas a dragabb (ugyanaz az
+  # indoklas, mint a kapu telegram-agaban).
+  GATE="$INSTALL_DIR/scripts/hooks/outgoing-copy-gate.py"
+  if [ -f "$GATE" ]; then
+    if GATE_OUT="$(python3 "$GATE" --check-file "$BRIEF_OUT" 2>&1)"; then
+      echo "KAPU: tiszta" >> "$LOG"
+    else
+      echo "KAPU-FIGYELMEZTETES (a szoveg IGY ment ki, fail-open):" >> "$LOG"
+      printf '%s\n' "$GATE_OUT" >> "$LOG"
+    fi
+  fi
   # MORNING_DRY_RUN=1 -> nincs kikuldes, csak a szoveg a naploba (teszteleshez).
   if [ "${MORNING_DRY_RUN:-0}" = "1" ]; then
     echo "DRY RUN: nem kuldtem ki, a szoveg $(wc -c < "$BRIEF_OUT") bajt" >> "$LOG"
