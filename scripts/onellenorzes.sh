@@ -31,7 +31,7 @@ echo "=== Onellenorzes -- $(date '+%Y-%m-%d %H:%M:%S') ==="
 echo
 
 # --- 1. gg-mcp health -------------------------------------------------------
-echo "[1/2] gg-mcp (flotta-identitas es MCP-kapcsolat)"
+echo "[1/3] gg-mcp (flotta-identitas es MCP-kapcsolat)"
 if [ ! -f "$INSTALL_DIR/scripts/gg-mcp-health.py" ]; then
   echo "  HIBA: scripts/gg-mcp-health.py nem letezik"
   rc=2
@@ -73,7 +73,7 @@ fi
 echo
 
 # --- 2. scheduled-task drift ------------------------------------------------
-echo "[2/2] scheduled-task sablon-drift (tajekoztatas, nem hibajelzes)"
+echo "[2/3] scheduled-task sablon-drift (tajekoztatas, nem hibajelzes)"
 if [ ! -x "$INSTALL_DIR/scripts/scheduled-task-drift.sh" ]; then
   echo "  HIBA: scripts/scheduled-task-drift.sh nem futtathato"
   rc=2
@@ -94,6 +94,40 @@ else
       printf '%s\n' "$drift_out" | sed -n '1,/^osszesen:/p' | sed 's/^/  /'
     fi
   fi
+fi
+
+# --- 3. agensspecifikus skill-parity ---------------------------------------
+# MIERT (2026-08-22): a .claude/skills/ ELO peldanya gitignore-olt (.gitignore:
+# ".claude/*"), a verziozott par a gg-skills/ alatt ul. Aznap reggel az egyik
+# skillt csak az elo peldanyban patcheltem, mert `git check-ignore`-ral azt
+# kerdeztem, hogy EZ AZ UTVONAL kovetett-e (nem az) -- holott a kerdes az, hogy
+# ENNEK A SKILLNEK VAN-E kovetett parja. A ket allitas nem ugyanaz, es a rossz
+# kerdes verziozatlan tudast hagy hatra. Itt nincs helyorzo-normalizalas: a ket
+# peldanynak BAJTRA azonosnak kell lennie, tehat az elteres valodi.
+echo
+echo "[3/3] agensspecifikus skill-parity (.claude/skills <-> gg-skills)"
+if [ ! -d "$INSTALL_DIR/.claude/skills" ]; then
+  echo "  nincs .claude/skills -- kihagyva"
+elif [ ! -d "$INSTALL_DIR/gg-skills" ]; then
+  echo "  nincs gg-skills/ ebben a checkoutban -- kihagyva"
+else
+  parity_gond=0
+  parity_ok=0
+  for d in "$INSTALL_DIR"/.claude/skills/*/; do
+    [ -f "$d/SKILL.md" ] || continue
+    n="$(basename "$d")"
+    if [ ! -f "$INSTALL_DIR/gg-skills/$n/SKILL.md" ]; then
+      echo "  FIGYELEM: $n -- NINCS kovetett par a gg-skills/ alatt (verziozatlan)"
+      parity_gond=$((parity_gond+1))
+    elif ! diff -q "$d/SKILL.md" "$INSTALL_DIR/gg-skills/$n/SKILL.md" >/dev/null 2>&1; then
+      echo "  FIGYELEM: $n -- az elo es a kovetett peldany ELTER"
+      parity_gond=$((parity_gond+1))
+    else
+      parity_ok=$((parity_ok+1))
+    fi
+  done
+  echo "  $parity_ok azonos, $parity_gond eltero vagy hianyzo"
+  [ "$parity_gond" != "0" ] && rc=1
 fi
 
 echo
