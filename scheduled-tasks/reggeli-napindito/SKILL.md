@@ -13,6 +13,28 @@ A többi szekció (email, naptár, AI hírek) maradnak a CLAUDE.md-ben leírt fo
 
 **AI hírek szekció -- CSAK a fő-ágensnél (marveen)**: ha NEM a fő-ágensként futsz (azaz sub-agentként), HAGYD KI az "🤖 AI HÍREK" szekciót -- sub-agenteknek nem releváns. Az email és naptár szekció marad mindenkinél.
 
+## 0. ELŐFELTÉTEL: ma már kiment a napindító?
+
+**2026-08-22 óta KÉT út visz ugyanahhoz az üzenethez, és mindkettő működhet.**
+A reggeli systemd timer (`...-morning.timer`) 07:27-kor futtatja a
+`{{INSTALL_DIR}}/scripts/morning-briefing.sh`-t,
+ami 08-21 óta a szöveget egy `-p` sessiontől kéri, de a KIKÜLDÉST maga végzi Bot
+API-val. Ez a task viszont 07:30-kor a te tmux sessionödbe kerül. Amíg a 07:27-es
+út hat reggelen át NÉMA volt, ez a duplázás nem létezett; most létezhet.
+
+**Ezért a küldés ELŐTT nézd meg, kiment-e már ma:**
+
+```bash
+tail -30 {{INSTALL_DIR}}/store/morning.log | grep -n "$(date +'%a %b %e')"
+```
+
+- Ha a mai naphoz tartozik egy `=== Kesz ... ===` sor, ami **NEM** `DRY RUN`, és
+  fölötte a szkript **msg-id-t** naplózott: a napindító MA MÁR KIMENT. Ilyenkor NE
+  küldj másodikat -- egyetlen sorban nyugtázd a transzkriptben, és zárd a kört.
+- Minden más esetben (nincs mai sor, `DRY RUN`, hibás/üres kimenet, vagy nem tudod
+  eldönteni): **KÜLDD KI**. A duplikátum kellemetlen, a kimaradó napindító drágább --
+  a kétség mindig a küldés felé billen.
+
 ## Buktatók (2026-07-29-i futásból)
 
 - 🔴 **A `chat_id: 0` NEM megy Telegramon.** 2026-08-12-en a `chat_id: "0"`-ra kuldott
