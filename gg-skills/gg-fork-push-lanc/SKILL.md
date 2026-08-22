@@ -65,6 +65,19 @@ bele (upstream-merge, >100 KB fájl -- lásd a következő szekciót).
 4. `github_open_pr(head: "<ag>", base: "develop")` -> `github_merge_pr(number, method: "merge")`
 5. `github_open_pr(head: "develop", base: "main")` -> `github_merge_pr(...)`
 6. Lokális zárás: `git pull --ff-only origin main`. Ha `src/` változott, **rebuild kell** (`update.sh` vagy build), mert a futó szolgáltatás a `dist/`-ből megy. Sima `scripts/*.sh` vagy doksi esetén nem.
+7. **A rebuildet MÉRD, ne feltételezd.** A `git log` már az új commiton áll akkor is, ha
+   a build félbeszakadt -- tipikusan azért, mert az `update.sh` restartolja a
+   fő-ágens sessionjét, és a saját buildjét vágja el. A kész-feltétel:
+
+   ```bash
+   cat dist/.built-commit; git rev-parse HEAD   # a kettő EGYEZZEN
+   ```
+
+   Ha eltér, a `dist/` a régi kódot futtatja, hiába zöld a git. Az `update.sh`
+   öngyógyító ága a következő ütemezett futáson elkapja (`dist elavult (built=...)
+   -> ongyogyito ujraforditas + restart`), de addig a telepítés a régi kódon áll,
+   tehát a saját jelentésedben csak a fenti egyezés után írhatod, hogy kész.
+   (2026-08-21, v1.33.0-gg.1: main @ `862923a`, dist @ `9e557d0` -- 2 órán át.)
 
 ## Upstream-merge push nélkül (64 commit, 112 fájl -- 2026-08-09, v1.31.0)
 
