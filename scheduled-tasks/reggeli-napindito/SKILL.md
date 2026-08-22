@@ -197,3 +197,23 @@ tail -30 {{INSTALL_DIR}}/store/morning.log | grep -n "$(date +'%a %b %e')"
 - **A `-p` session nyugtázását ne inter-agent üzenetben küldd vissza.** A delegáló
   `to: marveen`-t ad meg, ami a FŐ-ágens, vagyis a nyugta saját magamhoz ér vissza és
   egy fölösleges ébresztést okoz. A visszajelzés helye a `morning.log`.
+
+- 🔴 **Ha egy küldést kiveszel a tool-útból, a toolra kötött ŐRÖK IS lehullanak vele.**
+  2026-08-22, az első reggel, amikor a Bot API-s út tényleg működött (msg 621): a
+  szöveg **12 ékezet nélküli magyar szóval** és négy ` -- ` gondolatjel-pótlóval ment
+  ki a gazdának. Nem figyelmetlenség volt. A `scripts/hooks/outgoing-copy-gate.py`
+  2026-08-10 óta pontosan ezt a két szabályt őrzi, de PreToolUse hookként: `Bash`,
+  `*send_email*` és a telegram `reply` tool matcherén. A systemd-ből futó szkript
+  `curl`-je egyiken sincs rajta, tehát a néma napindítót **ellenőrizetlenre**
+  cseréltük. Javítva ugyanaznap (PR #91/#92): a kapunak van `--check-file` CLI-módja,
+  és a `morning-briefing.sh` meghívja küldés előtt, **fail-open** (naplóz és küld),
+  mert felügyeleti csatornán a némulás a drágább hiba.
+  **A kérdés, amit egy ilyen átépítésnél fel kell tenni:** mi az, ami eddig a tool-út
+  MELLÉ volt kötve, és most nem fut le? Hook, gate, audit-napló, rate-limit.
+- **Ha a Telegram MCP-szerver lekapcsolódott, a Bot API a kézi kerülőút, DE a kaput
+  magad futtasd.** 2026-08-22 07:35-kor a `plugin:telegram:telegram` disconnectált,
+  tehát nem volt `reply` tool. A menet: írd fájlba a szöveget, `python3
+  scripts/hooks/outgoing-copy-gate.py --check-file <fajl>`, és csak `exit 0` után
+  menjen a `curl .../sendMessage`. A kapu ilyenkor nem fut magától.
+  ⚠️ A kapu **hamis pozitívot** ad a `07:27-es`-szerű alakokra: a kötőjel után külön
+  szónak látja az `es`-t, és `és`-t javasol. Fogalmazd át (`7:27-kor`), ne kapcsold ki.
