@@ -74,10 +74,12 @@ bele (upstream-merge, >100 KB fájl -- lásd a következő szekciót).
    ```
 
    Ha eltér, a `dist/` a régi kódot futtatja, hiába zöld a git. Az `update.sh`
-   öngyógyító ága a következő ütemezett futáson elkapja (`dist elavult (built=...)
-   -> ongyogyito ujraforditas + restart`), de addig a telepítés a régi kódon áll,
-   tehát a saját jelentésedben csak a fenti egyezés után írhatod, hogy kész.
-   (2026-08-21, v1.33.0-gg.1: main @ `862923a`, dist @ `9e557d0` -- 2 órán át.)
+   öngyógyító ága elkapja (`dist elavult (built=...) -> ongyogyito ujraforditas +
+   restart`), **de NE várd meg**: az `auto-update` ütemezés `0 4 * * 3`, vagyis
+   HETENTE EGYSZER, szerda hajnalban. Ha a `src/` változott, magad futtasd az
+   `update.sh`-t, különben a telepítés akár egy hétig a régi kódon áll.
+   (2026-08-21, v1.33.0-gg.1: main @ `862923a`, dist @ `9e557d0` volt 2 órán át,
+   és azt is a KÉZZEL indított futásom javította 08:42-kor, nem az ütemezés.)
 
 ## Upstream-merge push nélkül (64 commit, 112 fájl -- 2026-08-09, v1.31.0)
 
