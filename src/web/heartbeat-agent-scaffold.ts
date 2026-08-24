@@ -41,6 +41,7 @@ import {
   OWNER_NAME,
   BOT_NAME,
   MAIN_AGENT_ID,
+  HEARTBEAT_AGENT_ID,
   WEB_PORT,
   HEARTBEAT_CALENDAR_ACCOUNT,
   APP_TZ,
@@ -50,7 +51,7 @@ import { resolveDashboardOrigin } from './agent-scaffold.js'
 import { logger } from '../logger.js'
 import { CHANNEL_PLUGIN_IDS } from './plugin-ids.js'
 
-const HEARTBEAT_AGENT_NAME = 'heartbeat'
+const HEARTBEAT_AGENT_NAME = HEARTBEAT_AGENT_ID
 const HEARTBEAT_AGENT_DIR = join(PROJECT_ROOT, 'agents', HEARTBEAT_AGENT_NAME)
 
 // Channel plugins MUST be explicitly disabled in the agent's

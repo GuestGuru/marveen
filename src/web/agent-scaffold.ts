@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
-import { PROJECT_ROOT, OWNER_NAME, MAIN_AGENT_ID, BOT_NAME, CHANNEL_PROVIDER, WEB_PORT, OWNER_DRIVE_FOLDER, APP_TZ, DASHBOARD_PUBLIC_URL, STORE_DIR } from '../config.js'
+import { PROJECT_ROOT, OWNER_NAME, MAIN_AGENT_ID, HEARTBEAT_AGENT_ID, BOT_NAME, CHANNEL_PROVIDER, WEB_PORT, OWNER_DRIVE_FOLDER, APP_TZ, DASHBOARD_PUBLIC_URL, STORE_DIR } from '../config.js'
 import { channelStateDir } from '../channel-provider.js'
 import { runAgent } from '../agent.js'
 import { atomicWriteFileSync } from './atomic-write.js'
@@ -364,6 +364,7 @@ export function writeAgentSettingsFromProfile(name: string, profile: ProfileTemp
   // covered by the self-pace block + the #0 CLAUDE.md doctrine.
   if (agentGetsEmailGate(name)) injectEmailSendGate(existing)
   if (agentGetsGovernanceGates(name)) injectSelfPaceGate(existing)
+  if (agentGetsKanbanWriteGate(name)) injectKanbanWriteGate(existing)
   injectEgressGate(existing)
   atomicWriteFileSync(settingsPath, JSON.stringify(existing, null, 2))
 }
@@ -456,6 +457,39 @@ export function injectSelfPaceGate(existing: Record<string, unknown>): void {
   const prev = Array.isArray(hooks.PreToolUse) ? (hooks.PreToolUse as unknown[]) : []
   hooks.PreToolUse = [
     ...prev.filter((e) => !JSON.stringify(e).includes('self-pace-gate.mjs')),
+    entry,
+  ]
+}
+
+// Which agents are subject to the kanban-write gate: ONLY the hidden heartbeat
+// worker (HBFUTTATOIR824). Its skill has forbidden board writes in prompt text
+// since 2026-08-22 ("A FUTTATO A TABLARA NEM IR. SEMMIT.") with zero
+// enforcement -- three violating writes on 2026-08-24 alone, one auto-closing
+// a card whose PR was unreviewed. Every OTHER agent's kanban-first workflow
+// REQUIRES board writes, so this must never widen to the general sub-agent
+// population. Pure + exported so both directions are unit-testable.
+export function agentGetsKanbanWriteGate(name: string): boolean {
+  return name === HEARTBEAT_AGENT_ID
+}
+
+// Idempotently wire the kanban-write-gate PreToolUse hook (blocks SQL and
+// dashboard-API writes to the kanban tables; reads pass). Same shape + dedupe
+// discipline as injectEmailSendGate. Bash-only matcher: the write routes are
+// sqlite3 / python / curl invocations, all of which arrive as Bash commands.
+export function injectKanbanWriteGate(existing: Record<string, unknown>): void {
+  const hooks = (existing.hooks && typeof existing.hooks === 'object'
+    ? existing.hooks
+    : (existing.hooks = {})) as Record<string, unknown>
+  const command = hookCommand(join(PROJECT_ROOT, 'scripts', 'kanban-write-gate.mjs'))
+  // Registration guard: a /tmp or missing path must never enter shared settings.
+  if (isUnsafeHookCommand(command)) return
+  const entry = {
+    matcher: 'Bash',
+    hooks: [{ type: 'command', command, timeout: 10 }],
+  }
+  const prev = Array.isArray(hooks.PreToolUse) ? (hooks.PreToolUse as unknown[]) : []
+  hooks.PreToolUse = [
+    ...prev.filter((e) => !JSON.stringify(e).includes('kanban-write-gate.mjs')),
     entry,
   ]
 }
