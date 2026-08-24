@@ -519,6 +519,10 @@ export function startWebServer(port = 3420): http.Server {
       // EGRESSRENDER824: a grant added to store/egress-allowlist.json must
       // reach the reader PROMPT copies without waiting for the next boot --
       // the egress-gate hook reads the JSON live, the prompt copies do not.
+      // DELIBERATELY inside the hookDecision.register branch: a worktree /
+      // sandbox instance must not start re-rendering the shared agent
+      // definitions any more than it may register hooks -- the same isolation
+      // rule that guards the settings writes above guards this watcher.
       watchEgressAllowlistForReaderRender(listAgentNames, (agents) =>
         logger.info({ agents }, 'quarantine-reader definitions re-rendered after egress-allowlist.json change'))
       if (pruned.length) logger.info({ pruned }, 'Stale hook entries pruned from agent settings.json')

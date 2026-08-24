@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, readdirSync, statSync, rmSync, watchFile } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, readdirSync, statSync, rmSync, watchFile, unwatchFile } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { PROJECT_ROOT, OWNER_NAME, MAIN_AGENT_ID, BOT_NAME, CHANNEL_PROVIDER, WEB_PORT, OWNER_DRIVE_FOLDER, APP_TZ, DASHBOARD_PUBLIC_URL, STORE_DIR } from '../config.js'
@@ -738,33 +738,42 @@ export function quarantineReaderDestDir(name: string): string {
   return join(agentDir(name), '.claude', 'agents')
 }
 
-export function ensureQuarantineReader(name: string): boolean {
-  const tplPath = join(PROJECT_ROOT, 'templates', 'sub-agents', 'quarantine-reader.md')
+// The optional `paths` override exists for tests only: it lets the whole
+// render-write-cleanup sequence run inside a tmp directory, so the legacy
+// removal ORDER is assertable without touching the real homedir.
+export function ensureQuarantineReader(
+  name: string,
+  paths?: { tplPath?: string; destDir?: string; legacyPath?: string; storeDir?: string },
+): boolean {
+  const tplPath = paths?.tplPath ?? join(PROJECT_ROOT, 'templates', 'sub-agents', 'quarantine-reader.md')
   if (!existsSync(tplPath)) return false
-  const destDir = quarantineReaderDestDir(name)
+  const destDir = paths?.destDir ?? quarantineReaderDestDir(name)
   mkdirSync(destDir, { recursive: true })
   const destPath = join(destDir, 'quarantine-reader.md')
   let rendered: string
   try {
-    rendered = renderQuarantineReader(readFileSync(tplPath, 'utf-8'), quarantineReaderDomains())
+    rendered = renderQuarantineReader(readFileSync(tplPath, 'utf-8'), quarantineReaderDomains(paths?.storeDir))
   } catch {
     return false
   }
-  // Legacy cleanup: the main agent's copy used to live in the USER scope,
-  // where the session-start cache made it permanently stale. Remove it once
-  // the project-scoped copy is in place -- a leftover user-scope file would
-  // keep shadowing nothing (project scope wins) but would mislead the next
-  // person debugging the gate.
-  if (name === MAIN_AGENT_ID) {
-    try { rmSync(join(homedir(), '.claude', 'agents', 'quarantine-reader.md'), { force: true }) } catch { /* best effort */ }
-  }
+  let upToDate = false
   if (existsSync(destPath)) {
     try {
-      if (readFileSync(destPath, 'utf-8') === rendered) return false
-    } catch { /* fall through to re-write */ }
+      upToDate = readFileSync(destPath, 'utf-8') === rendered
+    } catch { /* unreadable -> treat as stale, re-write below */ }
   }
-  writeFileSync(destPath, rendered)
-  return true
+  if (!upToDate) writeFileSync(destPath, rendered)
+  // Legacy cleanup, deliberately AFTER the project-scoped copy is guaranteed
+  // on disk (either it was already current, or the line above just wrote it):
+  // there must be no window in which NEITHER copy exists. The user-scope copy
+  // is the pre-EGRESSRENDER824 location, cached at session start and therefore
+  // permanently stale -- a leftover would shadow nothing (project scope wins)
+  // but would mislead the next person debugging the gate.
+  if (name === MAIN_AGENT_ID) {
+    const legacyPath = paths?.legacyPath ?? join(homedir(), '.claude', 'agents', 'quarantine-reader.md')
+    try { rmSync(legacyPath, { force: true }) } catch { /* best effort */ }
+  }
+  return !upToDate
 }
 
 // EGRESSRENDER824 (b): a grant typed into store/egress-allowlist.json used to
@@ -775,20 +784,28 @@ export function ensureQuarantineReader(name: string): boolean {
 // closes the gap: any change to the JSON re-renders every deployed reader
 // copy. fs.watchFile (mtime polling) rather than fs.watch: it survives the
 // file being replaced (editors/atomic writes) and needs no debounce.
+// `opts` exists for tests: a tmp storeDir + a short poll interval + an
+// injected ensure() make the re-render decision assertable in milliseconds
+// without touching real agent directories. Production callers pass none of it.
+// Returns a stop function (unwatchFile) so a test can end the poll.
 export function watchEgressAllowlistForReaderRender(
   listAgents: () => string[],
   onRendered?: (agents: string[]) => void,
-): void {
-  const allowlistPath = join(STORE_DIR, 'egress-allowlist.json')
-  watchFile(allowlistPath, { interval: 5000 }, () => {
+  opts?: { storeDir?: string; intervalMs?: number; ensure?: (name: string) => boolean },
+): () => void {
+  const allowlistPath = join(opts?.storeDir ?? STORE_DIR, 'egress-allowlist.json')
+  const ensure = opts?.ensure ?? ((name: string) => ensureQuarantineReader(name))
+  const listener = () => {
     const rendered: string[] = []
     for (const name of [MAIN_AGENT_ID, ...listAgents()]) {
       try {
-        if (ensureQuarantineReader(name)) rendered.push(name)
+        if (ensure(name)) rendered.push(name)
       } catch { /* per-agent best effort: one bad dir must not stop the rest */ }
     }
     if (rendered.length) onRendered?.(rendered)
-  })
+  }
+  watchFile(allowlistPath, { interval: opts?.intervalMs ?? 5000 }, listener)
+  return () => unwatchFile(allowlistPath, listener)
 }
 
 // Copy the repo's `scheduled-tasks/<task>/task-config.json` to the
