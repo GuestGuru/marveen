@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, readdirSync, statSync, rmSync, watchFile } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { PROJECT_ROOT, OWNER_NAME, MAIN_AGENT_ID, BOT_NAME, CHANNEL_PROVIDER, WEB_PORT, OWNER_DRIVE_FOLDER, APP_TZ, DASHBOARD_PUBLIC_URL, STORE_DIR } from '../config.js'
@@ -721,15 +721,27 @@ export function ensureGovernanceGateCommands(name: string): boolean {
 // disappeared on 2026-07-30. Now the owner's domains are an INPUT to the
 // render, so a re-render preserves the decision instead of erasing it.
 // Returns true if the file was written, false if already up-to-date.
+// Where an agent's deployed quarantine-reader definition lives. PROJECT scope
+// for EVERY agent, the main agent included -- and that word is load-bearing
+// (EGRESSRENDER824, measured 2026-08-24 with positive AND negative controls):
+// the Claude Code runtime reads a PROJECT-scoped agent definition from disk at
+// each sub-agent SPAWN, but caches a USER-scoped (~/.claude/agents) one at
+// session start. The main agent's copy used to go to the user scope, so an
+// operator-approved domain only reached its reader after a full session
+// restart -- and the denial came from the stale prompt copy, without any
+// network call, so nothing ever landed in store/egress-blocked.log. Writing
+// the main agent's copy into PROJECT_ROOT/.claude/agents makes a grant
+// effective at the NEXT reader spawn, no restart. Pure + exported so the
+// target-path guarantee is unit-testable.
+export function quarantineReaderDestDir(name: string): string {
+  if (name === MAIN_AGENT_ID) return join(PROJECT_ROOT, '.claude', 'agents')
+  return join(agentDir(name), '.claude', 'agents')
+}
+
 export function ensureQuarantineReader(name: string): boolean {
   const tplPath = join(PROJECT_ROOT, 'templates', 'sub-agents', 'quarantine-reader.md')
   if (!existsSync(tplPath)) return false
-  let destDir: string
-  if (name === MAIN_AGENT_ID) {
-    destDir = join(homedir(), '.claude', 'agents')
-  } else {
-    destDir = join(agentDir(name), '.claude', 'agents')
-  }
+  const destDir = quarantineReaderDestDir(name)
   mkdirSync(destDir, { recursive: true })
   const destPath = join(destDir, 'quarantine-reader.md')
   let rendered: string
@@ -738,6 +750,14 @@ export function ensureQuarantineReader(name: string): boolean {
   } catch {
     return false
   }
+  // Legacy cleanup: the main agent's copy used to live in the USER scope,
+  // where the session-start cache made it permanently stale. Remove it once
+  // the project-scoped copy is in place -- a leftover user-scope file would
+  // keep shadowing nothing (project scope wins) but would mislead the next
+  // person debugging the gate.
+  if (name === MAIN_AGENT_ID) {
+    try { rmSync(join(homedir(), '.claude', 'agents', 'quarantine-reader.md'), { force: true }) } catch { /* best effort */ }
+  }
   if (existsSync(destPath)) {
     try {
       if (readFileSync(destPath, 'utf-8') === rendered) return false
@@ -745,6 +765,30 @@ export function ensureQuarantineReader(name: string): boolean {
   }
   writeFileSync(destPath, rendered)
   return true
+}
+
+// EGRESSRENDER824 (b): a grant typed into store/egress-allowlist.json used to
+// reach the reader PROMPT copies only at the next scaffold (boot/spawn of the
+// dashboard) -- the egress-gate HOOK reads the JSON live, but the reader's
+// prompt-level list is baked at render time, so the two silently disagreed
+// and the prompt denial produced no egress-blocked.log line. This watcher
+// closes the gap: any change to the JSON re-renders every deployed reader
+// copy. fs.watchFile (mtime polling) rather than fs.watch: it survives the
+// file being replaced (editors/atomic writes) and needs no debounce.
+export function watchEgressAllowlistForReaderRender(
+  listAgents: () => string[],
+  onRendered?: (agents: string[]) => void,
+): void {
+  const allowlistPath = join(STORE_DIR, 'egress-allowlist.json')
+  watchFile(allowlistPath, { interval: 5000 }, () => {
+    const rendered: string[] = []
+    for (const name of [MAIN_AGENT_ID, ...listAgents()]) {
+      try {
+        if (ensureQuarantineReader(name)) rendered.push(name)
+      } catch { /* per-agent best effort: one bad dir must not stop the rest */ }
+    }
+    if (rendered.length) onRendered?.(rendered)
+  })
 }
 
 // Copy the repo's `scheduled-tasks/<task>/task-config.json` to the
