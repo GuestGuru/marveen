@@ -1702,12 +1702,6 @@ export function listKanbanCards(): KanbanCard[] {
     .all() as KanbanCard[]
 }
 
-export function listKanbanCardsSummary(): { status: string; title: string; assignee: string | null; priority: string; id: string }[] {
-  return db
-    .prepare("SELECT id, title, status, assignee, priority FROM kanban_cards WHERE archived_at IS NULL ORDER BY status, sort_order ASC")
-    .all() as any[]
-}
-
 export function getKanbanCard(id: string): KanbanCard | undefined {
   return db.prepare('SELECT rowid AS seq, * FROM kanban_cards WHERE id = ?').get(id) as KanbanCard | undefined
 }
