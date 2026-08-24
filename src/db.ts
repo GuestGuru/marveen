@@ -443,6 +443,19 @@ export function initDatabase(dbPathOverride?: string): void {
   // untouched (AFTER INSERT / AFTER UPDATE only) -- the 2026-08-24 sweep
   // already migrated the backlog, and re-running it is explicitly out of
   // scope here.
+  //
+  // The `OF title` restriction and the NEW.title != OLD.title guard are
+  // deliberately REDUNDANT and both load-bearing: either alone keeps a plain
+  // status flip from silently truncating one of the remaining legacy
+  // long-titled cards. A regression pin covers the behavior (a non-title
+  // UPDATE leaves a legacy long title byte-identical) and fails only when
+  // BOTH are removed -- kanban-title-gate-trigger.test.ts.
+  //
+  // Second-order effect for writers: a strict write-readback comparing the
+  // just-written title against the stored row sees a mismatch above 300
+  // chars -- the trigger rewrote it. That divergence is the trigger WORKING,
+  // not a lost write; readbacks must compare against the truncated form (or
+  // look for the trigger comment) instead of raw equality.
   const titleGateBody = `
     BEGIN
       INSERT INTO kanban_comments (card_id, author, content, created_at)
