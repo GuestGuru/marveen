@@ -95,6 +95,27 @@ describe('kanban_cards_title_gate triggers', () => {
     expect(comments('noop-1').length).toBe(1)
   })
 
+  it('regression pin: a legacy long title survives a NON-title UPDATE untouched', () => {
+    // The remaining legacy cards still carry >300-char titles (the backlog
+    // migration ran BEFORE this trigger existed, and 73 long descriptive
+    // titles stayed by decision). The `OF title` clause is the only thing
+    // standing between them and a silent truncation on their next status
+    // flip -- and it is ONE WORD. If a later edit turns `AFTER UPDATE OF
+    // title` into a plain `AFTER UPDATE`, this test is what fails.
+    getDb().exec('DROP TRIGGER kanban_cards_title_gate_insert')
+    const legacy = 'L'.repeat(2000)
+    insertCard('legacy-1', legacy) // insert-trigger dropped -> stays long, like a pre-gate row
+    expect(getKanbanCard('legacy-1')!.title).toBe(legacy)
+
+    // update-trigger still installed; a status flip must not touch the title.
+    getDb().prepare("UPDATE kanban_cards SET status = 'done' WHERE id = ?").run('legacy-1')
+
+    const card = getKanbanCard('legacy-1')!
+    expect(card.status).toBe('done')
+    expect(card.title).toBe(legacy)
+    expect(comments('legacy-1')).toEqual([])
+  })
+
   it('cannot loop even with recursive triggers enabled: the truncated value is exactly 300', () => {
     // The trigger's own UPDATE writes substr(...,1,299) || '…' = 300 chars,
     // deliberately NOT >300, so a re-fired WHEN clause is false. This test
