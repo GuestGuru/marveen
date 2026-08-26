@@ -18,6 +18,7 @@ Minden a `store/claudeclaw.db`-ben van (cwd KÖTELEZŐEN `/home/gg/marveen`, lá
 |---|---|---|
 | `daily_logs` (`agent_id, date, content`) | **a "MIRE"** -- ez az egyetlen forrás, ami emberi mondatban leírja a leszállított munkát | csak amit az ágens beírt; a bejegyzések száma jó proxy a munkadarabokra |
 | `token_usage` (`agent, timestamp, input/output_tokens`) | **a "MENNYIT"** -- hívásszám, tokentömeg, aktív napok, utolsó aktivitás | benne van a heartbeat-zaj is |
+| `memories` (`agent_id, category, content, created_at`) | **a "MIRE" MÁSIK fele** -- amit az ágens memóriába írt, de naplóba nem | nincs benne minden; kereszt-ellenőrzésre kell, nem önálló forrásként |
 | `conversation_log` | a nyers csatorna-átirat | **CSAK a fő-ágensre van** (a ledger-capture hook a repo gyökér `.claude/settings.json`-jában ül, az `agents/*/` alattiakban nincs) -- sub-ágens használat mérésére ALKALMATLAN |
 
 Tulajdonos-hozzárendelés: `agents/<nev>/agent-config.json` -> `.owner`.
@@ -77,6 +78,34 @@ ugyanaz, az nem ágens-probléma, hanem nyitott döntés -- azt nevesítsd, és
 ajánlj rá lezárást.
 
 ## Buktatók
+- 🔴 **A nulla-aktivitást MUNKANAPHOZ mérd, ne naptári naphoz.** 2026-08-24-én azt
+  jelentettem, hogy „csütörtök óta egyetlen kolléga sem használta a botját", és ebből
+  adoption-kérdést csináltam. Tamás javított: **08-20 csütörtök állami ünnep volt
+  (Szent István), és csütörtöktől szombatig hosszú hétvége.** A nulla tehát a normális
+  viselkedés volt, nem jelzés. A hiba nem a lekérdezésben volt, hanem a keretezésben:
+  a naptári nap nem munkanap.
+  **Eljárás:** mielőtt bármilyen „X napja nem használta" következtetést leírsz, nézd
+  meg, hány MUNKANAP esik az ablakba. A magyar állami ünnepek nincsenek a DB-ben,
+  tehát vagy tudod őket, vagy rákérdezel. Ha nem biztos, a mérést mondd ki
+  („08-20 és 08-23 között nulla"), a következtetést pedig ne.
+- **A `daily_logs` ALULMÉR: egy ágens dolgozhat naplóbejegyzés nélkül.** 2026-08-24-én
+  a `salesninja`-nak nulla `daily_logs` sora volt a mért héten, viszont a
+  `token_usage` öt hívást mutatott 08-17 11:00 és 11:03 között -- és a `memories`
+  táblából derült ki, hogy ez valódi munka volt (a 09-03-i sajtótájékoztató
+  meghívójának átdolgozása Péternek). Ha csak a naplót nézem, „nem használta"-t
+  jelentek egy olyan kollégáról, aki használta.
+  **Eljárás:** minden ágensre, akinek van `token_usage` sora de nincs (vagy alig van)
+  `daily_logs` bejegyzése, nézd meg a `memories`-t is ugyanarra az időszakra:
+  ```bash
+  python3 -c "
+  import sqlite3; db=sqlite3.connect('store/claudeclaw.db')
+  for r in db.execute('''SELECT datetime(created_at,\"unixepoch\",\"localtime\"), category, substr(content,1,300)
+    FROM memories WHERE agent_id=? AND created_at BETWEEN strftime('%s',?) AND strftime('%s',?)
+    ORDER BY created_at''', ('salesninja','2026-08-17','2026-08-24')): print(r)
+  "
+  ```
+  A `memories` tehát nem csak az akadály-audithoz kell, hanem a „MIRE" kérdéshez is.
+  A `token_usage` a horgony: az mutatja meg, KIT érdemes a memóriákban keresni.
 - **A `conversation_log`-ból ne vonj le következtetést a flottára.** Ha csak a fő-ágens és egy-két véletlen sor van benne, az NEM azt jelenti, hogy a többiek nem beszélgettek: a hook nincs telepítve náluk. Ezt mérd meg (`SELECT agent_id, COUNT(*) ... GROUP BY agent_id`), mielőtt "nem használta" következtetést írnál.
 - **A napi ~13:39-es token_usage sorok heartbeat-ek, nem munka.** Több ágensnél PONTOSAN egy időben jelennek meg, 1-2 hívás, pár száz token. Az "utolsó aktivitás" ezekből hamis: az utolsó VALÓDI munkát a `daily_logs` utolsó bejegyzése adja.
 - **Rossz cwd = üres DB.** A `sqlite3.connect('store/claudeclaw.db')` nem hibázik rossz könyvtárból, hanem üres DB-t hoz létre, és a riport némán "senki nem használta"-t mond. Mindig `cd /home/gg/marveen` először.
@@ -89,5 +118,7 @@ ajánlj rá lezárást.
 
 ## Ellenőrzés
 - Minden élő ágens szerepel a riportban, a nulla-használatúak is, kimondva.
+- A nulla-aktivitású ablakban meg van számolva a MUNKANAPOK száma (ünnep, hosszú hétvége), mielőtt bármilyen adoption-következtetés leíródik.
 - A "mire" mondatok a `daily_logs`-ból származnak, nem találgatásból.
+- Akinek van `token_usage` sora de nincs `daily_logs` bejegyzése, arra a `memories` is le van kérdezve -- különben a riport „nem használta"-t mond egy dolgozó kollégáról.
 - Az utolsó valódi aktivitás a daily_logs szerint van megadva, nem a token_usage szerint.

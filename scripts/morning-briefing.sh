@@ -45,28 +45,29 @@ cd "$INSTALL_DIR"
 BRIEF_OUT="$(mktemp)"
 if $CLAUDE --dangerously-skip-permissions \
   --channels plugin:telegram@claude-plugins-official \
-  -p "Reggeli napindito. NE kuldj semmit sehova -- csak ird ki a KESZ SZOVEGET a valaszodban, mast ne.
+  -p "Reggeli napindító. NE küldj semmit sehova: csak írd ki a KÉSZ SZÖVEGET a válaszodban, mást ne.
 
-1. Email es naptar EGY parancsbol: bash $INSTALL_DIR/scripts/gg-napi-forras.sh
-   (Ez kiirja a mai naptarat es az elmult 24 ora leveleit. NE keress
+1. E-mail és naptár EGY parancsból: bash $INSTALL_DIR/scripts/gg-napi-forras.sh
+   (Ez kiírja a mai naptárat és az elmúlt 24 óra leveleit. NE keress
    search_emails / list-events / gg_gmail_* toolt: nincsenek, sosem voltak.
-   Ha a szkript HIBA: sort ad, azt jelentsd, ne azt hogy nem elerheto.)
-2. Dream Engine: ha letezik es nem ures a $INSTALL_DIR/DREAM.md, annak az ot
-   bucketje kerul a szoveg ELEJERE (Skill-javaslatok, Memoria-egeszseg, Top-3,
+   Ha a szkript HIBA: sort ad, azt jelentsd, ne azt, hogy nem elérhető.)
+2. Dream Engine: ha létezik és nem üres a $INSTALL_DIR/DREAM.md, annak az öt
+   bucketje kerül a szöveg ELEJÉRE (Skill-javaslatok, Memória-egészség, Top-3,
    External opportunity, Skill-flotta health).
-3. AI hirek: WebSearch a tegnapi datummal.
-4. A vegen az email es naptar szekcio. Ha egy kategoria ures, hagyd ki.
+3. AI hírek: WebSearch a tegnapi dátummal.
+4. A végén az e-mail és naptár szekció. Ha egy kategória üres, hagyd ki.
 
-Formatum: sima szoveg, magyarul, tomoren. NE hasznalj MarkdownV2
-escape-eket es NE tegyel koré kodblokkot -- a kikuldes innen tortenik.
+Formátum: sima szöveg, magyarul, tömören. NE használj MarkdownV2
+escape-eket és NE tegyél köré kódblokkot: a kiküldés innen történik.
 
-KET SZABALY, amit a gazda kifejezetten szamon ker, es amit a 08-22-i elso eles
-futas MEGSZEGETT (12 ekezet nelkuli szo ment ki hozza):
-  1. MINDEN magyar szo EKEZETES. Nem stiluskerdes. Ha a szoveged tartalmaz
+KÉT SZABÁLY, amit a gazda kifejezetten számon kér, és amit a 08-22-i első éles
+futás MEGSZEGETT (12 ékezet nélküli szó ment ki hozzá), a 08-26-i pedig újra
+(30 szó):
+  1. MINDEN magyar szó ÉKEZETES. Nem stíluskérdés. Ha a szöveged tartalmaz
      olyat, hogy \"sajat\", \"ket\", \"kozott\", \"harom\", \"kovetkezo\", akkor
-     rossz -- olvasd vissza es javitsd, mielott visszaadod.
-  2. NINCS gondolatjel, es a \" -- \" (dupla kotojel) sem helyettesitheti.
-     Hasznalj kettospontot, zarojelet vagy uj mondatot." \
+     rossz: olvasd vissza és javítsd, mielőtt visszaadod.
+  2. NINCS gondolatjel, és a \" -- \" (dupla kötőjel) sem helyettesítheti.
+     Használj kettőspontot, zárójelet vagy új mondatot." \
   > "$BRIEF_OUT" 2>>"$LOG"; then
   cat "$BRIEF_OUT" >> "$LOG"
   # KIMENO-SZOVEG KAPU (2026-08-22). Ez az ut NEM tool-hivas, tehat egyetlen

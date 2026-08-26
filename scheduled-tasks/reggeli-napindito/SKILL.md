@@ -164,19 +164,28 @@ tail -30 {{INSTALL_DIR}}/store/morning.log | grep -n "$(date +'%a %b %e')"
   neked kell kiküldeni. 2026-08-16 a (b) eset volt (Execution error 07:30:15-kor,
   a teljes napindító 07:35-kor ment ki, msg 587). Az `Execution error` a `-p`
   session visszatérő hibája (08-11 és 08-16 is), tehát a (b) ág nem kivétel.
-  (c) 2026-08-17-től egy HARMADIK kimenet is van, és 2026-08-20-ra ez lett az
-  ALAPESET: ÖT egymást követő napon (08-16 a (b) ágon, majd 08-17, 08-18,
+  (c) 2026-08-17-től egy HARMADIK kimenet is van, ami 08-17 és 08-20 között
+  ALAPESET volt: öt egymást követő napon (08-16 a (b) ágon, majd 08-17, 08-18,
   08-19, 08-20 a (c) ágon) a `-p`
-  futás EGYSZER SEM küldött ki napindítót. Az (a) eset -- amikor a `-p` tényleg
-  kiküldi és neked csak pótolni kell -- 08-15 óta NEM fordult elő. Vagyis ne (a)-ra készülj: alapból
-  számíts rá, hogy a teljes napindító a tiéd, és a tail csak azt dönti el,
-  hogy kell-e pótolni valamit. A fejléc alatt egy prózai
+  futás EGYSZER SEM küldött ki napindítót. A fejléc alatt egy prózai
   bejelentés áll, hogy „nincs Gmail-, Naptár- vagy Telegram-küldő eszközöm ebben a
   sessionben", és hogy a napindító emiatt elmaradt. Ez **ugyanaz, mint a (b)**:
   semmi nem ment ki, a TELJES napindító a tiéd. Ne vedd át a diagnózisát -- a
   `.mcp.json`-ra és az `enabledPlugins`-re tett állítása a `-p` sessionre igaz,
   a tiédre nem; ugyanabban a percben nálam a `gg-napi-forras.sh` és a
   `mcp__plugin_telegram_telegram__reply` is hibátlanul ment (msg 588).
+
+  ⚠️ **2026-08-22 ÓTA A (c) MÁR NEM AZ ALAPESET -- a szkriptes út MŰKÖDIK.**
+  Három egymást követő reggel ment ki sikeresen a systemd + Bot API úton:
+  08-22 msg 621, 08-23 msg 623, 08-24 msg 624 -- az utóbbi kettő `KAPU: tiszta`
+  sorral. **És 08-24-én a szkript a TELJES napindítót küldte** (mind az öt
+  Dream Engine bucket, AI hírek, naptár, email), tehát még pótolni sem kellett:
+  a helyes teendő a nyugtázás volt, nem a küldés. Vagyis a fenti „alapból
+  számíts rá, hogy a teljes napindító a tiéd" tanács MEGFORDULT.
+  **Amit ebből tartsd meg:** ne az ágra készülj, hanem MÉRD LE a `tail`-lel,
+  és a mérés döntsön. Az előfeltétel-szabály változatlan: ha a mai naphoz
+  `=== Kész ===` sor tartozik msg-id-vel és nem `DRY RUN`, akkor kiment --
+  ne küldj másodikat. Ha bármi kétség van, a kétség a KÜLDÉS felé billen.
 - **A "nincs reply tool" NEM session-független tény.** A DREAM.md 08-15-én azt írta,
   hogy `enabledPlugins: telegram=false`, tehát a rendes reply tool le van tiltva --
   az interaktív sessionben viszont a `mcp__plugin_telegram_telegram__reply` LÉTEZETT

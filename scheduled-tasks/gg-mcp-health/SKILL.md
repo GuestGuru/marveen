@@ -60,3 +60,15 @@ Ha van DEAD vagy STALE:
 4. Ha az ágensnek van tulajdonosa (agent-config.json -> owner), írd oda, hogy az ő munkáját érinti.
 5. Restart előtt az érintett ágenst inter-agent üzenetben kérd meg, hogy mentse a memóriáját és írjon taskstate-et, mert fresh indulásnál a taskstate-replay hook nem fut.
 6. Írd fel kanban kártyára, ha a probléma két egymást követő futáson át fennáll.
+   ⚠️ **KIVÉTEL, ha az ügy MÁR EL VAN DÖNTVE és a megoldás automatikus.**
+   2026-08-24: a 15:13-as gg-mcp deploy után a 16:00 ÉS a 18:00 szonda is 7/7 STALE-t
+   adott, tehát a fenti szabály kártyát írt volna elő. Nem vettem fel, mert 16:05-kor
+   már megkérdeztem Tamást, ő a várakozást választotta („ráér, nem is tudnak a kollégák
+   az új toolokról"), a hajnali 3-as auto-restart pedig magától megoldja. Egy kártya,
+   ami éjjel magától lezáródik, csak hosszabbítja a listát -- a CLAUDE.md kifejezetten
+   rövidebb listát kér.
+   **A kártya akkor kell, ha fennáll a FELEJTÉS kockázata:** nincs döntés, vagy a
+   megoldás emberi lépést igényel (párosítás, jogosultság, külső rendszer). Ha a
+   javítás magától lefut egy ismert időpontban, elég egy `warm` memória a teendővel.
+   És ugyanígy: a MÁSODIK azonos jelzésnél NE írj újra Telegramra -- a jelzési
+   kötelezettséget az első kör teljesítette, a folytatás nem új esemény.
