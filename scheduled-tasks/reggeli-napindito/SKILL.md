@@ -31,6 +31,23 @@ tail -30 {{INSTALL_DIR}}/store/morning.log | grep -n "$(date +'%a %b %e')"
 - Ha a mai naphoz tartozik egy `=== Kesz ... ===` sor, ami **NEM** `DRY RUN`, és
   fölötte a szkript **msg-id-t** naplózott: a napindító MA MÁR KIMENT. Ilyenkor NE
   küldj másodikat -- egyetlen sorban nyugtázd a transzkriptben, és zárd a kört.
+  ⚠️ **De a „kiment" NEM azonos a „jól ment ki"-vel: a KAPU sorát is nézd meg.**
+  2026-08-26: a napindító hibátlanul kiment (msg 643, teljes tartalommal), a napló
+  mégis `KAPU-FIGYELMEZTETES (a szoveg IGY ment ki, fail-open)` sort tartalmazott
+  **30 ékezet nélküli magyar szóval**. Ha csak a `=== Kész ===` sort nézed, ezt
+  elmulasztod, és a gazda kap egy ékezet nélküli üzenetet anélkül, hogy bárki
+  észrevenné. **A nyugtázás előtt tehát ez is kötelező:**
+  ```bash
+  sed -n '/=== Reggeli napindító <ma>/,$p' store/morning.log | grep -E 'KAPU|KIKULDVE'
+  ```
+  `KAPU: tiszta` -> nyugtázz és zárd a kört. `KAPU-FIGYELMEZTETES` -> a kör NEM ért
+  véget: nézd meg, mit fogott, keresd meg az okát, és jelentsd a gazdának, mert ő
+  már látta a hibás szöveget.
+  **A 08-26-i konkrét ok, hogy legközelebb gyorsabb legyen:** a `-p` prompt MAGA volt
+  ékezet nélküli, miközben a szabályában ékezetet kért. A modell a prompt regiszterét
+  követi. Javítva ugyanaznap (PR #97/#98), de a bizonyíték TÖBB NAPOS: 08-23 és 08-24
+  ugyanezzel a régi prompttal tiszta volt, tehát egyetlen tiszta reggel nem igazol
+  semmit.
 - Minden más esetben (nincs mai sor, `DRY RUN`, hibás/üres kimenet, vagy nem tudod
   eldönteni): **KÜLDD KI**. A duplikátum kellemetlen, a kimaradó napindító drágább --
   a kétség mindig a küldés felé billen.
