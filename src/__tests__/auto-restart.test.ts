@@ -5,6 +5,8 @@ import {
   restartDue,
   dailyDueAtMs,
   restartBlockedBy,
+  deferralOverride,
+  OPEN_QUESTION_DEFERRAL_CAP_MS,
   DEFAULT_AUTO_RESTART,
 } from '../auto-restart.js'
 
@@ -30,11 +32,11 @@ describe('normalizeAutoRestartConfig', () => {
   })
   it('keeps a valid daily config and clears interval (daily wins)', () => {
     const c = normalizeAutoRestartConfig({ enabled: true, mode: 'fresh', dailyTime: '03:00', intervalHours: 6, handoff: true })
-    expect(c).toEqual({ enabled: true, mode: 'fresh', dailyTime: '03:00', intervalHours: null, handoff: true })
+    expect(c).toEqual({ enabled: true, mode: 'fresh', dailyTime: '03:00', intervalHours: null, handoff: true, openQuestionDeferralCapHours: 24 })
   })
   it('keeps a valid interval config when no daily time', () => {
     const c = normalizeAutoRestartConfig({ enabled: true, mode: 'continue', intervalHours: 8 })
-    expect(c).toEqual({ enabled: true, mode: 'continue', dailyTime: null, intervalHours: 8, handoff: false })
+    expect(c).toEqual({ enabled: true, mode: 'continue', dailyTime: null, intervalHours: 8, handoff: false, openQuestionDeferralCapHours: 24 })
   })
   it('drops an invalid dailyTime and non-positive interval', () => {
     const c = normalizeAutoRestartConfig({ enabled: true, dailyTime: '99:99', intervalHours: 0 })
@@ -43,6 +45,12 @@ describe('normalizeAutoRestartConfig', () => {
   })
   it('defaults mode to continue for an unknown mode', () => {
     expect(normalizeAutoRestartConfig({ mode: 'wild' }).mode).toBe('continue')
+  })
+  it('keeps a valid open-question deferral cap and defaults invalid ones', () => {
+    expect(normalizeAutoRestartConfig({ openQuestionDeferralCapHours: 6 }).openQuestionDeferralCapHours).toBe(6)
+    expect(normalizeAutoRestartConfig({ openQuestionDeferralCapHours: 0 }).openQuestionDeferralCapHours).toBe(24)
+    expect(normalizeAutoRestartConfig({ openQuestionDeferralCapHours: -1 }).openQuestionDeferralCapHours).toBe(24)
+    expect(normalizeAutoRestartConfig({ openQuestionDeferralCapHours: 'lots' }).openQuestionDeferralCapHours).toBe(24)
   })
 })
 
@@ -92,5 +100,34 @@ describe('restartBlockedBy', () => {
   })
   it('idle pane and no open question proceeds', () => {
     expect(restartBlockedBy({ paneIdle: true, openQuestion: false })).toBeNull()
+  })
+})
+
+describe('deferralOverride', () => {
+  const now = 1_700_000_000_000
+  const day = 24 * 60 * 60 * 1000
+
+  // Regression guard: the open-question signal is clockless (a question the
+  // owner never answers stays open forever), so before the cap an agent with
+  // one stale question had its nightly restart silently deferred for months --
+  // a live ledger showed a streak of 72.6 days.
+  it('overrides an open-question deferral once the streak reaches the cap', () => {
+    expect(deferralOverride('open-question', now - OPEN_QUESTION_DEFERRAL_CAP_MS, now)).toBe(true)
+    expect(deferralOverride('open-question', now - Math.round(72.6 * day), now)).toBe(true)
+  })
+  it('keeps deferring while the streak is under the cap', () => {
+    expect(deferralOverride('open-question', now - OPEN_QUESTION_DEFERRAL_CAP_MS + 1, now)).toBe(false)
+    expect(deferralOverride('open-question', now, now)).toBe(false)
+  })
+  it('never overrides a busy pane, no matter how long the streak', () => {
+    expect(deferralOverride('busy-pane', now - 100 * day, now)).toBe(false)
+  })
+  it('does nothing without a block or without a streak', () => {
+    expect(deferralOverride(null, now - 100 * day, now)).toBe(false)
+    expect(deferralOverride('open-question', null, now)).toBe(false)
+  })
+  it('respects an explicit cap argument', () => {
+    expect(deferralOverride('open-question', now - 2 * day, now, 3 * day)).toBe(false)
+    expect(deferralOverride('open-question', now - 3 * day, now, 3 * day)).toBe(true)
   })
 })
