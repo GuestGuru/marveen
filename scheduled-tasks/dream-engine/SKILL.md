@@ -112,6 +112,31 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
 - A `Bash` és SQL műveletek mind helyiek — semmilyen external API hívás (kivéve az Ollama embedding ha kell).
 - Ha akadály van (pl. DB lock, missing embedding model), írd be a DREAM.md végére `## ⚠️ Hibák` szekciót — reggel látom.
 - Befejezésként, írd a DREAM.md végére: `*{{BOT_NAME}}, 02:XX -- most már alszom én is.*`
+- 🔴 **A DREAM.md ELAVULHAT a saját megírása és a 07:27-es kiküldés között.** A
+  dream-engine hajnalban ír, a napindító órákkal később küld -- ami közben történik,
+  arról a fájl nem tud, mégis a te nevedben megy ki. 2026-08-25: a fő lelet az volt,
+  hogy egyedül maradtam `STALE`, mert a fő-ágens restartja nem tud lefutni; három
+  perccel a szekció megírása UTÁN (06:58) a restart lement, a szonda `problems = 0`-ra
+  váltott. A napindító tehát egy megoldott problémát jelentett volna sürgősként.
+  **Eljárás:** ha a DREAM.md írása és a kiküldés között eltelik idő, a kiküldés ELŐTT
+  futtasd újra a fő lelet OLCSÓ ellenőrzőjét (szonda, `tmux ls`, `git rev-parse`), és
+  ha változott, pontosítsd a szekciót -- ne töröld. **A javítás formája számít:** a
+  „mi volt 06:55-kor / mi lett 07:00-kor" kettősség többet ér, mint a felülírás, mert
+  a KÉSÉS ténye (itt: négy óra) akkor is tanulság marad, ha a tünet elmúlt.
+  Ugyanez a `## ⚠️ Hibák` szekcióra és a záró időbélyegre is áll: az utólagos
+  pontosítást írd oda, ne úgy tégy, mintha eleve így írtad volna.
+  ⚠️ **És a fordítottja is megtörtént ugyanaznap: a fő lelet nem elavult, hanem
+  ELEVE TÉVES volt.** A restart-késésre a legkézenfekvőbb okot választottam (a saját
+  ütemezésem sűrűsége nem enged üres ablakot), és mértem is hozzá bizonyítékot -- csak
+  épp a beavatkozás UTÁN. A valódi ok a beragadt session volt, amit a gazda Ctrl-C-je
+  oldott fel; ezt ő mondta meg (msg 640), miután a napindító már kivitte a téves
+  változatot az ő nevében. **Az újramérés ezt NEM fogta volna meg:** a 07:00-s szonda
+  `problems = 0`-t adott, ami a téves diagnózist „megoldottnak" mutatta, nem tévesnek.
+  **Ezért a fő leletnél a diagnózis maga is kettős munka:** írj le legalább két
+  versengő magyarázatot, és mondd meg, melyik bizonyíték döntene köztük. Ha a
+  megkülönböztető bizonyíték már nem gyűjthető (mert a jelenség elmúlt), a szekció
+  mondja ki, hogy utólagos rekonstrukció. A DREAM.md a napindítóval a GAZDA nevében
+  megy ki, tehát egy magabiztos téves ok drágább, mint egy őszinte bizonytalanság.
 
 ## Buktatók
 
@@ -127,6 +152,20 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
 - **Bucket 4 ellentmond a "semmilyen external API hívás" szabálynak.** A WebSearch bucket 4-nél megengedett, de csak akkor, ha a heti limit engedi: a `store/external-ops-last-run` marker dátuma 7 napnál régebbi. Ha nem, skip, és ezt írd is ki.
 - **A wrapper kérhet Telegram-küldést, a törzs viszont tiltja.** A törzs nyer: hajnali kettőkor nincs csatorna-üzenet, a DREAM.md a 07:30-as napindítóból megy ki. Ha a scheduler fejléce mást mond, azt a DREAM.md `## ⚠️ Hibák` szekciójában jelezd, ne az üzenetküldéssel oldd meg.
 - **A DREAM.md-t felülírás előtt be kell olvasni** (a Write tool megköveteli), és a tegnapi tartalom hasznos: abból derül ki, mi volt a korábbi top-3 és teljesült-e. Ne vakon írd felül, előbb vesd össze a mai állapottal.
+  ⚠️ **De a Bash-sel olvasás NEM elégíti ki a Write toolt, és ez 2026-08-26-án két
+  kört elvitt.** Bypass permissions módban a `cat`/`head` a preferált olvasás, csakhogy
+  a Write tool a SAJÁT Read-előzményét nézi: kétszer is `File has been modified since
+  read`-del utasította vissza a felülírást, pedig a fájl mtime-ja órák óta változatlan
+  volt. **A megbízható út a Bash heredoc**, ami egy lépésben ír és nem függ a
+  tool-állapottól:
+  ```bash
+  cat > {{INSTALL_DIR}}/DREAM.md <<'MARVEEN_DREAM_EOF'
+  ... a teljes fájl ...
+  MARVEEN_DREAM_EOF
+  ```
+  Idézett delimitert használj (`<<'EOF'`), különben a szövegben lévő `$` és backtick
+  behelyettesítődik. A tegnapi tartalom beolvasása ettől függetlenül KÖTELEZŐ marad,
+  csak nem a Write tool kedvéért, hanem mert a korábbi top-3 abból derül ki.
 - **A tegnapi top-3 teljesülését BIZONYÍTÉKKAL ellenőrizd, ne feltételezéssel.** Minden pontnak van olcsó, konkrét ellenőrzője: fájl-tartalom (`grep -n` a javítandó sorra), fájl-mtime (`ls -lt` a patchelendő SKILL.md-n), config-állapot (`access.json` `allowFrom`), kanban-státusz. 2026-08-04: a három javaslatból kettő NEM készült el, és ez csak a `grep`/`ls`/`access.json` triádból derült ki -- a napló és a memória alapján mindkettő „folyamatban"-nak látszott. Amelyik javaslat így ismétlődik, azt jelöld meg a DREAM.md-ben („második napja nyitva"), különben a lista minden reggel újnak tűnik.
 - 🔴 **A legveszélyesebb hamis pozitív: egy ROKON, de MÁS javítás ugyanazon a napon.** A fájl-mtime friss, a git-napló mozgást mutat, a memória tele van a témával — és a javaslat mégsem készült el. 2026-08-14: a tegnapi 1. pont az volt, hogy az egészségőr nézze az ÁGENSENKÉNTI kulcs-meglétet. Aznap tényleg bővítettem a `gg-mcp-health.py`-t, PR-ral, mérésekkel — csak épp egy GÉP-szintű csapdával (`ambient_token_trap`), ami egészen más kérdésre válaszol. A felületes ellenőrzés („hozzányúltál a szondához, kész") lezártnak jelölte volna egy negyedik napja nyitott ügyet.
   **Ezért a bizonyíték ne a fájl legyen, hanem a javaslat KIMENETE.** Ne azt kérdezd, „módosult-e a fájl", hanem hogy „megjelent-e az, aminek a javaslat szerint meg kellett volna jelennie":

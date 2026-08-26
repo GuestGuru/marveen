@@ -1,6 +1,6 @@
 ---
 name: fo-agens-restart-kontextus
-description: A fő-ágens (MAIN_AGENT_ID) újraindítása és a kontextus túlélése. Triggerelődik - "restartoljalak?", "elveszik a kontextus?", "continue vagy fresh", auto-restart.json mode mező, taskstate vs ledger, "a dashboard continue-t mutat".
+description: A fő-ágens (MAIN_AGENT_ID) újraindítása és a kontextus túlélése. Triggerelődik - "restartoljalak?", "elveszik a kontextus?", "continue vagy fresh", auto-restart.json mode mező, taskstate vs ledger, "a dashboard continue-t mutat", [CONTEXT-GUARD] auto-handoff uzenet, "HANDOFF.md nem keszult el", fresh kontextussal valo ebredes utani folytatas.
 ---
 
 # Fő-ágens restart és kontextus-megőrzés (Marveen fork)
@@ -9,6 +9,8 @@ description: A fő-ágens (MAIN_AGENT_ID) újraindítása és a kontextus túlé
 - Tamás azt kérdezi, restartolhat-e, vagy hogy elveszik-e a beszélgetés.
 - Az `store/auto-restart.json` `mode` mezőjéről kell nyilatkozni a fő-ágensnél.
 - Restart után hiányzik a kontextus, és el kell dönteni, melyik réteg hibázott.
+- `[CONTEXT-GUARD]` üzenettel ébredsz (pane saturated / auto-handoff), és el kell
+  dönteni, van-e félbehagyott munka -- akkor is, ha `HANDOFF.md` nem készült el.
 
 ## A tény: a fő-ágens restartja Linuxon MINDIG fresh
 Az út: `src/web/auto-restart-runner.ts` `performRestart()` -> ha `name === MAIN_AGENT_ID`,
@@ -45,7 +47,57 @@ taskstate-be.
 4. Restart után mérd, mi fut: `ps -eo pid,lstart,args | grep -- '--channels'`,
    az azonosítás `/proc/<pid>/cwd` alapján (lásd `fo-agens-modell-valtas`).
 
+## Eljárás fresh ébredés UTÁN (auto-handoff / context-guard restart)
+
+Ha `HANDOFF.md` nélkül ébredsz (a context-guard nem érte el a handoff-ot), NE kérdezz
+vissza és NE kezdd elölről: **négy élő forrás** eldönti, van-e folytatandó munka.
+Mind a négyet nézd meg, mert egyenként mindegyik hazudik.
+
+```bash
+sqlite3 store/claudeclaw.db "SELECT id,status,title,assignee FROM kanban_cards WHERE status IN ('in_progress','waiting');"
+curl -s -H "Authorization: Bearer $(cat store/.dashboard-token)" "http://localhost:3420/api/memories?agent=marveen&category=hot&limit=30"
+curl -s -H "Authorization: Bearer $(cat store/.dashboard-token)" "http://localhost:3420/api/messages?agent=marveen&status=pending&limit=20"
+ls -la DREAM.md; tail -c 6000 store/context-guard-last-pane-marveen.txt
+```
+
+1. **Kanban** `in_progress`/`waiting` -- üres kimenet és nemlétező tábla egyformán
+   néma, ezért `SELECT status,COUNT(*) ... GROUP BY status`-szal igazold, hogy a
+   tábla ÉL, mielőtt a "nincs nyitott kártya" következtetést levonod.
+2. **Saját `hot` tier** -- itt csak a SAJÁT `agent_id`-d számít; a globális hot
+   listában idegen ágensek kártyái ülnek, azokhoz nem nyúlsz.
+3. **Pending inter-agent üzenet** -- a szűrő `agent=`, nem `to=` (lásd `fleet-helper`
+   Buktatók); rossz kulcsnál a "nincs üzenet" hamis megnyugvás.
+4. **A pane-snapshot ÉS a munka kimenetének mtime-ja együtt.** A snapshot csak
+   annyit mond, mi volt a képernyőn; azt, hogy a munka BEFEJEZŐDÖTT-e, a termék
+   fájl-ideje mondja meg. 2026-08-24: a snapshot egy Dream Engine-jelentést
+   mutatott, a `DREAM.md` mtime-ja 02:09, a restart 02:14 -- tehát a kör lezárult,
+   nem szakadt félbe. Fordított sorrendnél (mtime a restart UTÁN) félbeszakadt munka.
+
+**A napi napló nem bizonyíték, hanem tanúvallomás.** Ha az előző kontextusod azt
+írta, hogy valamit "szándékosan" hagyott így, mérd le újra, mielőtt továbbadod.
+2026-08-24: a napló szerint a `dist/` szándékosan maradt a `main` mögött, mert az
+`src/` változatlan -- ezt a `git diff <built-commit>..HEAD -- src/ package.json`
+igazolta (0 változás, csak scriptek/hookok mozogtak, azok futásidőben olvasódnak).
+A mérés olcsó, a téves továbbadás drága.
+
 ## Buktatók
+- 🔴 **A `due but pane is busy` KETFELE dolgot jelenthet, és a kettő ellentétes
+  teendőt kíván.** Vagy tényleg dolgozol (akkor a halasztás helyes, a munkád védve),
+  vagy BERAGADTÁL (akkor a halasztás maga a hiba, mert a helyreállítás marad el).
+  A napló ugyanazt a sort írja mindkét esetben. **A megkülönböztető nem a `busy` sor,
+  hanem az, hogy van-e MELLETTE `Stuck-input restart deferred` bejegyzés** -- az
+  utóbbi parkolt inputot jelent, tehát beragadást.
+  2026-08-25: én az elsőre következtettem („folyamatosan dolgozom, ezért nincs
+  restart-ablak"), és strukturális ütemezési problémának neveztem. Tamás javított:
+  beragadt a session, és az ő Ctrl-C-je oldotta fel 06:50-kor. A 03:00-s restart
+  egyébként LEFUTOTT (`auto-restart: restarted session` 03:00:55), csak utána ragadt
+  be minden -- vagyis még a „a restart elmaradt" állításom is hamis volt.
+  **Ellenőrzés, mielőtt bármit állítasz a restart késéséről:**
+  ```bash
+  grep -E "auto-restart: restarted session|Stuck-input restart deferred|KEYS INJECTION" \
+    store/dashboard.log | tail -20
+  ```
+  A három minta együtt adja ki a történetet: lefutott-e, beragadt-e, és ki oldotta fel.
 - **A `mode: continue` 2026-08-19 ÓTA ÉRVÉNYES a fő-ágensnél is** (PR #56/#57,
   `9e557d0`). Előtte nem volt az: 2026-08-14-én a config alapján ígértem
   continue-t, és a kódolvasás cáfolta. A tanulság maradjon meg: **a config
