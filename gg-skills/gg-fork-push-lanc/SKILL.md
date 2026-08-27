@@ -184,6 +184,22 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   git diff --stat origin/develop origin/<ag>      # NEM FETCH_HEAD
   git rev-parse HEAD origin/<ag>                  # egyeznie kell
   ```
+- 🔴 **A szkript 3. lepesenek `--stat` kimenete NEM azt mutatja, mi kerul a `main`-re.**
+  A `gg-push-lanc.sh` az agat az `origin/develop`-hoz meri, es ha a `develop` a `main`
+  MOGOTT all (mert az elozo kor a `develop -> main` PR-rel zarult, de a develop azota
+  nem kapott ujabb merget), akkor ez a diff a te fajljaid MELLE beveszi mindazt, ami a
+  main-en mar bent van, a developen viszont meg nincs. 2026-08-27: negy SKILL.md-t
+  vittem fel, a verifikacio megis **12 fajlt** listazott (`morning-briefing.sh`,
+  `onellenorzes.sh`, `update.sh` es tarsai) -- egy pillanatra ugy nezett ki, mintha az
+  agam idegen valtozasokat vinne. Nem vitt.
+  **A helyes meres a lanc UTAN fut, es a MAIN ket allapotat hasonlitja:**
+  ```bash
+  git fetch origin --quiet
+  git diff --stat <a lanc ELOTTI main sha> HEAD    # pontosan a sajat fajljaid
+  git rev-parse HEAD origin/main                   # a ketto egyezzen
+  ```
+  Ezert jegyezd fel a lanc INDITASA elott a `git rev-parse HEAD`-et -- utolag mar
+  nehezebb megmondani, honnan indultal.
 - **`gh auth status` = not logged in, ez normális.** Ne kezdj el `gh auth login`-t szervezni, a push-út a `github_commit` MCP tool (IT-461 óta él).
 - **A `github_*` toolok a `fejlesztoi` csomaghoz kötöttek, és a csomag ELTŰNHET a token alól.** 2026-08-05: kész, tesztelt javítást nem lehetett felküldeni, mert `gg_allowed_tools` szerint mind a 12 `github_*` tool a `nincs_jogod` ágon volt (`kell: fejlesztoi`), és a `gg_secret_get` sem adta ki a `github` kulcsot. Mindkét token ugyanaz (`/home/gg/gg-mcp/tokens/*.token` -> ugyanaz a userId), tehát token-cserével sem kerülhető meg:
   ⚠️ **A régi mérő-parancs 2026-08-10-re KÉTSZERESEN félrevezet — ne ezt használd:**
