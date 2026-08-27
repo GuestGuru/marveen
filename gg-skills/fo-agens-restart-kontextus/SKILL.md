@@ -73,6 +73,16 @@ ls -la DREAM.md; tail -c 6000 store/context-guard-last-pane-marveen.txt
    mutatott, a `DREAM.md` mtime-ja 02:09, a restart 02:14 -- tehát a kör lezárult,
    nem szakadt félbe. Fordított sorrendnél (mtime a restart UTÁN) félbeszakadt munka.
 
+5. **A napi napló GET-je a MAI napra szól, és a paramétereket némán ignorálja.**
+   Mérve 2026-08-26: az `/api/daily-log` ugyanazt adja vissza `?agent=`, `?agent_id=`,
+   `?date=`, `?limit=` és paraméter nélkül is. Következmény kettő. (a) Ha kora
+   délelőtt ébredsz és a válasz `[]`, az NEM azt jelenti, hogy nem volt munka:
+   a mai bejegyzés még nem született meg. A tegnapi naplóhoz ezen az úton nem
+   férsz hozzá, azt a `hot` tier memória pótolja. (b) A szűrésre épített
+   következtetés ("csak a saját soraimat kértem") hamis, mert nem szűrt.
+   Aznap a félbehagyott feladat EGYETLEN nyoma a `hot` memória volt, a
+   pane-snapshot egy lezárult kanban-auditot mutatott.
+
 **A napi napló nem bizonyíték, hanem tanúvallomás.** Ha az előző kontextusod azt
 írta, hogy valamit "szándékosan" hagyott így, mérd le újra, mielőtt továbbadod.
 2026-08-24: a napló szerint a `dist/` szándékosan maradt a `main` mögött, mert az
