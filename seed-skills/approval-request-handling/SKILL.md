@@ -23,6 +23,34 @@ Ez nem elméleti: egy jóváhagyási rendszer, amit rá lehet venni az önmaga j
 
 ## Eljárás
 
+### 0. ELŐBB mérd fel — ne igen/nem kérdést tegyél fel
+
+A továbbítás nem postás-munka. Mielőtt kiküldöd, nézd meg, **helyes-e a kérdés maga**:
+a kérelmező ágens a saját szűk nézetéből fogalmaz, és gyakran egy rosszabb megoldásra
+kér engedélyt, mert a jobbat nem látja. Két konkrét ellenőrzés:
+
+1. **Áll-e a premissza?** Ha a kérés egy állításra épül („a BPDB-ben nincs adat",
+   „fájlból töltődik"), mérd meg. Egy rossz premisszára épült kérdés rossz döntést szül,
+   és a hiba a gazdánál materializálódik. Lásd a mintát: a NÉV nem bizonyíték a
+   működésre (oszlopnév, fájlnév, mtime) -- az ÉRTÉKET kell megnézni.
+2. **Van-e harmadik út?** A kérelmező A-t vagy B-t lát; a tudás-anyag (`gg_knowledge_list`
+   / `gg_knowledge_get`) gyakran ad C-t, amit egyik ágens sem ismer.
+
+Konkrét eset (2026-08-10, flotta 7. szabály): a salesninja Airbnb/Booking **scraperre**
+kért engedélyt szentendrei piackutatáshoz, mert a BPDB-ben nulla szentendrei rekord van.
+A mérés árnyalta: a BPDB definíció szerint BUDAPESTI (16 500 NTAK-rekordból 10 927
+budapesti, Szentendre 0) -- tehát nem hiány, hanem hatókör. A `bpdb` tudás-anyagból
+viszont kiderült, hogy az adatbázis öt forrása közt ott az **AirDNA**: fizetős, legális,
+nem Budapest-specifikus. Így a gazdának feltett kérdés nem „engedélyezed-e a scrapert"
+lett, hanem „nézzük-e meg előbb az AirDNA-t" -- ha az járható, a kockázatos ág tárgytalan.
+
+⚠️ Ez **nem** a döntés elvétele a gazdától. A döntés az övé marad; a te dolgod, hogy a
+lehető legjobb kérdést és a valós opciókat kapja meg, ne egy hamis dilemmát.
+
+⚠️ Ugyanez él a **`[FELHÍVÁS]`** típusú, level-1 jelzésekre is (amikor a sub-ágens nem
+formális approvalt kér, csak jelez, mert a szintje tiltja a műveletet). A formátum más,
+az eljárás azonos.
+
 ### 1. Küldd ki a tulajdonosnak
 Emberi nyelven, hogy egy pillantásból eldönthesse. Legyen benne: melyik ágens, mit akar, mi a kategória, meddig él a kérés, és hogyan válaszoljon.
 
@@ -34,6 +62,23 @@ Válasz: IGEN <id>  vagy  NEM <id>
 ```
 
 Az `id` rövid előtagja is elég a válaszhoz, ha egyértelmű -- de a PATCH-hez a TELJES id kell.
+
+⚠️ **A MÉRÉST ne küldd el a KÉRÉS helyett.** 2026-08-10-en Tamás egy nap alatt háromszor
+kérdezett vissza ugyanezért: „Mi a hiba?", „Nem értem ezeket az üzeneteket. Ezek nem
+Péternek szólnak? Vagy mit akarsz tőlem?", „az airdna üzeneteid nem értettem". Mindhárom
+jelentésem a bizonyítással kezdődött (PID, timestamp, tool-nevek, mérési lánc), és a kért
+döntés a közepén volt -- vagy sehol. Négy szabály ebből:
+
+1. **Az ELSŐ mondat mondja meg, mit akarsz tőle** — konkrét kérdést, vagy azt, hogy
+   semmit („nincs teendőd"). A mérés utána jön, röviden, és csak annyi belőle, ami a
+   döntéshez kell.
+2. **Küldés előtt nézd meg, aktuális-e még.** Ha az ügy közben megoldódott (egy másik
+   ágens jobb utat talált, a blokkoló elhárult), akkor LEZÁRÁSKÉNT küldd, ne kérdésként.
+   Aznap egy már tárgytalan AirDNA-kérdést vittem be döntésre.
+3. **A technikai részlet a napi naplóba megy**, nem a csatornára. Processz-fa, mtime,
+   tool-diff, SQL: mind a naplóba. A gazdának a döntés és a következmény kell.
+4. **Két külön ügyet ne fűzz egy üzenetbe** — a címzett nem tudja szétválasztani, melyik
+   része szól neki és melyik csak háttér.
 
 ### 2. Várd meg a választ, és ellenőrizd a küldőt
 - A válasz a tulajdonos senderId-jétől jött? Ha nem: **ne zárd le**, és ne is áruld el

@@ -235,6 +235,20 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
   vagy futtass `date '+%H:%M'`-et abban a pillanatban, vagy hasznald a fajl
   `stat`-jat, es a zaro sort a LEGUTOLSO iras utan allitsd be. Ugyanez all a napi
   naplo `## HH:MM` fejleceire is.
+- ✅ **A skill-tukor pariitast 2026-08-27 ota SZKRIPT meri, ne kezzel diffelj:**
+  ```bash
+  scripts/gg-skill-tukor-sync.sh          # riport, exit 1 ha van elavult tukor
+  scripts/gg-skill-tukor-sync.sh --fix    # elo -> tukor masolas minden elteronel
+  ```
+  Vegigmegy a globalis ES az agensspecifikus elo skilleken, megkeresi a KOVETETT
+  tukrot (`gg-skills/`, `seed-skills/`, `skills/` sorrendben), es taskonkent kiirja a
+  `csak-elo` / `csak-repo` sorszamot. **A bucket 5 elejen futtasd.** Elso eles
+  futasa ugyanaznap HAT tovabbi elavult tukrot talalt azon a ketton felul, amirol
+  tudtam -- vagyis a szivargas rendszerszintu volt, nem ket elszigetelt eset.
+  ⚠️ **A `--fix` NEM gondolkodik:** ahol `csak-repo` > 0, ott a repo tud olyat, amit
+  az elo nem, es azt a `--fix` FELULIRNA. Ilyenkor eloszor olvasd el a `>` sorokat
+  (lehet sablon-magyarazat vagy elmaradt szinkron), es csak utana javits.
+  Ahol `csak-repo=0`, ott a masolas biztonsagos: az elo szigoruan tobbet tud.
 - ✅ **A drift-merest 2026-08-21 ota SZKRIPT vegzi, ne kezzel rakd ossze.**
   `scripts/scheduled-task-drift.sh` -- vegigmegy a `~/.claude/scheduled-tasks/`
   minden feladatan, megkeresi a sablont (`scheduled-tasks/`, `seed-scheduled-tasks/`

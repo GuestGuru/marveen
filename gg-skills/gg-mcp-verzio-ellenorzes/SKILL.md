@@ -38,7 +38,16 @@ description: Megállapítani, hogy a futó gg-mcp szerver a legfrissebb kódot f
      /home/gg/gg-mcp/dist/tools/*.js | tr -d '"' | sort -u
    ```
    és vesd össze a FUTÓ sessionöd `gg_allowed_tools` kimenetével — ami a listában van, de
-   nálad nincs, az a most hiányzó képesség. 2026-08-10 20:00: a 19:34-es build három új
+   nálad nincs, az a most hiányzó képesség.
+
+   ⚠️ **EGYSZERŰBB ÚT a tool-diffhez, 2026-08-25-én mérve:** a `dist/tools/*.js` grepje
+   a dist szerkezetétől függ, és zajos. A `gg_allowed_tools` válasza viszont MAGA
+   felsorolja az összes toolt két helyen: `csomag_nelkul` (jogosultság nélkül járó) és
+   `elerheto` (csomaghoz kötött). **Elég ezt a két listát végigolvasni, és megkeresni
+   azt a nevet, ami a saját eszközkészletedben nincs.** Így találtam meg a `gg_humanize`
+   toolt a 08:43-as build után: a `csomag_nelkul` ágon szerepelt, tehát mindenkinek jár,
+   a futó sessionök mégsem látták. Ez a módszer azért is jobb, mert a válasz az
+   UPSTREAM-től jön, tehát mindig az éles állapotot mutatja, nem a lokális fájlokat. 2026-08-10 20:00: a 19:34-es build három új
    toolt hozott (`gg3_read`, `gg3_write_plan`, `gg3_write_apply`), amiről egyik futó
    session sem tudott. A forrásoldali `find src -newermt '<build előtti idő>'` megmutatja
    a témát is (akkor: `gg3.ts`, `gg3-muveletek.ts`, `gg3-hasura.ts`).
@@ -81,6 +90,29 @@ description: Megállapítani, hogy a futó gg-mcp szerver a legfrissebb kódot f
    `kulcs_kiadas` szekció).
 
 ## Buktatók
+- 🔴 **A STALE NEM KIESES -- mérd le, mielőtt riasztasz.** 2026-08-24 16:00: a szonda
+  ELŐSZÖR adott `problems=7`-et, mind a hét ágens STALE (a gg-mcp 15:13:45-kor épült
+  újra, a sessionök 03:00-kor indultak). A riasztás előtt lemértem, és a régi proxy
+  TOVÁBBRA IS beszélt az új upstreammel: a `gg_allowed_tools` hívásom átment, teljes
+  csomaglistával, az upstream `/health` ok. Vagyis szolgáltatás-kiesés nem volt.
+  **Az ellenőrzés kétlépcsős, és a két lépcső különböző sürgősségű:**
+  1. *Megy-e egyáltalán egy `gg_*` hívás?* Ha nem, az AZONNALI baj.
+  2. *Mit sorol fel az upstream, ami a saját tool-listámban nincs?* Ez „elveszett
+     képesség", és kivárható.
+  A kettőt ne mosd össze: STALE-nél szinte mindig a 2. eset áll fenn.
+  ⚠️ **És egy csapda a méréshez:** a `gg_allowed_tools` válasza az UPSTREAM-től jön,
+  tehát MÁR az új csomaglistát mutatja, miközben a saját eszközkészleted a session
+  indulásakor befagyott. Ezért a hívás sikere önmagában NEM cáfolja a STALE-t --
+  épp ez a diff adja a hiányzó képességek listáját.
+- **A tool-diff megmondja, MI hiányzik; a sürgősséget viszont a HASZNÁLAT dönti el.**
+  Ugyanaznap a deploy egy teljes új csomagot hozott (`share`: hat tool védett statikus
+  oldalak megosztására), amit egyetlen futó session sem látott. Két opciót adtam
+  Tamásnak, és a várakozást javasoltam; a válasza ez volt: *„ráér, nem is tudnak a
+  kollégák az új toolokról"*. **Ebből a szabály:** ha egy új képességről a felhasználók
+  még nem is tudnak, a verziókülönbség önmagában nem indok félbeszakítani a futó
+  munkát. Egy fresh restart idegen tulajdonos (Péter, Réka, Rita) munkáját viszi el,
+  és a fő-ágensnél a kontextust is. Új KÉPESSÉGNÉL várd meg a következő ütemezett
+  restartot; új HIBAJAVÍTÁSNÁL viszont kérdezd meg azonnal.
 
 - **Ha megváltoztatod egy komponens transzportját, a rá néző MONITOR is elavul
   (2026-08-12).** A `scripts/gg-mcp-health.py` „él-e" jele a stdio
