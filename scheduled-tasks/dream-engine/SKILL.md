@@ -224,6 +224,17 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
   Telegram msg-id, naplo-sor -- soha nem becsles, lasd a kezzel-becsult-ido buktatot).
   A kovetkezmeny a bucket 2-re: ha egy nap naploja hianyosnak latszik, elobb nezd meg
   a KOVETKEZO nap bejegyzeseit is -- lehet, hogy ott van potolva.
+- 🔴 **A DREAM.md-be irt IDOPONTOKAT MERD, ne fejbol ird -- a 224. sor mar hivatkozik
+  erre a buktatora, de eddig nem letezett.** 2026-08-27: a zaro sorba `02:31`-et,
+  az utolagos pontositas melle `02:52`-t irtam; a fajl valodi utolso irasa
+  `02:16:21` volt (`stat -c '%y' DREAM.md`), tehat mindketto tevedett, 15 illetve
+  36 perccel. **Miert szamit:** a DREAM.md a napindito reven a GAZDA nevehez kotve
+  megy ki, es egy kitalalt idobelyeg pont azt a latszatot kelti, hogy mertem. A
+  sajat munkam kozbeni idoerzek nem megbizhato: a kor elejen futtatott `date` ota
+  eltelt ido nem az, amennyinek erzem. **Eljaras:** ha idopontot irsz a fajlba,
+  vagy futtass `date '+%H:%M'`-et abban a pillanatban, vagy hasznald a fajl
+  `stat`-jat, es a zaro sort a LEGUTOLSO iras utan allitsd be. Ugyanez all a napi
+  naplo `## HH:MM` fejleceire is.
 - ✅ **A drift-merest 2026-08-21 ota SZKRIPT vegzi, ne kezzel rakd ossze.**
   `scripts/scheduled-task-drift.sh` -- vegigmegy a `~/.claude/scheduled-tasks/`
   minden feladatan, megkeresi a sablont (`scheduled-tasks/`, `seed-scheduled-tasks/`

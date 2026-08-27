@@ -287,6 +287,15 @@ grep -a '| >' ~/.claude/skills/.skill-index.md   # must return nothing
       && echo "szinkronban: $R" || echo "ELTER -> felvinni: $R"; }
   done
   ```
+  ⚠️ **És NE a `git status`-ra vagy a követett fájlok számára hagyatkozz: ebben az
+  esetben MINDKETTŐ tisztát mutat.** 2026-08-26: két skillt patcheltem, egyiknek a
+  tükörmásolatát sem frissítettem, és a `git status` üres volt (a követett fájlhoz
+  hozzá se nyúltam), a `git ls-files | grep -c SKILL.md` pedig változatlan 41-et
+  adott (a fájl létezik, csak elavult). A szivárgás egyetlen látható nyoma a fenti
+  `diff` volt: 31, illetve 10 csak-élő sor. **A `skill-index.sh` lefuttatása sem
+  bizonyíték**: az az indexet regenerálja, a tükröt nem érinti, tehát a „lefuttattam
+  az indexelőt" érzés pont a hiányzó lépést fedi el. Aznap ugyanezt a mulasztást két
+  külön körben ismételtem meg, mindkétszer indexeléssel a végén.
   Ha egyik sem létezik, a skill SEHOL nincs a repóban. 2026-08-13-án három
   ágens-specifikus skill volt pont ilyen (a `.gitignore` 15. sora zárta ki a
   `.claude/skills/`-t), és egyikük sem létezett egyetlen lemezen kívül.
