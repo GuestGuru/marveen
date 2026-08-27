@@ -65,6 +65,19 @@ only does the judgment + notification. Zero scheduler/runner changes. See
 (avoid cron collisions with other heartbeats; `skipIfBusy` trade-off).
 
 ## Buktatók
+- **A `GET /api/messages` mailbox-szűrője `agent=`, NEM `to=` -- és a rossz név nem üres listát ad, hanem hibát.**
+  2026-08-24: `?to=marveen&status=pending` -> `{"error":"unknown query parameter","unknown":["to"],...}`.
+  Ez most szerencsés volt, mert a végpont KISZÓL; de ha a hívást `| head` vagy
+  `>/dev/null` mögé teszed, pont úgy néz ki, mintha nem volna várakozó üzenet --
+  vagyis a "nincs pending" hamis megnyugvássá válik restart/handoff után.
+  A helyes és a végpont által elfogadott kulcsok: `agent`, `status`, `limit`, `before`.
+  ```bash
+  curl -s -H "Authorization: Bearer $(cat store/.dashboard-token)" \
+    "http://localhost:3420/api/messages?agent=marveen&status=pending&limit=20"
+  ```
+  Ökölszabály: ha egy listázó végpont `[]`-t ad, előbb győződj meg róla, hogy a
+  szűrőnevet elfogadta -- egy `{"error":...}` és egy `[]` a terminálban egyformán
+  rövid, de az egyik nem válasz.
 - **Inter-agent üzenet LEZÁRÁSÁRA nincs API-végpont, és a státusz nem `completed`.**
   2026-08-12: a `POST /api/messages/<id>/complete` sima `Not found`-ot ad (nem 404-es
   JSON-t, csak a szöveget), tehát a saját magadnak küldött `[FELHÍVÁS]` típusú üzenet
@@ -149,6 +162,21 @@ only does the judgment + notification. Zero scheduler/runner changes. See
   ```
   2026-07-30-án emiatt írtam saját MarkdownV2 escapert a reggeli napindítóhoz,
   pedig a `mdv2` alparancs kész volt és működött.
+- **A KIMENŐ KAPU ÉS A BOLD: minden magyar Telegram-üzenetre érvényes, nem csak a
+  napindítóra.** Két dolog kapcsolódik ide, és 2026-08-24-én mindkettő előjött egy
+  sima flotta-riportnál -- vagyis a `reggeli-napindito` Buktatókban dokumentálva
+  rossz helyen van, mert egy másik feladat nem találja meg.
+  1. **A `mdv2` alparancs a TELJES stringet escapeli, a szánt `*bold*` jelölőket is.**
+     Bold-tartalmú üzenetnél tehát nem használható közvetlenül. A működő minta:
+     írd a nyers szöveget `«...»` jelölőkkel a boldnak, escapelj MINDENT, majd
+     cseréld a `«` és `»` karaktert `*`-ra -- azokat az escaper nem érinti.
+  2. **A kimenő-szöveg kapu (`scripts/hooks/outgoing-copy-gate.py --check-file`)
+     hamis pozitívot ad a `<szám>-es` alakokra**: a kötőjel után önálló `es` szót
+     lát, és `és`-t javasol. 2026-08-24: a `4,70-es tisztaság-kategória` bukott el
+     rajta. A megoldás ÁTFOGALMAZÁS (`4,70-re csúszott`), nem a kapu kikapcsolása --
+     a kapu az ékezet- és gondolatjel-szabályt őrzi, ami valódi hiba szokott lenni.
+  Sorrend: nyers szöveg -> kapu (`exit 0`-ig) -> escapelés -> küldés. A kapu a nyers
+  szövegen fusson, mert az escapelt backslashek elrontják a szófelismerést.
 - **A `sqlite3` CLI hiánya megszűnt, de NE bízz benne vakon.** 2026-07-29-én még
   `command not found` volt (exit 127), 2026-07-31-re feltelepült
   (`/usr/bin/sqlite3`, 3.45.1, mérve). A régi buktató lényege viszont megmarad:
