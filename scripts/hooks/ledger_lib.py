@@ -166,7 +166,13 @@ def agent_id_from_cwd(cwd):
     """Which channel agent is this session? Derived from cwd so the hooks are
     generic across all three agents and never cross-contaminate:
       <install>/agents/<id>  -> <id>           (sub-agent: dia, erno-ba, ...)
-      <install>               -> MAIN_AGENT_ID  (the main channels agent)
+      <install>[/anything]    -> MAIN_AGENT_ID  (the main channels agent)
+
+    ⚠️ A fallback SZANDEKOSAN nem basename. 2026-08-26 12:31-kor a
+    `tool_call_log`-ba ket sor keruelt `agent_id="fo-agens-restart-kontextus"`
+    ertekkel -- egy SKILL neve --, mert a fordulo epp abba a konyvtarba cd-zett.
+    Egy agens barhova lephet a sajat telepitesen belul; ettol meg ugyanaz az
+    agens marad. A basename-tipp nemán szennyezi a per-agens riportokat.
     """
     cwd = (cwd or "").rstrip("/")
     install = _install_dir().rstrip("/")
@@ -174,9 +180,9 @@ def agent_id_from_cwd(cwd):
     if cwd.startswith(agents_root + os.sep):
         rel = cwd[len(agents_root) + 1:]
         return rel.split(os.sep)[0] or main_agent_id()
-    if cwd == install:
+    if cwd == install or cwd.startswith(install + os.sep):
         return main_agent_id()
-    # Fallback: last path component (best effort), else main.
+    # Outside the install: last path component (best effort), else main.
     base = os.path.basename(cwd)
     return base or main_agent_id()
 
