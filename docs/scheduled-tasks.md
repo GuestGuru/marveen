@@ -195,6 +195,23 @@ curl -s -X PUT http://localhost:3420/api/schedules/feladat-neve \
 
 Csak a megadott mezők frissülnek -- a többi változatlan marad.
 
+⚠️ **Éles feladaton ne próbálgasd, létezik-e a végpont.** A merge-elő szemantika
+fentebb ki van mondva, tehát nincs mit felderíteni. 2026-08-27: egy üres `PUT`-tal
+"teszteltem" a végpont létezését egy perccel korábban létrehozott, MÁS ágensnek
+szóló feladaton. Nem sérült semmi, de csak azért, mert a PUT merge-elő; egy
+felülíró végpont kiürítette volna. Felderítéshez eldobható teszt-objektum való.
+
+⚠️ **A `prompt` mezőt MINDIG teljes ékezettel írd, akkor is, ha más ágensnek szól.**
+2026-08-26-án mérve: a reggeli napindító azért ment ki 30 ékezet nélküli magyar
+szóval, mert maga a prompt volt ékezet nélküli, miközben a szabályában ékezetet
+kért. A modell a prompt regiszterét követi, tehát az ékezet nélküli utasítás
+ékezet nélküli kimenő üzenetet szül a címzett ágensnél is.
+
+⚠️ **Küszöb-dátumnál a határ is mondja meg, melyik futás esik bele.** Az „X UTÁN
+jelents" megfogalmazásban maga az X napi futás kimarad. Írd ki: „X-TŐL KEZDVE,
+tehát már az X-i futáskor". 2026-08-27: egy puszta dátum-csere így majdnem némán
+hagyta volna pont azt a kört, ami az első jelentésnek volt szánva.
+
 ### Törlés
 
 ```bash
