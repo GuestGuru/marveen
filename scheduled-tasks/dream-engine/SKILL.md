@@ -235,6 +235,24 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
   vagy futtass `date '+%H:%M'`-et abban a pillanatban, vagy hasznald a fajl
   `stat`-jat, es a zaro sort a LEGUTOLSO iras utan allitsd be. Ugyanez all a napi
   naplo `## HH:MM` fejleceire is.
+- 🔴 **"Ez hianyzik" allitas elott KERESD MEG A REPOBAN -- egy `git ls-files` az ara.**
+  2026-08-27: a bucket 5-hoz azt allapitottam meg, hogy a `skill_usage` tablanak
+  nincs termeloje, mert nincs ra PostToolUse hook, es ezt tettem a top-3 masodik
+  pontjanak. Reggel megirtam a hookot. Kozben a repoban MAR OTT VOLT a
+  `scripts/hooks/skill-usage-capture.py` (157 sor) es a tesztje (141 sor), es JOBB
+  volt annal, amit irtam: ket esemenytipust kezel (`Skill` tool -> `tool_call`,
+  SKILL.md `Read` -> `skill_read`), es a docstringje meg azt is megmondja, miert
+  kell kulon tabla (a `tool_call_log` 24 oranként purge-olodik).
+  **A hianyzo lepes nem az IRAS volt, hanem a BEKOTES** a `~/.claude/settings.json`
+  PostToolUse-ba. A bizonyitek, amit ket masodperc lett volna lekerni:
+  ```bash
+  git ls-files | grep -i <a keresett dolog neve>
+  ```
+  **Miert eppen itt szamit:** a dream-engine leletei a napinditon at a GAZDA nevehez
+  kotve mennek ki. Egy "ez nincs megirva" allitas egy megirt dologrol ugyanolyan
+  hamis, mint egy kitalalt idobelyeg -- csak nehezebb eszrevenni, mert munkat
+  general, nem hallgatast. Ha a bucket barmelyike hianyt allit, a szekcio mondja
+  meg, HOL kerestel.
 - ✅ **A skill-tukor pariitast 2026-08-27 ota SZKRIPT meri, ne kezzel diffelj:**
   ```bash
   scripts/gg-skill-tukor-sync.sh          # riport, exit 1 ha van elavult tukor
