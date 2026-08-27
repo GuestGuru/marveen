@@ -70,7 +70,13 @@ def _agent_id_from_cwd(cwd: str) -> str:
     """Derive agent_id from the session working directory.
 
     <install>/agents/<id>  -> <id>       (sub-agent: zack, rick, ...)
-    <install>               -> MAIN_AGENT_ID
+    <install>[/barmi]       -> MAIN_AGENT_ID
+
+    ⚠️ A fallback SZANDEKOSAN nem basename. 2026-08-26 12:31-kor a
+    `tool_call_log`-ba ket sor keruelt `agent_id="fo-agens-restart-kontextus"`
+    ertekkel -- egy SKILL neve --, mert a fordulo epp abba a konyvtarba cd-zett.
+    Egy agens barhova lephet a sajat telepitesen belul; ettol meg ugyanaz az
+    agens marad. A basename-tipp nemán szennyezi a per-agens riportokat.
     """
     cwd = (cwd or "").rstrip("/")
     install = _install_dir().rstrip("/")
@@ -79,7 +85,7 @@ def _agent_id_from_cwd(cwd: str) -> str:
         rel = cwd[len(agents_root) + 1:]
         seg = rel.split(os.sep)[0]
         return seg if seg else _main_agent_id()
-    if cwd == install:
+    if cwd == install or cwd.startswith(install + os.sep):
         return _main_agent_id()
     base = os.path.basename(cwd)
     return base if base else _main_agent_id()
