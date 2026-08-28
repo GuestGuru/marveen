@@ -65,24 +65,6 @@ only does the judgment + notification. Zero scheduler/runner changes. See
 (avoid cron collisions with other heartbeats; `skipIfBusy` trade-off).
 
 ## Buktatók
-- 🔴 **Egy végpont szemantikáját SOHA ne éles adaton derítsd ki.** Ha nem tudod,
-  létezik-e a `PUT`, merge-el-e vagy felülír-e, hogyan viselkedik üres törzsre:
-  ez felderítés, és felderítéshez eldobható objektum kell, nem valakinek a
-  munkája. **Ugyanez a hiba a flottában 2026-08-27 és 2026-08-28 között kétszer
-  fordult elő, két különböző ágensnél és két különböző végponton** -- egyszer egy
-  üres `PUT` egy másik ágens ÉLES ütemezett feladatán, egyszer egy „teszt"
-  tartalmú `PUT` egy ÉLES memória-bejegyzésen. Mindkétszer megúsztuk, de csak
-  azért, mert a végpont merge-elt, illetve mert a szerző azonnal visszaírta az
-  eredeti szöveget. Egy felülíró végpont mindkét esetben adatot vesztett volna.
-  A helyes sorrend, ebben a sorrendben:
-  1. **Olvasd el a doksit** (`docs/scheduled-tasks.md`, ez a skill, a végpont
-     saját leírása). A legtöbb kérdés egy sorral feljebb már meg van válaszolva.
-  2. Ha ott nincs, **hozz létre egy eldobható objektumot** (`zzz-teszt-` előtagú
-     ütemezés, memória, kártya), azon mérj, majd töröld.
-  3. Éles objektumon csak akkor írj, ha a művelet MAGA a cél, nem a mérés.
-  És ha mégis megtörtént: **a bevallás a helyes lépés** -- a némán visszaírt
-  adatnál csak az a rosszabb, amit senki nem néz meg utána.
-
 - **A `GET /api/messages` mailbox-szűrője `agent=`, NEM `to=` -- és a rossz név nem üres listát ad, hanem hibát.**
   2026-08-24: `?to=marveen&status=pending` -> `{"error":"unknown query parameter","unknown":["to"],...}`.
   Ez most szerencsés volt, mert a végpont KISZÓL; de ha a hívást `| head` vagy
@@ -145,7 +127,18 @@ only does the judgment + notification. Zero scheduler/runner changes. See
   A `PUT` törzse `{content, category|tier, agent_id, keywords}`, válasza `{"ok":true}`;
   hiányzó ID-re 404 + `{"error":"Memory not found"}` -- tehát itt is a HTTP-kódot nézd,
   ne a curl exit kódját.
-- **Írás-végpontot SOHA ne „próbálj ki" dummy törzzsel élő rekordon.** 2026-08-13:
+- 🔴 **Írás-végpontot SOHA ne „próbálj ki" dummy törzzsel élő rekordon. HÁROMSZOR
+  fordult elő, és mindháromszor le volt írva előre.** 2026-08-27: üres `PUT` egy
+  MÁSIK ágens éles ütemezett feladatán, hogy „létezik-e a végpont" -- a
+  `docs/scheduled-tasks.md` egy sorral feljebb mondja ki, hogy a `PUT` merge-elő.
+  2026-08-28: „teszt" tartalmú `PUT` egy éles memória-bejegyzésen (484) --
+  a helyes metódus ebben a fájlban állt, a fenti route-listában. Egyik sem
+  okozott kárt, de mindkettő csak azért nem: az egyik végpont merge-elt, a másik
+  szerzője azonnal visszaírta az eredetit.
+  **A hibaosztály tehát nem a hiányzó dokumentáció, hanem az el nem olvasott
+  dokumentáció.** Ha egy végpont szemantikáját nem tudod, az ELSŐ lépés nem a
+  hálózat, hanem a keresés: ez a skill, a seed skillek, `docs/`, végül
+  `src/web/routes/*.ts`. Az eredeti eset, amiből ez a szabály lett -- 2026-08-13:
   a 241-es emléket javítani akartam, a `PATCH`-re 404 jött, mire egy ciklussal
   végigpróbáltam a `PUT`/`POST`-ot `{"content":"probe"}` törzzsel -- a `PUT` 200-at
   adott, azaz **felülírta a valódi tartalmat a "probe" szóval**. Vissza tudtam írni,
