@@ -30,20 +30,38 @@ MIRRORS="gg-skills seed-skills skills"
 stale=0; synced=0; same=0; unversioned=0
 unversioned_list=""
 
+# $1 is the skill DIRECTORY, not its SKILL.md. A skill may ship helper files next
+# to the manifest (helpscout-pdf-melleklet/pdf-szoveg.py is 141 lines,
+# b2b-onepager-gyartas/scripts/ is six files), and comparing only SKILL.md would
+# report a confident "azonos" while a helper silently drifted. That is the same
+# blind spot as the agents/ one below, one level down -- found 2026-08-28 while
+# fixing the first.
 check_one() {
-  local live="$1" name="$2" scope="$3" m mirror
+  local live="$1" name="$2" scope="$3" m mirror lf mf f
   for m in $MIRRORS; do
-    mirror="$m/$name/SKILL.md"
+    mirror="$m/$name"
     # Only a TRACKED mirror counts; an untracked copy is not versioned.
-    git ls-files --error-unmatch "$mirror" >/dev/null 2>&1 || continue
-    if diff -q "$live" "$mirror" >/dev/null 2>&1; then
+    git ls-files --error-unmatch "$mirror/SKILL.md" >/dev/null 2>&1 || continue
+    if diff -rq "$live" "$mirror" >/dev/null 2>&1; then
       same=$((same + 1))
     elif [ "$FIX" = "1" ]; then
-      cp "$live" "$mirror"
+      cp -r "$live/." "$mirror/"
+      # A file dropped from the live skill must disappear from the mirror too,
+      # otherwise the mirror accumulates dead files that nothing ever removes.
+      lf=$(mktemp); mf=$(mktemp)
+      ( cd "$live" && find . -type f | sort ) > "$lf"
+      ( cd "$mirror" && find . -type f | sort ) > "$mf"
+      while read -r f; do
+        [ -n "$f" ] || continue
+        rm -f "$mirror/$f"
+        echo "  TOROLVE  $name/${f#./}  (mar nincs az elo skillben)"
+      done < <(comm -13 "$lf" "$mf")
+      rm -f "$lf" "$mf"
       echo "  SZINKRONIZALVA  $name  ($scope -> $mirror)"
       synced=$((synced + 1))
     else
-      echo "  ELTER  $name  ($scope vs $mirror)  csak-elo=$(diff "$live" "$mirror" | grep -c '^<')  csak-repo=$(diff "$live" "$mirror" | grep -c '^>')"
+      echo "  ELTER  $name  ($scope vs $mirror)"
+      diff -rq "$live" "$mirror" 2>&1 | sed 's/^/      /'
       stale=$((stale + 1))
     fi
     return 0
@@ -55,21 +73,21 @@ check_one() {
 
 for d in "$HOME"/.claude/skills/*/; do
   [ -f "$d/SKILL.md" ] || continue
-  check_one "$d/SKILL.md" "$(basename "$d")" "globalis"
+  check_one "$d" "$(basename "$d")" "globalis"
 done
 for d in .claude/skills/*/; do
   [ -f "$d/SKILL.md" ] || continue
-  check_one "$d/SKILL.md" "$(basename "$d")" "agens"
+  check_one "$d" "$(basename "$d")" "agens"
 done
 # Sub-agents keep their own skills under agents/<name>/.claude/skills/. These were
-# INVISIBLE to this script until 2026-08-28, and all seven of them turned out to be
-# unversioned -- the checker reported a green "verziozatlan=1" while seven files by
+# INVISIBLE to this script until 2026-08-28, and all eight of them turned out to be
+# unversioned -- the checker reported a green "verziozatlan=1" while eight skills by
 # five different colleagues sat outside the repo. A checker that cannot see a whole
 # class of skills is worse than none: it certifies a gap it never looked at.
 for d in agents/*/.claude/skills/*/; do
   [ -f "$d/SKILL.md" ] || continue
   owner=$(basename "$(dirname "$(dirname "$(dirname "$d")")")")
-  check_one "$d/SKILL.md" "$(basename "$d")" "agens:$owner"
+  check_one "$d" "$(basename "$d")" "agens:$owner"
 done
 
 echo
