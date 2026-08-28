@@ -65,6 +65,24 @@ only does the judgment + notification. Zero scheduler/runner changes. See
 (avoid cron collisions with other heartbeats; `skipIfBusy` trade-off).
 
 ## Buktatók
+- 🔴 **Egy végpont szemantikáját SOHA ne éles adaton derítsd ki.** Ha nem tudod,
+  létezik-e a `PUT`, merge-el-e vagy felülír-e, hogyan viselkedik üres törzsre:
+  ez felderítés, és felderítéshez eldobható objektum kell, nem valakinek a
+  munkája. **Ugyanez a hiba a flottában 2026-08-27 és 2026-08-28 között kétszer
+  fordult elő, két különböző ágensnél és két különböző végponton** -- egyszer egy
+  üres `PUT` egy másik ágens ÉLES ütemezett feladatán, egyszer egy „teszt"
+  tartalmú `PUT` egy ÉLES memória-bejegyzésen. Mindkétszer megúsztuk, de csak
+  azért, mert a végpont merge-elt, illetve mert a szerző azonnal visszaírta az
+  eredeti szöveget. Egy felülíró végpont mindkét esetben adatot vesztett volna.
+  A helyes sorrend, ebben a sorrendben:
+  1. **Olvasd el a doksit** (`docs/scheduled-tasks.md`, ez a skill, a végpont
+     saját leírása). A legtöbb kérdés egy sorral feljebb már meg van válaszolva.
+  2. Ha ott nincs, **hozz létre egy eldobható objektumot** (`zzz-teszt-` előtagú
+     ütemezés, memória, kártya), azon mérj, majd töröld.
+  3. Éles objektumon csak akkor írj, ha a művelet MAGA a cél, nem a mérés.
+  És ha mégis megtörtént: **a bevallás a helyes lépés** -- a némán visszaírt
+  adatnál csak az a rosszabb, amit senki nem néz meg utána.
+
 - **A `GET /api/messages` mailbox-szűrője `agent=`, NEM `to=` -- és a rossz név nem üres listát ad, hanem hibát.**
   2026-08-24: `?to=marveen&status=pending` -> `{"error":"unknown query parameter","unknown":["to"],...}`.
   Ez most szerencsés volt, mert a végpont KISZÓL; de ha a hívást `| head` vagy
