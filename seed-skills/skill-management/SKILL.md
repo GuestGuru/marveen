@@ -218,6 +218,19 @@ grep -a '| >' ~/.claude/skills/.skill-index.md   # must return nothing
 
 ## Pitfalls
 
+- **A skill is a DIRECTORY, not a SKILL.md.** Anything that mirrors, diffs, or
+  copies a skill must work on the whole directory. Skills ship helper files next
+  to the manifest (`helpscout-pdf-melleklet/pdf-szoveg.py` is 141 lines,
+  `b2b-onepager-gyartas/scripts/` is six files, `gg-mcp-transport-atallitas/mcp-probe.py`
+  is executable), and a manifest-only comparison reports a confident "identical"
+  while the helper drifts. 2026-08-28: the first run of a directory-level
+  comparison immediately found a helper that existed only on disk and had never
+  been versioned at all — the manifest beside it had been reported "identical"
+  for weeks. Use `diff -rq <live> <mirror>`, and when syncing, delete mirror
+  files the live skill no longer has, or the mirror accumulates dead files.
+  The same applies to the executable bit: `cp -p`, and verify with
+  `git ls-tree <ref> <path>` that `100755` survived the round trip.
+
 - **Never conclude "this skill is unversioned" from a single directory.** A
   versioned copy can live in any of several places, and this install has five:
   `seed-skills/` (goes to every install), `gg-skills/` (machine/org-specific,
