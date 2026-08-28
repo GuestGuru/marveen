@@ -36,8 +36,9 @@ A `gg-skills/` a `scheduled-tasks/` párja a skillek oldalán.
 
 ## Mi van itt
 
-**19 skill, 2026-08-17 óta a teljes GG-készlet.** Addig csak az első négy volt itt,
-a többi tizenöt kizárólag egyetlen gép lemezén létezett.
+**27 skill.** 2026-08-17-ig csak az első négy volt itt, a többi kizárólag egyetlen
+gép lemezén létezett. 2026-08-28-án jött a harmadik tábla: a *sub-ágensek saját*
+skilljei, amiket a paritás-mérő addig egyáltalán nem nézett.
 
 ### Gép- vagy GG-specifikus (verbatim seedként működésképtelen lenne)
 
@@ -73,7 +74,36 @@ döntés. Addig itt vannak, hogy legalább verziózva legyenek.
 | `telegram-hang-atirat` | hangüzenet átirat, ha a csatorna nem adott |
 | `youtube-video-tartalom` | YouTube-videó címe, leírása, fejezetei bot-ellenőrzés mellett |
 
-Az ágens-specifikus skillek a `.claude/skills/` alatt élnek, amit a
+### Sub-ágensek saját skilljei (2026-08-28)
+
+A kollégák ágensei az `agents/<név>/.claude/skills/` alatt tartják a saját
+skilljeiket, és ezt a fát a `.gitignore` **egészében** kizárja (19. sor). Nem
+csak verziózatlanok voltak: a `scripts/gg-skill-tukor-sync.sh` **nem is nézte**
+őket 2026-08-28-ig, tehát zöld `verziozatlan=1`-et jelentett, miközben nyolc
+skill öt kolléga munkájából a repón kívül állt. Egy mérő, ami egy egész osztályt
+nem lát, rosszabb a semminél: tanúsít egy hiányt, amit meg sem nézett.
+
+| skill | gazda | mit tud |
+|---|---|---|
+| `gg3-tulaj-lakas-lekerdezes` | brokermarcsi | GG3 tulajdonos-, szállás- és számla-adat lekérdezése |
+| `szovegbol-designos-pdf` | jean | nyers szövegből tervezett A4 PDF fpdf2-vel |
+| `armaradas-riasztas` | marlenka | ármaradás észlelése és riasztás |
+| `helpscout-pdf-melleklet` | peppa | HelpScout-jegy PDF-mellékletének kiolvasása |
+| `google-drive-gmail-olvasas` | salesninja | Drive- és Gmail-tartalom olvasása |
+
+Az `office-fajl-szoveg-kinyeres` a globális `~/.claude/skills/` alól jött, és
+GG-hivatkozás nélküli — ezért a fenti promóció-jelölt táblába tartozik, nem ide.
+
+⚠️ **Két skill szándékosan NINCS itt**, mert ez a fork **publikus**, és mindkettő
+olyan adatot vinne ki, ami nem folyamat-tudás, hanem személyes vagy ügyfél-adat.
+A döntés a gazdáé, addig csak a gépen léteznek:
+
+| skill | gazda | mi tartja vissza |
+|---|---|---|
+| `kikuldetesi-rendelveny` | brokermarcsi | egy magánszemély teljes neve és a havi km-térítése |
+| `b2b-onepager-gyartas` | jean | négy lakás valós címe, kiadhatósági dátuma és elrendezése a `content.example.py`-ban, plusz három beégetett Drive-mappa-ID a `drive.py`-ban |
+
+A marveen saját ágens-specifikus skilljei a `.claude/skills/` alatt élnek, amit a
 `.gitignore` 15. sora kizár — tehát a repóban egyikük sem létezne enélkül.
 
 ## Visszaállítás
