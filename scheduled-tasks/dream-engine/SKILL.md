@@ -263,6 +263,14 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
   `csak-elo` / `csak-repo` sorszamot. **A bucket 5 elejen futtasd.** Elso eles
   futasa ugyanaznap HAT tovabbi elavult tukrot talalt azon a ketton felul, amirol
   tudtam -- vagyis a szivargas rendszerszintu volt, nem ket elszigetelt eset.
+  ⚠️ **UJ skillnel a masolas MEG NEM eleg: a szam csak a PUSH-LANC utan megy nullara.**
+  A szkript `git ls-files --error-unmatch`-csel a KOVETETT fajlt keresi, tehat egy
+  frissen a tukorbe masolt, meg untracked fajl tovabbra is `verziozatlan`. Ez helyes
+  (a "letezik" es a "verziozva van" ket kulon allitas), de konnyen felrevezet:
+  2026-08-28-an bubi uj skilljet bemasoltam a `gg-skills/`-be, es a szam maradt 1.
+  **Kovetkezmeny a riportra:** ha ugyanabban a korben masolsz es mersz, ird oda, hogy
+  a szam a lanctol fugg -- kulonben holnap te magad fogod azt hinni, hogy a masolas
+  nem sikerult. PATCH-nel ez nem all fenn, mert ott a fajl mar kovetve van.
   ⚠️ **A `--fix` NEM gondolkodik:** ahol `csak-repo` > 0, ott a repo tud olyat, amit
   az elo nem, es azt a `--fix` FELULIRNA. Ilyenkor eloszor olvasd el a `>` sorokat
   (lehet sablon-magyarazat vagy elmaradt szinkron), es csak utana javits.
