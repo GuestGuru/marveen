@@ -56,3 +56,23 @@ készült változat (ext4.py minta a scratchpadben).
 
 A kinyert szövegben keress egy olyan konkrét értéket, amit előre tudsz
 (összeg, név, dátum). Ha nem találod, a kinyerés hibás, nem a dokumentum üres.
+
+## Ha te GENERÁLTAD a dokumentumot: olvasd vissza a teljes szöveget
+
+A fenti kiolvasás nem csak idegen fájlokhoz kell. Ha DOCX-et állítasz elő
+sablonból, a legalattomosabb hibaosztály az, ahol **a szám stimmel, a dokumentum
+mégis hibás** -- mert nem a számítás romlik el, hanem az, ami a papírra kerül.
+Ezt semmilyen szám-alapú teszt nem fogja el.
+
+Két mért eset (2026-08-28, kiküldetési rendelvény generátor):
+
+- A Word három futamra vágta a `Dátum: 2026.08.01.` sort, ezért a futamonkénti
+  regex csendben nem talált semmit, és MINDEN generált példány a sablon eredeti
+  dátumát örökölte. A végösszegek tökéletesek voltak.
+- A gépjármű típusa két futamra volt vágva, ezért a javított hengerűrtartalom
+  kétszer került bele: `(2967 cm³) (2967 cm³)`.
+
+Szabály: minden generálás után olvasd vissza a kimenet TELJES szövegét, és
+hasonlítsd a várt tartalomhoz -- ne csak a számokat nézd. Ha a dokumentum
+konvertálva is megy tovább (pl. PDF-be aláírásra), a KONVERTÁLT példányt is
+olvasd vissza: az külön lépés, és külön tud elromlani.
