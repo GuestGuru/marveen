@@ -39,6 +39,16 @@ launchctl-ENOENT incidens óta a platform-ág tesztelt --
 Tehát restart előtt a helyes lépés: **memóriába írni a nyitott szálakat**, nem
 taskstate-be.
 
+⚠️ **A restart nem csak a kontextust cseréli le: a `~/.claude/settings.json` HOOKJAIT
+is ekkor tölti be a session.** Egy menet közben bekötött hook a bekötés napján NEM
+tüzel, és ez pontosan úgy néz ki, mintha rosszul kötötted volna be. 2026-08-27
+08:30-kor kötöttem be a `skill_usage` PostToolUse hookot; a tábla egész nap 0 soros
+maradt, a 03:00-s restart utáni ELSŐ `Read` viszont azonnal írt egy helyes sort
+(03:15:56). **Eljárás, hogy ne kelljen találgatni:** a bekötés napján futtasd le a
+hook-parancsot KÉZZEL, valódi payloaddal (ez a szkriptet és a végpontot bizonyítja),
+az éles kiváltást pedig a KÖVETKEZŐ restart utánra időzítsd, és ezt előre mondd ki.
+Ugyanez áll minden más session-indításkor beolvasott konfigra.
+
 ## Eljárás restart előtt
 1. `date`, majd a nyitott szálak `hot` tier memóriába (`/api/memories`).
 2. Mondd ki egyenesen: fresh lesz, akkor is, ha a config continue-t ír.
