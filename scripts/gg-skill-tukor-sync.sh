@@ -61,6 +61,16 @@ for d in .claude/skills/*/; do
   [ -f "$d/SKILL.md" ] || continue
   check_one "$d/SKILL.md" "$(basename "$d")" "agens"
 done
+# Sub-agents keep their own skills under agents/<name>/.claude/skills/. These were
+# INVISIBLE to this script until 2026-08-28, and all seven of them turned out to be
+# unversioned -- the checker reported a green "verziozatlan=1" while seven files by
+# five different colleagues sat outside the repo. A checker that cannot see a whole
+# class of skills is worse than none: it certifies a gap it never looked at.
+for d in agents/*/.claude/skills/*/; do
+  [ -f "$d/SKILL.md" ] || continue
+  owner=$(basename "$(dirname "$(dirname "$(dirname "$d")")")")
+  check_one "$d/SKILL.md" "$(basename "$d")" "agens:$owner"
+done
 
 echo
 echo "azonos=$same  elter=$stale  szinkronizalva=$synced  verziozatlan=$unversioned"
