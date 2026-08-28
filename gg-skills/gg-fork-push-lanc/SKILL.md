@@ -118,6 +118,31 @@ kontextusomon folyik át. 2026-08-09-en emiatt maradt ki az `install-linux.sh`
 Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
 
 ## Buktatók
+- 🔴 **EZ A FORK PUBLIKUS, és a titok-grep nem látja a személyes adatot (2026-08-28).**
+  `GuestGuru/marveen` -> `private=false` (mérve a GitHub API-n). Minden felküldött
+  fájl világolvasható, és a git history visszamenőleg is az. Nyolc sub-ágens-skill
+  tükrözésénél a szokásos titok-szűrés (`ggp_`, `sk-`, `AIza`, `xox`, private key)
+  **nulla találatot** adott -- közben a `b2b-onepager-gyartas/scripts/content.example.py`
+  négy lakás valós címét, kiadhatósági dátumát és ágy-elrendezését tartalmazta, a
+  `drive.py` három beégetett Drive-mappa-ID-t, a `kikuldetesi-rendelveny` pedig egy
+  magánszemély teljes nevét és havi km-térítését. Egyik sem titok, mégis egyik sem
+  való publikus repóba.
+  **Push előtt tehát KÉT szűrés kell, nem egy:**
+  ```bash
+  # 1. titok (a meglevo)
+  grep -rnoE "ggp_[0-9a-f]{20,}|sk-[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{30,}|xox[baprs]-" <fajlok>
+  # 2. szemelyes es ugyfel-adat (az uj)
+  grep -rinE "utca|körút|[0-9]{4} Budapest|rendszám|adószám|lakcím|bankszám" <fajlok>
+  grep -rnoE "[01][A-Za-z0-9_-]{25,}" <fajlok>          # beegetett Drive/Doc ID
+  grep -rnoE "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[a-z]{2,}" <fajlok>
+  ```
+  A céges munka-email (`nev@guest.guru`) NEM blokkoló: már bent van precedensként.
+  A magánszemély teljes neve + pénzösszeg, a lakás-cím és a mappa-ID viszont igen.
+  **Ha ilyet találsz, ne dönts helyette:** a többit vidd fel, az érintettet tartsd
+  vissza, és kérdezd a gazdát ajánlással. A hosszútávú megoldás nem a kihagyás,
+  hanem a sanitizálás (a név a kérésből, az ID configból jöjjön), mert a
+  verziózatlan fájl csak addig létezik, amíg a lemez.
+
 - **ÉLŐ hitelesítő adat a teszt-fixture-ben (2026-08-12, majdnem kiment).** A remote
   gg-access javításához írtam egy tesztet, aminek kellett egy bearer token — és a
   legkézenfekvőbb helyről vettem: a saját `.mcp.json`-omból, vagyis az ÉLŐ tokenemet
