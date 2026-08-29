@@ -1,5 +1,7 @@
 import { logger } from '../logger.js'
 import { MAIN_AGENT_ID } from '../config.js'
+// GG fork: MAIN's plain re-inject is time-gated, not permanently off.
+import { mainPlainReinjectAllowed, MAIN_PLAIN_REINJECT_AFTER_MS } from '../gg/main-plain-reinject-gate.js'
 import { listAgentNames, readAgentRemoteHost } from './agent-config.js'
 import { isAgentRunning, captureParkedInputView, sendEnterToSession, capturePane } from './agent-process.js'
 import { resolveAgentSession } from './channel-mcp-reconnect.js'
@@ -115,6 +117,11 @@ const watchState = new Map<string, StuckInputState>()
 // open and are dropped with it, so a NEW spell on the same session alerts
 // again. Not persisted -- a dashboard restart may re-alert once, acceptable.
 const alertedSpells = new Set<string>()
+// GG fork: one "the gate opened" report per parked spell, cleared with the
+// spell in checkLocalSession. Separate from alertedSpells, which tracks the
+// give-up alert -- the two fire on different conditions and must not share a
+// flag, or one would silence the other.
+const mainGateReported = new Set<string>()
 
 // Backstop for a PARKED `[Pasted text #N]` placeholder -- a long inbound prompt
 // (e.g. a scheduled-task notice > ~700 chars) the TUI collapsed into a paste
@@ -234,6 +241,7 @@ async function checkLocalSession(label: string, session: string, alertOnGiveUp: 
   if (next.parkedSig === null) {
     watchState.delete(session)
     alertedSpells.delete(session)
+    mainGateReported.delete(session) // GG fork: a new spell reports again
   } else {
     watchState.set(session, next)
     if (alertOnGiveUp && next.attempts >= LOCAL_FAST_THRESHOLDS.maxAttempts) {
@@ -280,7 +288,26 @@ export function startStuckInputWatcher(): NodeJS.Timeout {
       // typing-parked box); only run the normal 'typing' recovery when there is
       // no stuck paste this tick.
       if (!recoverParkedPaste(MAIN_AGENT_ID, MAIN_CHANNELS_SESSION, null, LOCAL_FAST_THRESHOLDS)) {
-        await checkLocalSession(MAIN_AGENT_ID, MAIN_CHANNELS_SESSION, false, false)
+        // GG fork: MAIN's plain re-inject used to be a permanent `false`, which
+        // made the watcher wait for an owner who is usually asleep (2026-08-25:
+        // a wedge held from 03:00 to 06:50 and a human keystroke ended it).
+        // It is now time-gated: shut for the whole fast-escalation window, open
+        // once the same spell has lasted MAIN_PLAIN_REINJECT_AFTER_MS. The
+        // branch it opens is still origin-guarded downstream (STUCKINPUT805),
+        // so neither a human draft nor a prompt-suggestion ghost can reach it.
+        // See src/gg/main-plain-reinject-gate.ts for the full reasoning.
+        const mainPrev = watchState.get(MAIN_CHANNELS_SESSION) ?? NO_STATE
+        const allowPlain = mainPlainReinjectAllowed({ firstSeenAt: mainPrev.firstSeenAt, now: Date.now() })
+        if (allowPlain && !mainGateReported.has(MAIN_CHANNELS_SESSION)) {
+          // Report AFTER the fact, once per spell: the owner asked to be told,
+          // not asked for permission. Silence here would hide the one moment
+          // this gate exists for.
+          mainGateReported.add(MAIN_CHANNELS_SESSION)
+          const mins = Math.round((Date.now() - (mainPrev.firstSeenAt ?? Date.now())) / 60_000)
+          logger.warn({ session: MAIN_CHANNELS_SESSION, mins }, 'stuck-input-watcher: MAIN parked past the plain-reinject delay -- opening the origin-guarded plain re-inject')
+          sendAlert(`ℹ️ A fő-ágens bemenete ${mins} perce beragadt, ezért az őr most megkísérli a helyreállítást (gépi eredetű parkolt szöveg újraküldése). Ez a 2026-08-29-i döntés szerinti időkorlát: ${Math.round(MAIN_PLAIN_REINJECT_AFTER_MS / 60_000)} perc után az őr cselekszik, és utólag jelent.`)
+        }
+        await checkLocalSession(MAIN_AGENT_ID, MAIN_CHANNELS_SESSION, false, allowPlain)
       }
     } catch (err) {
       logger.debug({ err }, 'stuck-input-watcher: main agent check error')
