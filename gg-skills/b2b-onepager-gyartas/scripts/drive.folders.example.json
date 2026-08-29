@@ -1,5 +1,5 @@
 {
-  "_comment": "Masold ezt drive.folders.json nevre es toltsd ki. A valodi azonositokat SOHA ne ird bele ebbe a peldafajlba: ez a repoban van, a masolat nincs.",
+  "_comment": "Másold ezt drive.folders.json névre és töltsd ki. A valódi azonosítókat SOHA ne írd bele ebbe a példafájlba: ez a repóban van, a másolat nincs.",
   "target": "<a kesz one-pagerek Drive-mappajanak azonositoja>",
   "logo": "<a logo-mappa azonositoja>",
   "photos": "<a lakas-fotok mappajanak azonositoja>"
