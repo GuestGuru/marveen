@@ -50,13 +50,19 @@ done
 # A helyorzo-keszlet OT elemu. Ha csak az INSTALL_DIR-t es az OWNER_NAME-et
 # szurod, olyan sorok latszanak driftnek, mint `skip ha assignee='<agens>'`
 # (2026-08-20: a kanban-audit igy adott 20 hamis csak-elo sort).
+#
+# A ZARO \b SZANDEKOSAN HIANYZIK a nev-helyorzokrol (2026-08-29). A magyar
+# ragozo nyelv: az elo peldanyban "GuestGurunak" all, a sablonban
+# "{{OWNER_NAME}}nak" -- a zaro szohatar miatt a csere NEM ILLESZKEDETT, es a
+# dream-engine meg a memoria-heartbeat is orokre 1/1 hamis driftet mutatott.
+# A nyito \b marad, hogy ne illeszkedjunk egy hosszabb szo BELSEJEBE.
 normalize() {
   sed -E \
     -e "s#$INSTALL_DIR#{{INSTALL_DIR}}#g" \
     -e "s#localhost:$WEB_PORT#localhost:{{WEB_PORT}}#g" \
-    -e "s#\\b$OWNER_NAME\\b#{{OWNER_NAME}}#g" \
-    ${BOT_NAME:+-e "s#\\b$BOT_NAME\\b#{{BOT_NAME}}#g"} \
-    -e "s#\\b$AGENT_ID\\b#{{MAIN_AGENT_ID}}#g" \
+    -e "s#\\b$OWNER_NAME#{{OWNER_NAME}}#g" \
+    ${BOT_NAME:+-e "s#\\b$BOT_NAME#{{BOT_NAME}}#g"} \
+    -e "s#\\b$AGENT_ID#{{MAIN_AGENT_ID}}#g" \
     "$1"
 }
 
@@ -83,7 +89,13 @@ for dir in "$LIVE_DIR"/*/; do
     continue
   fi
 
-  d="$(diff <(normalize "$dir/SKILL.md") "$INSTALL_DIR/$tpl" || true)"
+  # A normalizalas MINDKET oldalon fut (2026-08-29). A scheduled-tasks/ sablonok
+  # NEM egysegesek: a dream-engine helyorzot ir ({{OWNER_NAME}}nak), a
+  # memoria-heartbeat konkret erteket (localhost:3420). Ha csak az elo oldalt
+  # normalizaljuk, a konkret erteket iro sablon ORoKRE hamis 1/1-et ad, mert az
+  # elo oldalbol {{WEB_PORT}} lesz, a sablonbol nem. Mindket oldalt normalizalva
+  # a ket iras egy alakra jon ossze, es csak a VALODI elteres marad.
+  d="$(diff <(normalize "$dir/SKILL.md") <(normalize "$INSTALL_DIR/$tpl") || true)"
   lt="$(printf '%s' "$d" | grep -c '^<' || true)"
   gt="$(printf '%s' "$d" | grep -c '^>' || true)"
   total_live=$((total_live + lt)); total_tpl=$((total_tpl + gt))
