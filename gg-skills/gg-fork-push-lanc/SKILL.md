@@ -136,6 +136,36 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   grep -rnoE "[01][A-Za-z0-9_-]{25,}" <fajlok>          # beegetett Drive/Doc ID
   grep -rnoE "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[a-z]{2,}" <fajlok>
   ```
+  ⚠️ **A GREP KÉT MÓDON HAZUDIK, és 2026-08-29-én mindkettőbe belefutottam egy
+  körben.** (1) **A magyar nevet ékezettel ÉS ékezet nélkül is írjuk.** A `grep -i`
+  a kis- és nagybetűt egyesíti, az ékezetet NEM: a szűrésem `drégely`-re és
+  `ferenc körút`-ra ment, a szövegben viszont `Dregely 601` és `Ferenc korut 14`
+  állt, és tisztát jelentett egy olyan fájlra, amiben ott voltak a címek.
+  Ékezet-független szűrés kell:
+  ```bash
+  python3 -c "
+  import sys,unicodedata,io
+  fold=lambda s:''.join(c for c in unicodedata.normalize('NFD',s) if unicodedata.category(c)!='Mn').lower()
+  terms=[fold(t) for t in sys.argv[2:]]
+  for i,l in enumerate(io.open(sys.argv[1],encoding='utf-8'),1):
+      if any(t in fold(l) for t in terms): print(f'{sys.argv[1]}:{i}: {l.strip()[:120]}')
+  " <fajl> "Drégely" "Ferenc körút" "Vasvári"
+  ```
+  (2) **A KÓD sanitizálása nem sanitizálja a DOKUMENTÁCIÓT.** A lakás-slugokat
+  kiszerveztem a `gen.py`-ból configba, és késznek hittem magam, miközben ugyanazok
+  a címek szó szerint ott álltak a `SKILL.md` Buktatók szekciójában, egy
+  hiba-történet közepén. A war story értéke nem függ a valós nevektől: „az egyik
+  lakás lapján egy MÁSIK lakás képei" pontosan ugyanazt tanítja. **Szűrj a prózára
+  is, ne csak a kódra** -- a doksi általában TÖBB valós adatot tartalmaz, mert ott
+  a konkrétum a magyarázat része.
+  Ezt jean kapta el, nem én, és csak azután, hogy a HEAD már fent volt.
+  **Ha mégis kiment: a HEAD javítása egy sima commit, a TÖRTÉNET viszont a gazda
+  döntése.** Force-push a `main`-re tilos, a fork-hálózatot és minden klónt eltör,
+  és a GitHub az elérhetetlen objektumot SHA-val még sokáig kiszolgálja, tehát nem
+  is töröl. Mérd meg és tálald: MI ment ki, MENNYI IDEIG (commit-időbélyegek),
+  és milyen osztályú adat. Alacsony érzékenységnél a történet maradhat; személyes
+  adatnál a helyes út a GitHub support, nem a force-push.
+
   A céges munka-email (`nev@guest.guru`) NEM blokkoló: már bent van precedensként.
   A magánszemély teljes neve + pénzösszeg, a lakás-cím és a mappa-ID viszont igen.
   **Ha ilyet találsz, ne dönts helyette:** a többit vidd fel, az érintettet tartsd
