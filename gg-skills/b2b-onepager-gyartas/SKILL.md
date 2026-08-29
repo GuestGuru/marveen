@@ -144,6 +144,14 @@ A `scripts/` mappában:
   tartalmazta; azért került ki, mert a repo egy PUBLIKUS fork. **Ne másold vissza
   a valódi adatot ide**, és a `cp`-t `-n`-nel futtasd, hogy a meglévő `content.py`-t
   ne írja felül
+- `sanitycheck.py` - **push előtt kötelező**: megnézi, maradt-e valós lakás-azonosító
+  a publikusba készülő fájlokban. A keresett neveket NEM kézzel adod meg, hanem a
+  helyi `photos.local.json`-ból, az `assets/photos`-ból és a `content.py`-ból szedi
+  össze - mert a kézzel írt terminus kétszer is vak volt: `grep -i "Példa"` nem
+  fogja a `Pelda 12`-t (a `-i` az ékezetet nem egyesíti), az ékezet-független
+  keresés pedig nem fogja a rövidített slugot (`pelda-krt-12`). Nem-nulla exit
+  esetén a push nem mehet:
+  `python3 sanitycheck.py scripts/photos.local.json assets/photos SKILL.md scripts/*.py`
 - `photos.local.json` - **gitignorált**: melyik anyag melyik lakás fotóiból indul
   (`photo_set`), melyik mappa képei nem hitelesek (`photo_blocklist`), és a
   fotórács sorrendje (`photo_order`). 2026-08-29-ig ez a három a `gen.py`-ban állt
