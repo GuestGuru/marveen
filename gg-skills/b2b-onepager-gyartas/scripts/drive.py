@@ -35,14 +35,14 @@ try:
         FOLDERS = json.load(_f)
 except FileNotFoundError:
     sys.exit(
-        f"Hianyzik: {_FOLDERS_FILE}\n"
-        "Masold le a drive.folders.example.json-t erre a nevre, es toltsd ki a\n"
-        "harom Drive-mappa azonositojaval (target, logo, photos). Szandekosan\n"
-        "NINCS alapertelmezes: egy nema fallback rossz mappaba toltene fel."
+        f"Hiányzik: {_FOLDERS_FILE}\n"
+        "Másold le a drive.folders.example.json-t erre a névre, és töltsd ki a\n"
+        "három Drive-mappa azonosítójával (target, logo, photos). Szándékosan\n"
+        "NINCS alapértelmezés: egy néma fallback rossz mappába töltene fel."
     )
 _missing = [k for k in ("target", "logo", "photos") if not FOLDERS.get(k)]
 if _missing:
-    sys.exit(f"{_FOLDERS_FILE}: hianyzo vagy ures kulcs(ok): {', '.join(_missing)}")
+    sys.exit(f"{_FOLDERS_FILE}: hiányzó vagy üres kulcs(ok): {', '.join(_missing)}")
 
 API = "https://www.googleapis.com/drive/v3"
 UPLOAD = "https://www.googleapis.com/upload/drive/v3"

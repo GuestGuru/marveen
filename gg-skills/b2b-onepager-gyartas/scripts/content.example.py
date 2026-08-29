@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
-"""SABLON a one-pager tartalom-fajlhoz. VALODI ADAT IDE NEM KERUL.
+"""SABLON a one-pager tartalom-fájlhoz. VALÓDI ADAT IDE NEM KERÜL.
 
-2026-08-29: ez a fajl korabban a negy GG-lakas VALOS adatait tartalmazta (cim,
-kiadhatosagi datum, agy-elrendezes). A repo egy PUBLIKUS fork, ezert a valos
-tartalom atkerult a `content.py`-ba, amit a .gitignore kizar; itt csak a
-SZERKEZET maradt, kitoltendo helyorzokkel.
+2026-08-29: ez a fájl korábban a négy GG-lakás VALÓS adatait tartalmazta (cím,
+kiadhatósági dátum, ágy-elrendezés). A repo egy PUBLIKUS fork, ezért a valós
+tartalom átkerült a `content.py`-ba, amit a .gitignore kizár; itt csak a
+SZERKEZET maradt, kitöltendő helyőrzőkkel.
 
-Hasznalat:
-    cp content.example.py content.py    # CSAK ha meg nincs content.py!
-    # majd a content.py-t toltod ki -- a gen.py abbol olvas.
+Használat:
+    cp -n content.example.py content.py    # a -n SZÁNDÉKOS, lásd lentebb
+    # majd a content.py-t töltöd ki, a gen.py abból olvas.
 
-FIGYELEM: ha a `content.py` MAR LETEZIK, ne masold felul ezzel a fajllal, mert
-az elveszi a valos tartalmat. Eloszor nezd meg: `ls -l content.py`.
+FIGYELEM: ha a `content.py` MÁR LÉTEZIK, ne másold felül ezzel a fájllal, mert
+az elveszi a valós tartalmat. Előbb nézd meg: `ls -l content.py`.
 """
 
 CONTACT = {
@@ -20,11 +20,11 @@ CONTACT = {
     "phone": "[+36 XX XXX XXXX]",
 }
 
-# Tenyek, amikre a pitch-ek es a lakaslapok hivatkoznak. A "hol" mezo mondja meg,
-# melyik anyagban jelenik meg -- ez teszi ellenorizhetove, hogy mi honnan jon.
+# Tények, amikre a pitch-ek és a lakáslapok hivatkoznak. A "hol" mező mondja meg,
+# melyik anyagban jelenik meg: ez teszi ellenőrizhetővé, hogy mi honnan jön.
 FACTS = [
     {"ertek": "<egy ellenorzott teny, amire hivatkozunk>",
-     "hol": "<melyik anyag melyik pontja hasznalja>"},
+     "hol": "<melyik anyag melyik pontja használja>"},
 ]
 
 _WIFI_HU = "Gyors és stabil"
@@ -45,9 +45,9 @@ def _specs_en(m2, halo, furdo, kerulet, lift):
     return rows
 
 
-# EGYETLEN minta-rekord, kitalalt adattal. A valodi lakasok a content.py-ban vannak.
-# A "lift" kulcs szandekosan bool: ahol nincs lift, ott a sor MEG SEM JELENIK MEG,
-# tehat a hianya nem kap hangsulyt.
+# EGYETLEN minta-rekord, kitalált adattal. A valódi lakások a content.py-ban vannak.
+# A "lift" kulcs szándékosan bool: ahol nincs lift, ott a sor MEG SEM JELENIK MEG,
+# tehát a hiánya nem kap hangsúlyt.
 APARTMENTS = [
     {
         "slug": "minta-lakas-1", "nev": "<Lakás neve>", "kirakat": True,

@@ -90,13 +90,13 @@ def prep(path, w_mm, h_mm, key):
     return out
 
 
-# Melyik anyag melyik lakas fotoit hasznalja, es melyik mappa kepei nem
-# hitelesek. Mindketto TELEPITES-FUGGO adat, ezert 2026-08-29 ota a
-# photos.local.json-bol jon (gitignorald; a photos.local.example.json mutatja a
-# szerkezetet). Korabban itt allt beegetve, konkret lakas-slugokkal -- ez a repo
-# egy PUBLIKUS fork, es a lakas-azonositoknak nincs helyuk egy vilagolvashato
-# fajlban. A blocklist logikaja valtozatlan: jobb az ures keret, mint egy masik
-# lakas fotoja egy ugyfelnek meno lapon.
+# Melyik anyag melyik lakás fotóit használja, és melyik mappa képei nem
+# hitelesek. Mindkettő TELEPÍTÉS-FÜGGŐ adat, ezért 2026-08-29 óta a
+# photos.local.json-ból jön (gitignorált; a photos.local.example.json mutatja a
+# szerkezetet). Korábban itt állt beégetve, konkrét lakás-slugokkal, holott ez a
+# repo egy PUBLIKUS fork, és a lakás-azonosítóknak nincs helyük egy
+# világolvasható fájlban. A blocklist logikája változatlan: jobb az üres keret,
+# mint egy másik lakás fotója egy ügyfélnek menő lapon.
 _PHOTOS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             "photos.local.json")
 try:
@@ -104,10 +104,10 @@ try:
         _photos_cfg = json.load(_f)
 except FileNotFoundError:
     sys.exit(
-        f"Hianyzik: {_PHOTOS_FILE}\n"
-        "Masold le a photos.local.example.json-t erre a nevre, es add meg, melyik\n"
-        "anyag melyik lakas fotoit hasznalja. Szandekosan NINCS alapertelmezes:\n"
-        "egy nema fallback IDEGEN lakas fotojat tenne egy ugyfelnek meno lapra."
+        f"Hiányzik: {_PHOTOS_FILE}\n"
+        "Másold le a photos.local.example.json-t erre a névre, és add meg, melyik\n"
+        "anyag melyik lakás fotóit használja. Szándékosan NINCS alapértelmezés:\n"
+        "egy néma fallback IDEGEN lakás fotóját tenné egy ügyfélnek menő lapra."
     )
 PHOTO_SET = {k: (v[0], v[1]) for k, v in _photos_cfg.get("photo_set", {}).items()}
 PHOTO_BLOCKLIST = set(_photos_cfg.get("photo_blocklist", []))
@@ -120,10 +120,10 @@ PHOTO_BLOCKLIST = set(_photos_cfg.get("photo_blocklist", []))
 # Ellenorizd, ha a Drive-mappa tartalma valtozik: a gen.py figyelmeztet, ha a
 # hossz nem stimmel, es olyankor a nyers sorrendre esik vissza.
 #
-# A konkret sorrendek is a photos.local.json-ban vannak (photo_order), mert
-# lakas-slugot tartalmaznak, es ez a repo PUBLIKUS fork. A magyarazat, hogy
-# MIERT az adott sorrend (melyik kep allo, melyik fekvo, mi legyen a hero),
-# a helyi fajl "_comment" mezojebe valo, a szamok melle.
+# A konkrét sorrendek is a photos.local.json-ban vannak (photo_order), mert
+# lakás-slugot tartalmaznak, és ez a repo PUBLIKUS fork. A magyarázat, hogy
+# MIÉRT az adott sorrend (melyik kép álló, melyik fekvő, mi legyen a hero),
+# a helyi fájl "_comment" mezőjébe való, a számok mellé.
 PHOTO_ORDER = {k: list(v) for k, v in _photos_cfg.get("photo_order", {}).items()}
 
 

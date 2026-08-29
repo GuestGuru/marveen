@@ -1,5 +1,5 @@
 {
-  "_comment": "Masold ezt photos.local.json nevre es toltsd ki. A photo_set erteke [lakas-slug, kezdo-index]: melyik anyag melyik lakas fotoibol indul. A photo_blocklist azokat a mappakat sorolja, amelyek kepei nem hitelesek -- azok sehol nem jelennek meg. A valodi slugokat SOHA ne ird ebbe a peldafajlba: ez a repoban van, a masolat nincs.",
+  "_comment": "Másold ezt photos.local.json névre és töltsd ki. A photo_set értéke [lakás-slug, kezdő-index]: melyik anyag melyik lakás fotóiból indul. A photo_blocklist azokat a mappákat sorolja, amelyek képei nem hitelesek, azok sehol nem jelennek meg. A photo_order a fotórács sorrendje, indexekkel a letöltött listába; a MIÉRT-et írd a valódi fájl _comment mezőjébe, a számok mellé. A valódi slugokat SOHA ne írd ebbe a példafájlba: ez a repóban van, a másolat nincs.",
   "photo_set": {
     "01-corporate-tmc": [
       "<lakas-slug>",
