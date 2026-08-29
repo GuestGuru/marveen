@@ -228,30 +228,51 @@ pymupdf.open(f)[0].get_pixmap(dpi=110).save('prev.png')
   birtokos ragok (`a beszerzési folyamatukhoz`, nem `folyamatotokhoz`), és a
   `Kérhetnek` / `tudnak` alakok. A `Nézzük meg` és a `mi` alanyú mondatok
   jók, azok nem tegeződés.
-- **A kep-gyorsitotar kulcsa nemán osszekeverte a lakasok fotoit.** A `prep()`
-  a kivagott kepet `_imgcache/<key>.jpg` neven tarolta, a `key` viszont a
-  DOBOZ neve volt (`cat-big`, `cat-s0`...), nem a kepe - es minden lakaslap
-  ugyanazokat a dobozneveket hasznalja. Az elsonek renderelt lap fotoi ezert
-  rarakodtak az osszes tobbire: 2026-08-11-tol 2026-08-25-ig a **Ferenc korut 14
-  lapjan a Dregely 601 kepei** mentek ki. A lap hibatlannak latszott, a
-  geometria-ellenorzes es a `toneparse.py` sem foghatta meg, mert a SZOVEG
-  helyes volt. Javitva: a kulcsba bekerult a forrasfajl utvonalanak es a
-  celmeretnek a hash-e. **Tanulsag: gyorsitotar-kulcs sose a cel-dobozrol
-  kapja a nevet, hanem a forrasrol.** Ellenorzes: kulon lakaslapokat egymas
-  melle rasztererzve nezd meg, hogy tenyleg mas kepek vannak-e rajtuk.
-- **A fotok sorrendjet ne a Drive-fajlnev dontse el.** A `drive.py fetch`
-  `00..NN`-re szamozza at a letoltott kepeket, tehat egy uj feltoltes
-  felboritja, melyik lesz a nagy hero. A sorrend a `gen.py` `PHOTO_ORDER`
-  dict-jeben all, slugonkent, indexekkel a rendezett listaba; ha a hossz nem
-  stimmel, a generator figyelmeztet es a nyers sorrendre esik vissza.
-  A nagy doboz **1,9-es kepararanyu**: allo kepbol ott a harmada marad meg,
-  ezert hero-nak mindig fekvo kepet valassz. A harom kis kep 3,46-os csik.
-- **Az ANGOL lapon magyar adat maradt.** Ket helyen, 2026-08-25-ig elesben:
-  a cim alatti sorban a kerulet (`IX. kerület` a `District IX` helyett), es az
-  `Available from` erteke (`2027. január 3.`). A forditas ott bukott el, ahol
-  az adat a `content.py` lakas-rekordjabol jott, nem a nyelvi szotarbol.
-  **Uj adatmezo felvetelekor kerdezd meg: ez megjelenik-e az angol lapon is?**
-  Ha igen, kell hozza `_en` valtozat vagy szarmaztatas.
+- **A kép-gyorsítótár kulcsa némán összekeverte a lakások fotóit.** A `prep()`
+  a kivágott képet `_imgcache/<key>.jpg` néven tárolta, a `key` viszont a
+  DOBOZ neve volt (`cat-big`, `cat-s0`...), nem a képé - és minden lakáslap
+  ugyanazokat a doboz-neveket használja. Az elsőnek renderelt lap fotói ezért
+  rárakódtak az összes többire: 2026-08-11-től 2026-08-25-ig az egyik lakás
+  lapján **egy MÁSIK lakás képei** mentek ki (hogy melyiken melyiké, az a helyi
+  `photos.local.json` mellé tartozik, nem ide). A lap hibátlannak látszott, a
+  geometria-ellenőrzés és a `toneparse.py` sem foghatta meg, mert a SZÖVEG
+  helyes volt. Javítva: a kulcsba bekerült a forrásfájl útvonalának és a
+  célméretnek a hash-e. **Tanulság: gyorsítótár-kulcs soha ne a cél-dobozról
+  kapja a nevét, hanem a forrásról.** Ellenőrzés: külön lakáslapokat egymás
+  mellé raszterezve nézd meg, hogy tényleg más képek vannak-e rajtuk.
+- **A fotók sorrendjét ne a Drive-fájlnév döntse el.** A `drive.py fetch`
+  `00..NN`-re számozza át a letöltött képeket, tehát egy új feltöltés
+  felborítja, melyik lesz a nagy hero. A sorrend a `photos.local.json`
+  `photo_order` mezőjében áll (2026-08-29-ig a `gen.py`-ban, `PHOTO_ORDER`
+  néven), slugonként, indexekkel a rendezett listába; ha a hossz nem stimmel,
+  a generátor figyelmeztet és a nyers sorrendre esik vissza.
+  A nagy doboz **1,9-es képarányú**: álló képből ott a harmada marad meg,
+  ezért hero-nak mindig fekvő képet válassz. A három kis kép 3,46-os csík.
+  **Egy elírt index itt nem hibát okoz, hanem csendben más képet tesz a hero
+  helyére**, ezért a `photo_order`-t nem a JSON-ban kell ellenőrizni, hanem a
+  kész PDF-et visszarenderelve, a `_comment`-ben leírt szándék mellé téve.
+- **Az ANGOL lapon magyar adat maradt.** Két helyen, 2026-08-25-ig élesben:
+  a cím alatti sorban a kerület (`<szám>. kerület` a `District <szám>` helyett),
+  és az `Available from` értéke (magyar dátumformátumban maradt). A fordítás ott bukott el, ahol
+  az adat a `content.py` lakás-rekordjából jött, nem a nyelvi szótárból.
+  **Új adatmező felvételekor kérdezd meg: ez megjelenik-e az angol lapon is?**
+  Ha igen, kell hozzá `_en` változat vagy származtatás.
+- **A trust-doboz „kozmetika" figyelmeztetése NEM mindig kozmetika.** A pitch-lapok
+  „Amit vállalunk" sávja fix magasságú, a benne futó szöveg viszont nem: ha
+  hosszabb, a doboz alja a CTA-sáv alá lóg, és a render ezt írja ki:
+  `~ kozmetika: '<cím eleje>' trust-doboz alja X mm-rel levagva (szoveg megvan)`.
+  A „szoveg megvan" a PDF SZÖVEGRÉTEGÉRE igaz - minden sor benne van és
+  kimásolható -, de nem arra, amit a néző lát. Mérve 2026-08-29-én, PDF-ből
+  visszarenderelve:
+  - **5,0 mm (02-relocation HU/EN): tényleg kozmetika.** Csak a doboz lekerekített
+    alsó kerete csúszik a sáv alá, minden szó olvasható.
+  - **9,1 mm (01-corporate-tmc, 03-film-production): a lap NEM mehet ki így.**
+    A kétsoros vállalások MÁSODIK sorát a lila CTA-sáv félbevágja és eltakarja;
+    a „felelősség," és a „hogy a beosztás" folytatása egyszerűen nem látszik.
+  **Tanulság: a mm-számot nézd meg, ne a „kozmetika" szót**, és 6 mm fölött
+  mindig renderelj vissza. Javítás: rövidítsd a leghosszabb vállalás-sort úgy,
+  hogy egy sorba férjen, vagy vedd el a mm-eket a fotórács `big_h` értékéből -
+  ugyanaz a mozdulat, mint a Megjegyzés-sor eltűnésénél.
 - **Placeholder bent maradt.** Kiküldés előtt futtasd a `checklist.py`-t: ha bármit
   talál, az anyag nem mehet ki. Ez nem adminisztratív formalitás, és nem is csak
   esztétika: a placeholder helyére a türelmetlenség "hihető" számot ír, és egy
