@@ -30,6 +30,19 @@ MIRRORS="gg-skills seed-skills skills"
 stale=0; synced=0; same=0; unversioned=0
 unversioned_list=""
 
+# Files that live NEXT TO a skill but deliberately never reach the mirror: build
+# artifacts, and the local config files that keep deployment-specific or personal
+# data out of this PUBLIC fork (drive.folders.json, photos.local.json, content.py).
+# Without this list every such file is reported as drift FOREVER -- 2026-08-29, the
+# b2b-onepager skill produced four "Only in ..." lines on its very first run, all
+# four intentional. The exclusions are derived from .gitignore's own gg-skills/**
+# entries, so the checker and the ignore rules cannot drift apart: add a pattern
+# there and this picks it up.
+DIFF_EXCLUDES="-x __pycache__ -x *.pyc"
+while read -r pat; do
+  [ -n "$pat" ] && DIFF_EXCLUDES="$DIFF_EXCLUDES -x $pat"
+done < <(sed -nE 's#^gg-skills/\*\*/(.+)$#\1#p' .gitignore 2>/dev/null || true)
+
 # $1 is the skill DIRECTORY, not its SKILL.md. A skill may ship helper files next
 # to the manifest (helpscout-pdf-melleklet/pdf-szoveg.py is 141 lines,
 # b2b-onepager-gyartas/scripts/ is six files), and comparing only SKILL.md would
@@ -42,7 +55,7 @@ check_one() {
     mirror="$m/$name"
     # Only a TRACKED mirror counts; an untracked copy is not versioned.
     git ls-files --error-unmatch "$mirror/SKILL.md" >/dev/null 2>&1 || continue
-    if diff -rq "$live" "$mirror" >/dev/null 2>&1; then
+    if diff -rq $DIFF_EXCLUDES "$live" "$mirror" >/dev/null 2>&1; then
       same=$((same + 1))
     elif [ "$FIX" = "1" ]; then
       cp -r "$live/." "$mirror/"
@@ -61,7 +74,7 @@ check_one() {
       synced=$((synced + 1))
     else
       echo "  ELTER  $name  ($scope vs $mirror)"
-      diff -rq "$live" "$mirror" 2>&1 | sed 's/^/      /'
+      diff -rq $DIFF_EXCLUDES "$live" "$mirror" 2>&1 | sed 's/^/      /'
       stale=$((stale + 1))
     fi
     return 0
