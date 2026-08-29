@@ -89,6 +89,27 @@ amiben fut — vagyis a saját éles memóriádat és kanban-adatbázisodat írn
   Ami az ötösön kívül van, azt vagy javítsd ugyanabban a PR-ban, vagy nevezd meg a
   jelentésben. A puszta „a baseline is bukik rá" mondat itt elfedte volna egy
   gépfüggetlenségi szabály megsértését, amit pont egy teszt őriz.
+- 🔴 **A módosított fát és a baseline-t NE futtasd EGYSZERRE, mert a baseline lesz
+  rosszabb, és az összehasonlítás értelmetlenné válik.** 2026-08-29: időt akartam
+  spórolni, ezért párhuzamosan indítottam a kettőt. Eredmény: módosított fa
+  **20 bukás / 5 fájl**, baseline **21 bukás / 6 fájl** -- vagyis az érintetlen
+  HEAD bukott TÖBBET. A hatodik a `memory-performance.test.ts` volt, ami időzítést
+  mér, és a két párhuzamos suite erőforrás-versenyétől esett el; egyedül futtatva
+  11/11 zöld.
+  **Miért veszélyes, pedig „javamra" tévedett:** a fenti ellenőrzés úgy szól, hogy
+  „a bukásszám MEGEGYEZIK a baseline-éval". Itt nem egyezett, és aki csak a számot
+  nézi, vagy fals riasztást kap, vagy -- rosszabb -- megtanulja, hogy az eltérés
+  normális, és legközelebb egy VALÓDI regressziót is ezzel magyaráz.
+  **Eljárás:** a két futás legyen egymás UTÁN, vagy ha mégis párhuzamos volt, minden
+  olyan fájlt, ami CSAK az egyik oldalon bukik, futtass le EGYEDÜL, mielőtt
+  bármelyik irányban következtetsz:
+  ```bash
+  cd "$B" && npx vitest run <a csak-egyik-oldalon buko fajl>
+  ```
+  Zöld egyedül = a párhuzamosság flake-je, nem lelet. A jelentésbe a MINDKÉT
+  számot írd bele, és nevezd meg a különbséget -- ne kerekítsd „nulla új bukás"-ra
+  magyarázat nélkül.
+
 - **A `git worktree list` idegen worktree-ket is mutathat** korábbi sessionök
   scratchpadjéből. Csak azt takarítsd, amit te hoztál létre; a `prune` viszont
   biztonságos, ha a könyvtár már nem létezik.
