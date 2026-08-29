@@ -1,0 +1,6 @@
+{
+  "_comment": "Masold ezt drive.folders.json nevre es toltsd ki. A valodi azonositokat SOHA ne ird bele ebbe a peldafajlba: ez a repoban van, a masolat nincs.",
+  "target": "<a kesz one-pagerek Drive-mappajanak azonositoja>",
+  "logo": "<a logo-mappa azonositoja>",
+  "photos": "<a lakas-fotok mappajanak azonositoja>"
+}

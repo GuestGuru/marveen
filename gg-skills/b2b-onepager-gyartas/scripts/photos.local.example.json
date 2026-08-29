@@ -1,0 +1,28 @@
+{
+  "_comment": "Masold ezt photos.local.json nevre es toltsd ki. A photo_set erteke [lakas-slug, kezdo-index]: melyik anyag melyik lakas fotoibol indul. A photo_blocklist azokat a mappakat sorolja, amelyek kepei nem hitelesek -- azok sehol nem jelennek meg. A valodi slugokat SOHA ne ird ebbe a peldafajlba: ez a repoban van, a masolat nincs.",
+  "photo_set": {
+    "01-corporate-tmc": [
+      "<lakas-slug>",
+      0
+    ],
+    "02-relocation": [
+      "<lakas-slug>",
+      0
+    ],
+    "03-film-production": [
+      "<lakas-slug>",
+      0
+    ]
+  },
+  "photo_blocklist": [
+    "<lakas-slug, aminek a fotoi nem hitelesek>"
+  ],
+  "photo_order": {
+    "<lakas-slug>": [
+      0,
+      1,
+      2,
+      3
+    ]
+  }
+}

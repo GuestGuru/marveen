@@ -118,3 +118,12 @@ evidence/
 .evidence/
 transcripts/
 .session-capture/
+
+# Sub-agent skill working data: real content next to the versioned template.
+# This fork is PUBLIC, so the real apartment records and the Drive folder ids
+# stay out of it. The *.example.* companions are tracked and show the shape.
+# (The whole agents/ tree is already excluded above; these lines make the intent
+# explicit for the gg-skills/ mirror, which IS tracked.)
+gg-skills/**/content.py
+gg-skills/**/drive.folders.json
+gg-skills/**/photos.local.json
