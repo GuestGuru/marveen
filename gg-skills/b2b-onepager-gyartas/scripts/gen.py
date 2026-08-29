@@ -59,11 +59,12 @@ def prep(path, w_mm, h_mm, key):
 
     2026-08-25: a gyorsitotar kulcsa KORABBAN csak a `key` volt ("cat-big",
     "cat-s0"...), az viszont MINDEN lakaslapon ugyanaz. Emiatt az elsonek
-    renderelt lap fotoi rarakodtak a tobbire: a Ferenc korut 14 es az Iskola
-    utca 6 lapjan is a Dregely 601 kepei alltak. A lapok hibatlannak latszottak,
-    a geometria-ellenorzes es a toneparse sem foghatta meg, mert a szoveg
+    renderelt lap fotoi rarakodtak a tobbire: tobb lakas lapjan is UGYANANNAK
+    az egy lakasnak a kepei alltak. A lapok hibatlannak latszottak, a
+    geometria-ellenorzes es a toneparse sem foghatta meg, mert a szoveg
     helyes volt. A kulcs mostantol a FORRASFAJL utvonalat es a celmeretet is
-    tartalmazza.
+    tartalmazza. (Hogy konkretan mely lakasokrol volt szo, az a helyi
+    photos.local.json melle tartozik, nem egy publikus repoba.)
     """
     os.makedirs(CACHE, exist_ok=True)
     sig = hashlib.sha1(
