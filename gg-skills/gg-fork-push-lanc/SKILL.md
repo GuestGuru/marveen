@@ -136,12 +136,25 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   grep -rnoE "[01][A-Za-z0-9_-]{25,}" <fajlok>          # beegetett Drive/Doc ID
   grep -rnoE "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[a-z]{2,}" <fajlok>
   ```
-  ⚠️ **A GREP KÉT MÓDON HAZUDIK, és 2026-08-29-én mindkettőbe belefutottam egy
-  körben.** (1) **A magyar nevet ékezettel ÉS ékezet nélkül is írjuk.** A `grep -i`
-  a kis- és nagybetűt egyesíti, az ékezetet NEM: a szűrésem `drégely`-re és
-  `ferenc körút`-ra ment, a szövegben viszont `Dregely 601` és `Ferenc korut 14`
-  állt, és tisztát jelentett egy olyan fájlra, amiben ott voltak a címek.
-  Ékezet-független szűrés kell:
+  ⚠️ **A GREP HÁROM MÓDON HAZUDIK, és 2026-08-29-én mindháromba belefutottam egy
+  körben.** *(A példák szándékosan kitaláltak: egy buktató, ami a valós neveket
+  idézi, MAGA a szivárgás. Ezt is menet közben tanultam meg, mert az első
+  változatom pontosan ezt csinálta.)*
+  (1) **A magyar nevet ékezettel ÉS ékezet nélkül is írjuk.** A `grep -i` a kis- és
+  nagybetűt egyesíti, az ékezetet NEM: `Példa körút`-ra szűrtem, a szövegben
+  `Pelda korut 12` állt, és tisztát jelentett egy olyan fájlra, amiben ott voltak
+  a címek.
+  (2) **A rövidítést és az elválasztót sem egyesíti semmi.** A `Példa körút` nem
+  fogja a `pelda-krt-12` slugot, és fordítva: a slug nem fogja a prózában álló
+  teljes utcanevet. Vagyis a gyenge pont nem a grep, hanem hogy **a terminus
+  kézzel jön** -- amit nem írsz be, arra nem is keresel.
+  **A megoldás: a terminusok jöjjenek FUTÁSIDŐBEN a helyi, gitignorált forrásokból**
+  (a configból a slugok, a tartalom-fájlból a megjelenő nevek; a kettő uniója kell,
+  egyik sem fedi le a másikat), és a szűrő normalizáljon ékezetre ÉS elválasztóra.
+  Így a szűrő-szkript maga sem tartalmaz valós adatot. Kész implementáció:
+  `gg-skills/b2b-onepager-gyartas/scripts/sanitycheck.py` (jean, 2026-08-29),
+  nem-nulla exit = nem mehet push.
+  Az egyszerű, ékezet-független szűrés innentől csak a gyorsellenőrzés:
   ```bash
   python3 -c "
   import sys,unicodedata,io
@@ -149,7 +162,7 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   terms=[fold(t) for t in sys.argv[2:]]
   for i,l in enumerate(io.open(sys.argv[1],encoding='utf-8'),1):
       if any(t in fold(l) for t in terms): print(f'{sys.argv[1]}:{i}: {l.strip()[:120]}')
-  " <fajl> "Drégely" "Ferenc körút" "Vasvári"
+  " <fajl> "Példa körút" "Minta utca" "Teszt tér"
   ```
   (2) **A KÓD sanitizálása nem sanitizálja a DOKUMENTÁCIÓT.** A lakás-slugokat
   kiszerveztem a `gen.py`-ból configba, és késznek hittem magam, miközben ugyanazok
