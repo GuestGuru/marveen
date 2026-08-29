@@ -117,7 +117,10 @@ ellenőrizz, ne a forráson, mert a PDF az, ami kimegy.
 ### 5. Render
 
 ```bash
-cp scripts/*.py ./                      # munkakönyvtárba (a szkriptek egymás mellől importálnak)
+cp scripts/*.py scripts/*.json ./       # munkakönyvtárba (a szkriptek egymás mellől importálnak)
+                                        # a *.json IS KELL: a gen.py és a drive.py a SAJÁT
+                                        # mappájából olvassa a photos.local.json-t és a
+                                        # drive.folders.json-t, tehát a working dirbe is kell
 cp -n content.example.py content.py     # KÖTELEZŐ: enélkül ImportError. A -n SZÁNDÉKOS:
                                         # a content.py a VALÓDI tartalom, a .example csak sablon
 python3 -m venv venv && ./venv/bin/pip install fpdf2 pillow
