@@ -74,7 +74,24 @@ find_template() {
   return 1
 }
 
-total_live=0 total_tpl=0 missing=0
+total_live=0 total_tpl=0 missing=0 ephemeral=0
+ephemeral_list=""
+
+# Egy feladat lehet SZANDEKOSAN sablon nelkul: ugyfelhez es datumhoz kotott, nem
+# termek-viselkedes (pl. "figyeld X lakas decemberet, amig be nem telik"). Ezt a
+# task-config.json "ephemeral": true mezoje mondja ki. 2026-08-29-ig minden ilyen
+# feladat "sablon nelkul"-kent jelent meg, es a szam NOTT (1 -> 2), tehat a zaj
+# elkezdte elfedni a valodi hianyt -- pont azt, amiert ez a mero letezik.
+# A dontes NEM tunik el: az efemer feladatok kulon sorban, nevvel jelennek meg.
+is_ephemeral() {
+  python3 - "$1" <<'PYEOF' 2>/dev/null
+import json, sys
+try:
+    print('1' if json.load(open(sys.argv[1], encoding='utf-8')).get('ephemeral') is True else '0')
+except Exception:
+    print('0')
+PYEOF
+}
 printf '%-26s %-24s %8s %8s\n' TASK SABLON 'CSAK-ELO' 'CSAK-SABLON'
 printf '%-26s %-24s %8s %8s\n' -------------------------- ------------------------ -------- -----------
 
@@ -84,8 +101,13 @@ for dir in "$LIVE_DIR"/*/; do
   [ -f "$dir/SKILL.md" ] || continue
 
   if ! tpl="$(find_template "$t")"; then
-    printf '%-26s %-24s %8s %8s\n' "$t" '(NINCS SABLON)' '-' '-'
-    missing=$((missing + 1))
+    if [ "$(is_ephemeral "$dir/task-config.json")" = "1" ]; then
+      ephemeral=$((ephemeral + 1))
+      ephemeral_list="$ephemeral_list $t"
+    else
+      printf '%-26s %-24s %8s %8s\n' "$t" '(NINCS SABLON)' '-' '-'
+      missing=$((missing + 1))
+    fi
     continue
   fi
 
@@ -109,7 +131,11 @@ for dir in "$LIVE_DIR"/*/; do
 done
 
 echo
-echo "osszesen: csak-elo=$total_live  csak-sablon=$total_tpl  sablon nelkul=$missing"
+echo "osszesen: csak-elo=$total_live  csak-sablon=$total_tpl  sablon nelkul=$missing  efemer=$ephemeral"
+if [ "$ephemeral" -gt 0 ]; then
+  echo "efemer (SZANDEKOSAN nincs sablon, task-config.json -> \"ephemeral\": true):"
+  for n in $ephemeral_list; do echo "  - $n"; done
+fi
 cat <<'EOF'
 
 Ertelmezes (a szam onmagaban NEM drift):
