@@ -253,6 +253,23 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
   hamis, mint egy kitalalt idobelyeg -- csak nehezebb eszrevenni, mert munkat
   general, nem hallgatast. Ha a bucket barmelyike hianyt allit, a szekcio mondja
   meg, HOL kerestel.
+- ✅ **A drift-szamok 2026-08-29-en LECSOKKENTEK (24/79 -> 20/75), es ez JAVITAS, nem
+  tudasvesztes.** Ket hamis pozitivot szuntettem meg a `scheduled-task-drift.sh`-ban,
+  miutan ket ejszakan at „placeholder-artefaktkent" MAGYARAZTAM oket ahelyett, hogy
+  megjavitottam volna. (1) A nev-helyorzok zaro `\b`-je a magyar ragozason bukott el:
+  az elo peldanyban `GuestGurunak` all, a sablonban `{{OWNER_NAME}}nak`, es a zaro
+  szohatar miatt a csere nem illeszkedett. A zaro `\b` most nincs, a nyito marad.
+  (2) A normalizalas csak az ELO oldalon futott, holott a `scheduled-tasks/` sablonok
+  nem egysegesek: a `dream-engine` helyorzot ir, a `memoria-heartbeat` konkret
+  erteket (`localhost:3420`). A konkret erteket iro sablon igy OROKRE 1/1-et adott.
+  Most mindket oldal normalizalodik.
+  **A tanulsag nem a ket bug, hanem a masodik ejszaka:** ha egy hamis pozitiv MINDEN
+  ejjel megjelenik, a helyes lepes a MERO javitasa, nem egy ujabb bekezdes arrol,
+  hogy miert kell figyelmen kivul hagyni. A magyarazat elfogy a kontextusbol, a
+  javitas nem.
+  A maradek `kanban-audit 18/69` es `reggeli-napindito 2/6` tovabbra is SZANDEKOS
+  (mas eljaras, illetve a sablon sajat doku-helyorzoi) -- azokat ne javitsd.
+
 - ✅ **A skill-tukor pariitast 2026-08-27 ota SZKRIPT meri, ne kezzel diffelj:**
   ```bash
   scripts/gg-skill-tukor-sync.sh          # riport, exit 1 ha van elavult tukor
