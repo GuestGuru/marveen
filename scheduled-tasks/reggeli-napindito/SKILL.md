@@ -128,6 +128,21 @@ tail -30 {{INSTALL_DIR}}/store/morning.log | grep -n "$(date +'%a %b %e')"
 - **`sqlite3` CLI VAN a gépen** (`/usr/bin/sqlite3`, 3.45.1 -- időközben feltelepült).
   A korábbi "nincs telepítve, használj python3-at" megkötés elavult; a python3-as út
   továbbra is jó, csak nem kötelező.
+- 🔴 **A DREAM.md tömörítése ELHAGYHATJA azt a tagmondatot, amitől a lelet őszinte
+  volt -- és a rövidebb változat mindig riasztóbb.** 2026-08-30: a fő lelet az volt,
+  hogy egy javítás a `main`-en van, de a `dist` régebbi, tehát „négy éjszakán át nem
+  véd". A DREAM.md ehhez odaírta, hogy **a rés szűkebb, mint amilyennek hangzik**:
+  a leggyakoribb eset (parkolt `<channel>` blokk) a régi kódon is helyreáll, csak egy
+  szűkebb ág marad fedetlen. A kiküldött összefoglalóból ez a második fele KIMARADT,
+  tehát a gazda egy nagyobb rést látott, mint amit a mérés alátámaszt.
+  Nem hazugság, hanem tömörítési veszteség -- és pont a védekező tagmondat esik ki
+  először, mert az hangzik „mellékesnek".
+  **Eljárás:** ha egy DREAM.md-lelet tartalmaz `DE`/`viszont`/`a rés szűkebb` alakú
+  megszorítást, az a lelet SZÉTVÁLASZTHATATLAN része. Vagy mindkettő megy ki, vagy
+  egyik sem. Ha nem fér bele, inkább a lelet legyen rövidebb, ne a megszorítás
+  hiányozzon: „X nem fut, de a gyakori eset így is védve" rövidebb, mint a
+  felnagyított változat, és igaz is.
+
 - A DREAM.md `## ⚠️ Hibák` szekcióját nem kell szó szerint bemásolni, de a benne lévő
   gépi akadályokat érdemes egy rövid záró bekezdésben összefoglalni.
 - **A MarkdownV2-t NE kézzel escapeld.** Kész, tesztelt helper van rá a projektben:
