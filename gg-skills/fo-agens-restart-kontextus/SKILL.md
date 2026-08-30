@@ -93,6 +93,16 @@ ls -la DREAM.md; tail -c 6000 store/context-guard-last-pane-marveen.txt
    Aznap a félbehagyott feladat EGYETLEN nyoma a `hot` memória volt, a
    pane-snapshot egy lezárult kanban-auditot mutatott.
 
+6. **A `conversation_log` NEM a csatorna teljes története: a Bot API-n kiküldött
+   üzenetek hiányoznak belőle.** A ledger-outbound hook a `reply` tool-hívást
+   kapja el; a napindító viszont szkriptből, közvetlen Bot API-val megy ki, tehát
+   nyoma sem marad a táblában. Mérve 2026-08-30 21:25: a `conversation_log` utolsó
+   sora 08-29 07:54 volt (msg 676), amiből 37 óra csatorna-némaság következett
+   volna, holott a napindító aznap reggel 07:28-kor kiment (msg 677). A cáfolatot
+   a **napi napló** adta, nem a tábla. Vagyis: a `conversation_log` hézagából
+   SOHA ne következtess arra, hogy nem történt kifelé menő kommunikáció; a
+   kimenő üzenetek teljes listáját a napi napló + a plugin logja adja.
+
 **A napi napló nem bizonyíték, hanem tanúvallomás.** Ha az előző kontextusod azt
 írta, hogy valamit "szándékosan" hagyott így, mérd le újra, mielőtt továbbadod.
 2026-08-24: a napló szerint a `dist/` szándékosan maradt a `main` mögött, mert az
@@ -162,6 +172,15 @@ A mérés olcsó, a téves továbbadás drága.
   a napló VÉGE (`tail`, a mai sorok ott vannak), a `ps -eo pid,lstart,args` (az
   `lstart` teljes dátumot ír), és a `tmux ls` `created` mezője. Általánosan:
   időpont-alapú grep csak akkor bizonyíték, ha a sor tartalmazza a dátumot is.
+
+- **A fresh restart maga is ÉRV: a nyitott kérdéseidet ne változatlanul ismételd
+  meg.** Ha egy függő döntés ellenérve az volt, hogy „ez megszakítja a
+  beszélgetést", akkor egy context-guard fresh ébredés után ez az ellenérv MÁR
+  NEM ÁLL, mert nincs mit megszakítani. Mérve 2026-08-30: 08-29 óta várt válasz
+  az `update.sh` futtatására, egyetlen kontrával (session-megszakítás); a 21:25-ös
+  fresh restart után a kérdést az új mérleggel tettem fel újra, nem szó szerint.
+  Általánosan: fresh ébredéskor a `hot` emlékeket ne csak ELŐVEDD, hanem
+  ÚJRA IS ÉRTÉKELD -- a restart maga megváltoztathatta a döntés bemenetét.
 
 ## Ellenőrzés
 - **Az ÉLES continue négy egymástól független jele** (2026-08-20 03:02-03:04,
