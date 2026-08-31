@@ -1,6 +1,6 @@
 ---
 name: google-docs-biztonsagos-szerkesztes
-description: Meglévő Google Doc szerkesztése adatvesztés nélkül a Docs API-val - számok, táblázatcellák és bekezdések cseréje. Triggerelődik - "frissítsd a doksit", "írd át a számokat a dokumentumban", "cseréld le a táblázatot", meglévő elemzés vagy brief adatfrissítése, batchUpdate, replaceAllText.
+description: Google Doc létrehozása HTML-ből és meglévő szerkesztése adatvesztés nélkül a Docs API-val - számok, táblázatcellák és bekezdések cseréje, bekezdés törlése. Triggerelődik - "frissítsd a doksit", "írd át a számokat a dokumentumban", "cseréld le a táblázatot", "készíts egy doksit/tervezetet a Drive-ra", meglévő elemzés vagy brief adatfrissítése, batchUpdate, replaceAllText, deleteContentRange, 403 unregistered callers.
 ---
 
 # Google Doc biztonságos szerkesztése
@@ -44,7 +44,55 @@ a teljes törlés + beszúrás elveszti a táblákat és a stílusokat.
    megmaradt, a csere nem talált. A HTTP 200 önmagában nem bizonyíték, mert a
    `replaceAllText` nulla találattal is 200-at ad.
 
+## Új doksi létrehozása HTML-ből (nem szerkesztés, hanem gyártás)
+
+Ha nem meglévő doksit írsz át, hanem újat gyártasz (szerződéstervezet, elemzés,
+brief), NE a Docs API `insertText`-jével építsd fel. Írd meg HTML-ben, és töltsd
+fel a Drive-ra `mimeType: application/vnd.google-apps.document`-tel: a Drive
+konvertálja, és a `<h1>`, `<b>`, `<i>`, `<p>` formázás megmarad.
+
+```bash
+python3 - <<'EOF'
+import json
+meta={"name":"A doksi neve","parents":["<CEL_MAPPA_ID>"],
+      "mimeType":"application/vnd.google-apps.document"}
+body=open("/abs/ut/tartalom.html","rb").read()
+B="-----sajatboundary123"
+out=(f"--{B}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n"+json.dumps(meta)
+     +f"\r\n--{B}\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n").encode()+body+f"\r\n--{B}--\r\n".encode()
+open("/abs/ut/upload.bin","wb").write(out)
+EOF
+
+GG_MCP_TOKEN_FILE=<sajat.token> GG_MCP_AGENT_LABEL=marveen/<sajat_neved> \
+  /home/gg/.local/bin/gg-mcp-proxy exec --alias google-drive -- \
+  sh -c "curl -s -X POST 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,name,webViewLink' \
+    -H \"Authorization: Bearer \$GOOGLE_DRIVE_ACCESS_TOKEN\" \
+    -H 'Content-Type: multipart/related; boundary=-----sajatboundary123' \
+    --data-binary @/abs/ut/upload.bin"
+```
+
+Feltöltés után a finomításokat már a `replaceAllText`-tel csináld: így a
+javításokat nem kell újra végigvinni a HTML-en, és a doksi URL-je sem változik
+(Eszti/a gazda esetleg már kommentelt bele).
+
 ## Buktatók
+
+- **Az env-változó neve `GOOGLE_DRIVE_ACCESS_TOKEN`**, nem `GOOGLE_DRIVE` és nem
+  `GG_SECRET`. A Drive/Docs/Sheets API mind ezt az egy tokent használja (alias:
+  `google-drive`). Ha rossz nevet adsz meg, a curl üres Authorization fejlécet
+  küld, és a Google **403 "Method doesn't allow unregistered callers"**-t ad, ami
+  jogosultsági hibának néz ki, pedig csak elgépelés. A proxy az első kimeneti
+  sorában kiírja a helyes nevet — olvasd el.
+- **A `replaceAllText` NEM fog bekezdéshatáron átívelő szöveget.** Egy egész
+  bekezdés (pl. egy fölöslegessé vált szerződéspont) törléséhez kérd le a
+  `documents.get`-tel a JSON-t, keresd meg a bekezdés `startIndex`/`endIndex`
+  párját, és `deleteContentRange`-dzsel töröld. Ha üres stringre cserélsz,
+  ottmarad egy üres bekezdés.
+- **Egy `replaceAllText` MINDEN előfordulást cserél.** Ha a doksiban két
+  hasonló szerkezetű rész van (pl. két melléklet ugyanazzal a záró
+  formulával), a csere mindkettőt átírja. Ez lehet pont az, amit akarsz
+  (egy pont beszúrása mindkét mellékletbe), de ha nem, tedd egyedivé a
+  keresett szöveget egy szomszédos, eltérő mondattal.
 
 - **A `proxy exec`-nek MINDIG add meg a saját `GG_MCP_TOKEN_FILE`-odat.** A
   shell-út nem viszi magától az identitásodat, az MCP-út (a sima `gg_*` toolok)
