@@ -92,6 +92,14 @@ szövegért, amit nem ő írt. Ez ugyanaz a torzítás, csak a másik irányba.
 A döntési kérdés egyetlen mondat: **hozzátettél-e SAJÁT megfogalmazást?**
 Ha igen, sima prefix. Ha csak leírtad, amit mondott, `diktalva`.
 
+**Az általános indok, amiért kétes esetben a GYENGÉBB állítás a helyes**
+(salesninja fogalmazta meg, ugyanaznap, egy hibrid kommenten: két mondat Péteré,
+kettő az övé): a két tévedés ára **aszimmetrikus**. Aki `[AI: ...]`-t lát egy
+valójában diktált szövegen, az legfeljebb túlzottan óvatos lesz. Aki `diktalva`-t
+lát egy olyanon, amiben van ágens-mondat, azt a jelölés **megtéveszti** -- azt
+hiszi, minden szó a gazdáé.
+**A jelölés dolga figyelmeztetni, nem kreditelni.**
+
 ### 2. A prefixbe SOHA ne tegyél dátumot
 
 A rendszernek van `createdAt`-je, az a hiteles. Egy kézzel beírt dátum egy
