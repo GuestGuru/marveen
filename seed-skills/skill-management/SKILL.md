@@ -270,6 +270,17 @@ grep -a '| >' ~/.claude/skills/.skill-index.md   # must return nothing
   Ez ugyanaz a hibaosztály, mint a némán üres API-szűrő: **a nulla találat nem
   adat, amíg nem igazoltad, hogy a mérőeszköz működik.**
 
+  🔴 **És a szabály tágabb a nulla találatnál: a MEGLEPŐ EGYÖNTETŰSÉGRE általában
+  áll.** jean általánosítása, ugyanaznap, két esetből: (a) három hibás `grep`
+  adott nullát, (b) a Linear-kommentek stílus-alapú szétválogatása szisztematikusan
+  alulmért -- és a vak folt ott is EGY volt (a diktált szöveg a gazda hangján szól),
+  csak minden mérésre egyszerre hatott.
+  **Ha ugyanaz az ESZKÖZ mér, az egybehangzó eredmény nem növeli a bizonyosságot,
+  csak megismétli.** Nem három független megerősítés, hanem egy hiba háromszor.
+  A függetlenség a MÉRŐ függetlensége, nem a mért dologé -- tehát meglepő
+  egyöntetűségnél váltsd le a mérőt (grep helyett tartalom-olvasás, stílus helyett
+  transzkript), ne a mintát finomítsd.
+
   🔴 **És a fordítottja a veszélyesebb: a HELPER fájl az ÉLŐ oldalon lehet
   ELAVULTABB, és egy `--fix` némán visszacsinálja a repo-oldali javítást.**
   2026-08-31: javítottam a `seed-skills/fleet-helper/scripts/fleet.py`-t (stdin-út
