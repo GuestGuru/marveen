@@ -57,6 +57,10 @@ interface Args {
   apiBase: string
   accessToken?: string
   rotate: boolean
+  /** (B) ut: a webfeluletrol beillesztett kulcs. Kapcsolo, nem alapertelmezes. */
+  keyId?: string
+  attestKey?: string
+  memberId?: string
 }
 
 function parseArgs(argv: string[]): Args {
@@ -74,6 +78,9 @@ function parseArgs(argv: string[]): Args {
     else if (a === '--rotate') args.rotate = true
     else if (a === '--api-base') args.apiBase = argv[++i] ?? fail('--api-base ertek nelkul')
     else if (a === '--access-token') args.accessToken = argv[++i] ?? fail('--access-token ertek nelkul')
+    else if (a === '--key-id') args.keyId = argv[++i] ?? fail('--key-id ertek nelkul')
+    else if (a === '--attest-key') args.attestKey = argv[++i] ?? fail('--attest-key ertek nelkul')
+    else if (a === '--member-id') args.memberId = argv[++i] ?? fail('--member-id ertek nelkul')
     else if (a.startsWith('-')) fail(`ismeretlen kapcsolo: ${a}`)
     else if (!args.fajl) args.fajl = a
   }
@@ -86,6 +93,10 @@ function sugo(): void {
   npm run skill -- enroll [--user|--project] [--rotate]
       Egyszeri bekotes: attest-kulcs kerese, helyi tarolas (0600), skillek letoltese.
       Hitelesites: MARVEEN_ACCESS_TOKEN vagy --access-token; enelkul email+jelszo bekerese.
+
+  npm run skill -- enroll --key-id <id> --attest-key <titok> --member-id <uuid>
+      Ugyanaz, de a webfeluletrol MASOLT kulccsal, szerver-hivas nelkul.
+      Akkor hasznos, ha a gepnek nincs bejelentkezese, csak a kulcs.
 
   npm run skill -- upload <fajl>
       Helyi szken, majd tiszta eredmeny eseten alairt feltoltes.
@@ -140,6 +151,31 @@ function anonKulcs(): string {
 }
 
 async function enroll(args: Args): Promise<void> {
+  // (B) UT: a tag a webfeluleten kapta a kulcsot es beilleszti. Nem
+  // alapertelmezes, hanem kapcsolo -- de valodi ut: egy gepnek lehet, hogy
+  // sosem lesz marveen.io-bejelentkezese, csak a kulcsa.
+  if (args.attestKey || args.keyId || args.memberId) {
+    if (!args.attestKey || !args.keyId || !args.memberId) {
+      fail('a beillesztett bekoteshez MINDHAROM kell: --key-id, --attest-key, --member-id')
+    }
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(args.memberId)) {
+      fail('a --member-id nem uuid alaku')
+    }
+    const ut = saveCredentials({
+      memberId: args.memberId,
+      keyId: args.keyId,
+      attestKey: args.attestKey,
+      apiBase: args.apiBase,
+      enrolledAt: attestationTimestamp(new Date()),
+    })
+    console.log(`Bekotve a beillesztett kulccsal. Kulcs: ${args.keyId}`)
+    console.log(`Tarolva: ${ut} (0600)`)
+    // A skilleket ezen az uton NEM toltjuk le: ahhoz felhasznaloi token kell,
+    // es ez az ut epp azt kerulte meg. Ezt kimondjuk, nem hallgatjuk el.
+    console.log('A skillek letoltesehez bejelentkezes kell: npm run skill -- update')
+    return
+  }
+
   const token = await felhasznaloiToken(args)
   const res = await fetch(`${args.apiBase}/functions/v1/attest-issue-key`, {
     method: 'POST',
