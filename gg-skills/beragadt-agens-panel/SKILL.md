@@ -63,6 +63,12 @@ description: Egy flotta-ágens bemenete beragadt (az őr riaszt, hogy az auto-re
   nekifutásra. **A javítás iránya:** a parkolt szöveg EREDETÉT kell nézni. Ha a saját
   routertől jött (inter-agent üzenet, ütemezett prompt), az nem emberi piszkozat,
   tehát helyreállítható; csak a valóban kívülről gépelt szöveget kell kímélni.
+  **2026-08-30: MEGOLDVA, ne javasold újra.** A fő-ágensnél a plain-text
+  újrainjektálás mostantól időkorlátos (`src/gg/main-plain-reinject-gate.ts`,
+  30 perc a `firstSeenAt`-tól); a parkolt `<channel>` blokk helyreállítása
+  ettől függetlenül megy. Hiányzó vagy visszafelé ugró időbélyegnél a kapu
+  ZÁRVA marad: a hiányzó bizonyíték nem bizonyíték. Sub-ágensnél a régi,
+  óvatos működés maradt. Élesben a `84db1cb` buildtől.
 - 🔴 **A beragadás bizonyítékát NE a beavatkozás UTÁN gyűjtsd.** Ugyanaznap ebbe is
   belefutottam: a `tmux capture-pane`-t azután néztem meg, hogy a gazda már
   kiszabadított, üres input-boxot láttam, és ebből azt következtettem, hogy sosem
@@ -90,6 +96,16 @@ description: Egy flotta-ágens bemenete beragadt (az őr riaszt, hogy az auto-re
 - **`delivered` státusz nem jelenti, hogy az ágens LÁTTA.** A router akkor is
   `delivered`-re állítja a sort, ha a szöveg a promptsorban parkol. Néma hibaosztály:
   két ágens várhat egymásra örökké, és a queue szerint minden rendben.
+- 🔴 **Az őrök a marveen SZOLGÁLTATÁS folyamatában futnak, nem az ágensekében.**
+  A `stuck-input-watcher` a `dist/index.js` egyetlen processzéből figyeli az
+  egész flottát (`dist/web.js` -> `startStuckInputWatcher`). Következmény:
+  egy őr-változás után a SZOLGÁLTATÁST kell újrafordítani/újraindítani, és az
+  azonnal minden figyelt ágensre él -- **a kollégák újraindítása felesleges.**
+  2026-08-30: az `update.sh` után elsőre azt jelentettem Tamásnak, hogy a
+  hajnal óta futó hat ágens „még a régi kódot viszi"; tévedés volt, mert a
+  `ps`-ben látott `claude --channels` processzek a FIGYELT sessionök, nem a
+  marveen kód futtatói. A helyes ellenőrzés:
+  `ps -eo pid,lstart,args | grep 'marveen/dist/index.js'`.
 - **Ne írj a promptsorba diagnózis közben.** Ha te hagysz ott parkolt szöveget, a router
   `busy`-nak látja a sessiont, és a következő üzenet kézbesítése is elakad -- pont azt a
   hibát gyártod, amit javítani jöttél.
@@ -100,3 +116,5 @@ description: Egy flotta-ágens bemenete beragadt (az őr riaszt, hogy az auto-re
 - A panel dolgozik vagy kész választ mutat, és a válasz az elakadt üzenetre szól.
 - `agent_messages` sor sorsa látszik: vagy `done`, vagy a címzett érdemben válaszolt.
 - Restart esetén: `tmux ls` mutatja az új session-időt, és a beszélgetés folytatódott.
+- Őr-kódváltozás után: `cat /home/gg/marveen/dist/.built-commit` egyezik a
+  `git rev-parse HEAD`-del, és a szolgáltatás indulási ideje frissebb nála.
