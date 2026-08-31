@@ -182,6 +182,25 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
 - **A `daily_logs` oszlopa `date`, nem `log_date`.** A rossz név `OperationalError`-t dob, nem üres eredményt -- ez a szerencsés eset; a séma ellenőrzése (`SELECT sql FROM sqlite_master WHERE name='daily_logs'`) olcsóbb, mint a találgatás.
 - **Üres kanban / üres daily_logs nem hiba.** Ilyenkor a top-3-at memóriából, git-állapotból és élő API-válaszokból kell levezetni, és ezt a DREAM.md-ben ki is kell mondani, hogy reggel látszódjon, min alapul a sorrend.
 - **IDEGEN ágens hot memóriáját ne mozgasd — jelezd.** A bucket 2 szövege minden ágens memóriáját vizsgálandónak mondja, és ez az ELEMZÉSRE igaz, de az ÍRÁSRA nem. Egy sub-ágens hot bejegyzése az ő élő munkájának az állapota: te kívülről nem látod, mi zárult le nála és mi vár válaszra. 2026-08-11: a salesninja 9 hot bejegyzéséből 8 a SAL-455 és a Be Social élő szálához tartozott (félkész tábla, Péter válaszára várva), a kilencedik (OC projekt) a saját szövege szerint lezárt volt — mégis mind maradt, mert a tévedés ára aszimmetrikus: egy bent maradt hot bejegyzés semmit nem ront, egy tévesen cold-ba tolt élő ügy viszont kiesik a látóteréből. **A saját tiered rendezd magabiztosan, az övékét a DREAM.md-ben nevesítsd** („#111 lezártnak látszik, az ő döntése"), és ha érdemi, inter-agent üzenetben szólj neki. Ugyanez áll a tartalmi korrekcióra is: idegen memória szövegébe ne írj záradékot.
+
+- 🔴 **A KLASZTER-TAGSÁGOT SOHA ne az ID-szomszédságból vezesd le, és a DARABSZÁMOT
+  se fejből mondd.** 2026-08-31: az idegen hot tierről írt leletemben mindkét ágensnél
+  elszámoltam a klasztert, **ellentétes irányba**, ugyanabból az okból. salesninjánál
+  kilencet mondtam, mert a #146–#222 ID-sávot egyben SAL-455-nek olvastam — a #133 és
+  a #141 valójában Be Social. jeannél hatot mondtam, holott magam soroltam fel HÉT
+  ID-t: a felsorolást nem számoltam meg. Mindkettőt ők javították, nem én.
+  **Eljárás:** a tagságot a bejegyzés TARTALMA dönti el, az ID csak sorrend; és ha
+  egy mondat számot állít, a szám a felsorolás megszámolásából jöjjön, ugyanabban a
+  lépésben. Egy `len()` olcsóbb, mint egy javító kör két ágenssel.
+- 🔴 **Az „X átadta Y-nak" típusú megállapítást a forrás EGÉSZÉBŐL olvasd ki, ne a
+  címéből.** Ugyanaznap ez volt a súlyosabb hibám: a #222 bejegyzést „salesninja
+  átadta jeannek"-ként foglaltam össze, holott a szövege kimondja, hogy **magát az
+  átadást NEM hajtotta végre** — a lezárás nála történt, 08-12-én, Péter
+  jóváhagyásával, és két másik, MÁR COLD bejegyzésben állt (#224, #233). Az irány jó
+  volt (a bejegyzések tényleg elavultak), de az OK és a DÁTUM is hibás, tizenkilenc
+  nappal. **Ha egy lelet azt állítja, hogy egy ügy máshol zárult le, a másik oldal
+  bizonyítékát is keresd meg** — és ha egy szál állapota két tierből áll össze,
+  az önmagában is jelzés, hogy kereszthivatkozás hiányzik. ⚠️ **És ha egy blokkot MÁSOLSZ a két példány között, a határát is mérd:** ugyanaznap a tükörbe írásnál az anchor és a következő buktató közötti EGÉSZ tartományt másoltam, nem csak a két új bekezdést, és ezzel duplikáltam négy meglévő buktatót. A drift-mérő elkapta (`csak-sablon` 0-ról 45-re ugrott), de a gyorsabb ellenőrzés egy `grep -c` egy jellemző szóra MINDKÉT példányban -- annak 1-1-et kell adnia.
 - 🔴 **A tegnapi javaslat TELJESÜLHET MÁS ÚTON, mint ahogy megfogalmaztad -- és ez nem mulasztás, hanem nevezendő különbség.** Ez a „rokon-de-más javítás" tükörképe, és ugyanúgy félrevezet: ott a fájl mozdult, de a kimenet nem; itt a kimenet megvan, de nem a javasolt szereplő, nem a javasolt csatornán érte el. 2026-08-15: a tegnapi 3. pont az volt, hogy „jean kérje az AirDNA-döntést Esztitől". A döntés meg is született aznap -- csakhogy Tamás válaszolta meg NEKEM, egy akadály-auditból kifolyólag, jean és Eszti közreműködése nélkül. Ha a javasolt LÉPÉST ellenőrzöd, „nem történt meg"-et írsz egy lezárt ügyre; ha csak az EREDMÉNYT, elveszted, hogy a javasolt útvonal továbbra sem működik. Mindkettőt írd le: mi lett az eredmény, és milyen úton.
 - 🔴 **A tünet eltűnése nem javítás: a MECHANIZMUST kérdezd, ne a kimenetelt.** Ha egy javaslat egy visszatérő hibáról szólt, és aznap „nem jelentkezett", az önmagában semmit nem bizonyít -- lehet, hogy egy kerülőút takarja el. 2026-08-15: a napindító nyolcadik reggel NEM némult el, kiment az üzenet -- de a `store/morning.log` maga írja, hogy a rendes `reply` tool tiltott, és Bot API fallbackkel ment. A forrás (`~/.claude/settings.json` -> `enabledPlugins: telegram=false`) változatlan, tehát a strukturális hiba áll, csak most egy második mechanizmus fedi el. Ilyenkor a DREAM.md-ben a fallback maga is kockázat: ha az is elromlik, a hiba bejelentés nélkül tér vissza.
   ⚠️ **És a TÜKÖRKÉPE, mert ugyanolyan könnyű elrontani: a javítás LÉTEZÉSE sem
