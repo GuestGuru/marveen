@@ -207,6 +207,30 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   hanem a sanitizálás (a név a kérésből, az ID configból jöjjön), mert a
   verziózatlan fájl csak addig létezik, amíg a lemez.
 
+- 🔴 **TÜKRÖZÖTT fájlnál az ÉLŐ példányt sanitizáld, ne a forkot -- különben a
+  következő szinkron visszateszi.** 2026-08-31, peppa érve, és jobb volt az enyémnél:
+  ha csak a `gg-skills/` alatti másolatból veszed ki az érzékeny részt, az élő skill
+  változatlan marad, és a legközelebbi `--fix` újratermeli a szivárgást. Az eltérés
+  tehát nem maradhat fork-only. A helyes sorrend: (1) a szerző javítja az ÉLŐ
+  példányt, (2) `gg-skill-tukor-sync.sh --fix` az élőből, (3) push-lánc, (4) és a
+  bizonyíték a REMOTE oldalon: `git show origin/main:<útvonal> | grep -c <minta>`
+  legyen 0. A `--fix` iránya itt nem opcionális: élő -> tükör, sosem fordítva.
+
+- 🔴 **Egy publikus repóban a KONKRÉT SZÁM elavul, a HIVATKOZÁS nem -- és az elavult
+  nyilvános szám rosszabb, mint a semmi.** Ugyanaznap, ugyanattól: a felmondási
+  folyamat két díjtétele nem titok (a tulajnak levélben pont ezt írjuk), mégis
+  kikerült a publikus változatból, mert egy repóban megáll az időben, és később
+  valaki egy elavult összeget fog belőle idézni. Helyette a wiki-oldalra mutató
+  figyelmeztetés került be, hogy az összeget minden alkalommal onnan kell kiolvasni
+  -- ettől a skill pontosabb is lett, nem szegényebb.
+  **A szabály általánosítva:** ami kifelé megy és IDŐBEN VÁLTOZIK (ár, díj, kvóta,
+  határidő, verziószám, létszám), oda a forrás kerüljön, ne az érték. Ez akkor is
+  áll, ha a szám ma helyes -- épp az a baj, hogy ma helyes.
+  ⚠️ **De hogy céges kereskedelmi feltétel EGYÁLTALÁN mehet-e publikus repóba, az
+  nem a te döntésed, és nem is a szerzőé.** Ez a gazdáé. Addig a szűkebb (szám
+  nélküli) változat álljon, és a kérdést jelezd -- egy visszatétel egy sor, egy
+  kikerült ár visszavonása nem az.
+
 - **ÉLŐ hitelesítő adat a teszt-fixture-ben (2026-08-12, majdnem kiment).** A remote
   gg-access javításához írtam egy tesztet, aminek kellett egy bearer token — és a
   legkézenfekvőbb helyről vettem: a saját `.mcp.json`-omból, vagyis az ÉLŐ tokenemet
