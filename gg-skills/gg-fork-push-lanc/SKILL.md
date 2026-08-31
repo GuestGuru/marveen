@@ -151,9 +151,30 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   **A megoldás: a terminusok jöjjenek FUTÁSIDŐBEN a helyi, gitignorált forrásokból**
   (a configból a slugok, a tartalom-fájlból a megjelenő nevek; a kettő uniója kell,
   egyik sem fedi le a másikat), és a szűrő normalizáljon ékezetre ÉS elválasztóra.
-  Így a szűrő-szkript maga sem tartalmaz valós adatot. Kész implementáció:
-  `gg-skills/b2b-onepager-gyartas/scripts/sanitycheck.py` (jean, 2026-08-29),
-  nem-nulla exit = nem mehet push.
+  Így a szűrő-szkript maga sem tartalmaz valós adatot.
+  **Kész, ÁLTALÁNOS implementáció: `scripts/leak-check.py`** (2026-08-31) --
+  nem-nulla exit = nem mehet push. Nem lakás-specifikus: a terminusokat
+  tetszőleges helyi forrásból szedi.
+  ```bash
+  python3 scripts/leak-check.py \
+      --terms-from-json <config.local.json> \   # minden string kulcs es ertek, rekurzivan
+      --terms-from-dir  <assets/photos> \       # minden fajl- es konyvtarnev (kiterjesztes nelkul is)
+      --terms-from-quoted <content.py> \        # minden idezojeles string-literal
+      --terms-from-lines <nevek.txt> \          # soronkent egy terminus
+      --term "Teljes Nev" \                     # explicit, ismetelheto
+      -- <a publikalando fajlok...>
+  ```
+  Az eredeti, b2b-specifikus változat továbbra is megvan
+  (`gg-skills/b2b-onepager-gyartas/scripts/sanitycheck.py`, jean, 2026-08-29);
+  az általános a annak a kiemelése, nem a leváltása.
+  ⚠️ **Két dolog, ami az általánosításnál számít, és az eredetiben nem merült fel:**
+  (1) **A terminusokat alapból NEM írja ki** -- a terminusok MAGUK az érzékeny
+  adat, tehát a listázásuk ugyanaz a szivárgás, amit meg akarsz előzni.
+  `--show-terms` kell hozzá, tudatosan.
+  (2) **A négy karakternél rövidebb terminusokat eldobja** (`--min-len`), és
+  megmondja, hányat. Enélkül egy `{"id": "12"}` mezőből `12` lesz terminus, ami
+  minden sorra illeszkedik, és a valódi találatot elnyeli a zaj. Ha egy rövid
+  terminus tényleg kell, `--min-len 2` és nézd meg, mit kapsz.
   Az egyszerű, ékezet-független szűrés innentől csak a gyorsellenőrzés:
   ```bash
   python3 -c "
