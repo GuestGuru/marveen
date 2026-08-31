@@ -289,6 +289,27 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   ```
   Ezert jegyezd fel a lanc INDITASA elott a `git rev-parse HEAD`-et -- utolag mar
   nehezebb megmondani, honnan indultal.
+- 🔴 **A `git fetch origin <ag>` AUTH-ot ker, a sima `git fetch origin` NEM -- es ez
+  a lanc 3. lepeset allitja meg.** 2026-08-31 13:00: ugyanaz a szkript, ami reggel
+  otszor vegigment, a verifikacional elhasalt:
+  `fatal: could not read Username for 'https://github.com'`. A push (proxyn at) es a
+  `git fetch origin` / `git pull --ff-only origin main` (anonim, alap refspec)
+  tovabbra is ment; kizarolag az EXPLICIT ag-nevre valo fetch kert hitelesitest.
+  **Az ag ilyenkor MAR FENT VAN, tehat a munka nem veszett el** -- csak a PR-lanc
+  maradt el. A `--resume` sem segit, mert ugyanazon a lepesen bukik.
+  **A kezi befejezes, ami mukodott:**
+  ```bash
+  git fetch origin --quiet                       # alap refspec: ez megy
+  git rev-parse --short origin/<ag>              # a mar lehuzott remote ref
+  git diff --stat origin/main origin/<ag>        # pontosan a sajat fajljaid?
+  ```
+  majd a PR-lanc a MCP-toolokkal (`github_open_pr` -> `github_merge_pr` ketszer),
+  mert azok a proxyn at hitelesitenek, nem a git credential helperen.
+  ⚠️ **Es egy csapda a vegen: a `gg-skill-tukor-sync.sh` ilyenkor ZOLDET mutat,
+  miközben az origin meg nem tud a fajlrol.** A meroje `git ls-files`, ami a LOKALIS
+  commitot latja -- a szkript lokalisan mar commitolt, mielott a lanc elszallt.
+  A tukor-paritas tehat a lanc befejezese elott NEM bizonyitek; a bizonyitek
+  `git rev-parse HEAD origin/main` egyezese.
 - **`gh auth status` = not logged in, ez normális.** Ne kezdj el `gh auth login`-t szervezni, a push-út a `github_commit` MCP tool (IT-461 óta él).
 - **A `github_*` toolok a `fejlesztoi` csomaghoz kötöttek, és a csomag ELTŰNHET a token alól.** 2026-08-05: kész, tesztelt javítást nem lehetett felküldeni, mert `gg_allowed_tools` szerint mind a 12 `github_*` tool a `nincs_jogod` ágon volt (`kell: fejlesztoi`), és a `gg_secret_get` sem adta ki a `github` kulcsot. Mindkét token ugyanaz (`/home/gg/gg-mcp/tokens/*.token` -> ugyanaz a userId), tehát token-cserével sem kerülhető meg:
   ⚠️ **A régi mérő-parancs 2026-08-10-re KÉTSZERESEN félrevezet — ne ezt használd:**

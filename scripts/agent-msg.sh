@@ -9,7 +9,19 @@
 # when an id came back.
 #
 # Usage:  bash scripts/agent-msg.sh <from> <to> "<content>"
-#   content: plain text (quotes / newlines OK) -- the body is built with json.dumps (no quoting pitfalls).
+#   content: plain text (quotes / newlines OK) -- the body is built with json.dumps, so the JSON side
+#   has no quoting pitfalls. The SHELL side does, and it fails SILENTLY:
+#
+#   WARNING: inside a double-quoted argument the shell expands `backticks`, $VAR and $(...) BEFORE this
+#   script ever sees the text. A message full of `path/to/file` markdown then arrives with holes where
+#   the paths were -- and the send still reports "OK id=<n>", because the transport worked perfectly.
+#   Measured 2026-08-31 (msg 249): every backticked path vanished from a message to another agent, and
+#   only re-reading the stored row revealed it. Prefer STDIN with a QUOTED heredoc for anything
+#   containing backticks, $ or code:
+#     cat <<'EOF' | bash scripts/agent-msg.sh <from> <to> -
+#     ... text with `backticks` and $vars kept verbatim ...
+#     EOF
+#   (The quoted 'EOF' is what disables expansion; an unquoted EOF re-opens the same hole.)
 #   large / multi-line content may come from STDIN when the 3rd arg is "-":
 #     echo "<long text>" | bash scripts/agent-msg.sh <from> <to> -
 # Output: success -> "OK id=<n>"; failure -> "FAIL <reason>" + a line in store/agent-msg-failures.log, exit 1.
