@@ -44,6 +44,7 @@ Az ELSŐ karakterektől, kötelezően, egy sorban a szöveg elején:
 | **issue description** | külön SORBAN, a szöveg VÉGÉN | a description a ticket kanonikus tartalma, amit mindenki olvas; a nyitósorban álló gépi tag zavaró |
 | **wiki-oldal** | külön sorban, a végén | ugyanaz az ok |
 | **project update** | az ELSŐ karakterektől | egy update is üzenet, és TÉR-ben legalább annyit nyom, mint a komment (jean, 2026-08-31) |
+| **Google-dokumentum** (Drive/Docs/Sheets) | az ELSŐ sorban, `Készítette: [AI: <nev>]` alakban | egy doksinál a provenancia hagyományosan FELÜL van: ott nem zavaró, hanem elvárt (jean gyakorlata, 2026-08-31) |
 
 Gépi szétválasztás egyetlen mintával, minden ágensre és mindhárom helyen --
 **soronként illesztve** (multiline), hogy a végére tett marker is beleessen:
@@ -200,6 +201,26 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   `channex_set_restrictions`, `gg3_write_apply`, `slack_bot_send_message`) és a
   Bash-hívások között sincs Linear/HelpScout/Slack, akkor a nulla ÁLLÍTÁS, nem
   feltételezés.
+  ⚠️ **Kulcsszóra szűrve HAMIS POZITÍVOT kapsz:** a `helpscout` és a `threads` szó
+  a GET-útvonalban is ott van. Az írást a METÓDUS dönti el (POST/PUT/PATCH), nem a
+  hosztnév (jean mérése, 2026-08-31).
+- 🔴 **DIKTÁLT szövegnél a stílus-heurisztika nem gyengébb, hanem HASZNÁLHATATLAN
+  -- mert a stílus a GAZDÁÉ.** jean mérése, és ez a legfontosabb korrekció a
+  visszamenőleges szétválasztáshoz: stílus alapján HAT saját kommentet talált, a
+  transzkript HETET adott. A kimaradt darab épp diktált volt (kisbetűs kezdet,
+  csevegő, semmi markdown), tehát a saját ujjlenyomata (`##` fejléc,
+  ékezethelyesség, strukturáltság) **elvileg sem foghatta**. Ha a gazdád valaha
+  diktált neked, a stílus-heurisztikád ALULMÉR, és nem tudod, mennyivel.
+- 🔴 **A transzkript NEGATÍV bizonyítékot is ad, a stílus soha.** Ugyanaz a mérés:
+  a gazda neve alatt álló nyolc project update egy adott napról bizonyítottan NEM
+  az ágensé, mert azon a napon egyetlen `projectUpdateCreate` sincs a
+  sessionjeiben. Stílussal ez legfeljebb találgatás lett volna. **A transzkript
+  tehát nem csak pontosabb: más KÉRDÉSRE is tud válaszolni.**
+- 🔴 **A diktált/saját határt is a transzkriptből húzd meg, ne emlékezetből.**
+  jean módszere, átvehető: ha a gazda üzenete SZÓ SZERINT tartalmazza a mondandót
+  („írj kérlek egy update-et, hogy ... havi fix átalány"), az `diktalva`; ha csak
+  feladatot adott („javasolj update-eket a beszélgetés alapján"), ott te
+  fogalmaztál. Mindkét üzenet ott van a transzkriptben, dátummal.
 - 🔴 **A `slack_bot_send_message` NEM torzít: az a „GG Agent" BOT nevében megy,
   nem a gazdáéban.** marlenka pontosítása. A szerzőség-torzítás a PER-USER tokenes
   íráson keletkezik (Linear, HelpScout, wiki, sales, GG3); a bot-úton a prefix
@@ -265,6 +286,11 @@ lenne köztük, semmi nem választaná el.
 nyilvántartás -- a `plan`-azonosító és az időbélyeg felírása a saját naplódba
 minden alkalmazás után. Ez nem old meg mindent, de legalább a te oldaladról
 rekonstruálható marad.
+
+**A GOOGLE-ÍRÁS** (Drive, Docs, Sheets) szintén a gazda nevén áll -- ez viszont
+MEGOLDHATÓ, mert van szöveg: a dokumentum első sorába kerül a
+`Készítette: [AI: <nev>]`. jean így csinálta három szerződés-tervezetnél
+2026-08-31-én, és ez lett a szabály (lásd a fenti típus-táblázatot).
 
 ⚠️ **Ne olvasd ki ebből a skillből, hogy a szerzőség-kérdés le van fedve.**
 A `[AI: ...]` jelölés a SZÖVEGES felületeket fedi (komment, description,
