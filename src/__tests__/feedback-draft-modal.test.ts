@@ -62,6 +62,35 @@ const BUSY_WITH_MODAL_TEXT_PANE = [
   '  ⏵⏵ bypass permissions on · esc to interrupt · ← for agents',
 ].join('\n')
 
+// The hole review found: the option line quoted WITH its border. This is the
+// exact shape of the code comment documenting the modal, so a diff of the
+// detector pasted into the prompt would otherwise arm it against its author.
+const BORDER_QUOTED_IN_INPUT_PANE = [
+  '✻ Crunched for 2m 1s · done 8:22',
+  '',
+  '───────────────────────────────────────────────────────────────────────── Samu ─',
+  '❯ A modal anatomiaja a kommentben:',
+  '  ╭──────────────────────────────────────────────╮',
+  '  │ ✻ Bug report drafted: <one-line summary>…    │',
+  '  │ 1 to review · 2 to send · 0 to dismiss       │',
+  '  ╰──────────────────────────────────────────────╯',
+  '────────────────────────────────────────────────────────────────────────────────',
+  '  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents · 1 feedback d…',
+].join('\n')
+
+// Same content, but rendered in the TRANSCRIPT above the prompt and pushed out
+// of the live region by later output. Distance is what disarms this one.
+const BORDER_QUOTED_IN_SCROLLBACK_PANE = [
+  '  ╭──────────────────────────────────────────────╮',
+  '  │ 1 to review · 2 to send · 0 to dismiss       │',
+  '  ╰──────────────────────────────────────────────╯',
+  ...Array(14).fill('  a valasz tobbi resze, sorrol sorra'),
+  '───────────────────────────────────────────────────────────────────────── Samu ─',
+  '❯ ',
+  '────────────────────────────────────────────────────────────────────────────────',
+  '  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents',
+].join('\n')
+
 describe('detectsFeedbackDraftModal', () => {
   it('fires on the real captured modal (known positive)', () => {
     expect(detectsFeedbackDraftModal(REAL_MODAL_PANE)).toBe(true)
@@ -86,6 +115,23 @@ describe('detectsFeedbackDraftModal', () => {
     )
     expect(unboxed).not.toBe(REAL_MODAL_PANE)
     expect(detectsFeedbackDraftModal(unboxed)).toBe(false)
+  })
+
+  it('does NOT fire on a border-quoted option line parked in the input box', () => {
+    expect(detectsFeedbackDraftModal(BORDER_QUOTED_IN_INPUT_PANE)).toBe(false)
+  })
+
+  it('does NOT fire on a bordered reproduction that scrolled out of the live region', () => {
+    expect(detectsFeedbackDraftModal(BORDER_QUOTED_IN_SCROLLBACK_PANE)).toBe(false)
+  })
+
+  // Mutation control for the position rule specifically: take the real modal
+  // and strip the prompt marker below the box. Without a prompt underneath,
+  // the box cannot be sitting above the input, and the detector must go dark.
+  it('goes dark when no prompt marker follows the box', () => {
+    const noPrompt = REAL_MODAL_PANE.replace('❯ ', '  ')
+    expect(noPrompt).not.toBe(REAL_MODAL_PANE)
+    expect(detectsFeedbackDraftModal(noPrompt)).toBe(false)
   })
 
   it('does NOT fire on an empty or blank pane', () => {

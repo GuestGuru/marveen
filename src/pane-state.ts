@@ -631,7 +631,27 @@ export function detectsModelConsentDialog(pane: string): boolean {
 // prompt input (no box border on that line) and can never trigger a
 // keystroke. The busy guard follows detectsModelConsentDialog's discipline:
 // a pane mid-turn is never an actionable modal.
-const FEEDBACK_DRAFT_OPTIONS_RX = /^[^\S\n]*│.*?\d+ to review\b.*?\d+ to send\b.*?\d+ to dismiss\b/m
+//
+// The border alone is NOT enough, and the hole was found in review: an option
+// line quoted WITH its border ("  │ 1 to review · 2 to send · 0 to dismiss  │")
+// matches it -- and the very code comment above is that shape, so a diff of
+// this file pasted into a prompt would arm the detector against its author.
+// Two further conditions close it:
+//   1. POSITION. The real modal renders ABOVE the prompt input; anything a
+//      person or agent parks in the box renders at or below the `❯` marker.
+//      The option line must therefore precede the last prompt marker.
+//   2. ADJACENCY. The modal sits directly on top of the input (measured: 6
+//      lines up); scrollback quotes drift further away. Scoping to the live
+//      region keeps an old transcript quote from arming anything.
+// Residual vector, stated rather than hidden: a faithfully bordered
+// reproduction rendered in the live region ABOVE the prompt still matches.
+// The blast radius is one stray "0" character typed into an idle prompt --
+// the Esc follow-up cannot fire without its own detector -- which is the
+// cheaper failure. Gating on the footer's "N feedback draft" counter would
+// prune it, but that string TRUNCATES on a narrow pane, and a false negative
+// here costs a 10-minute silent stall.
+const FEEDBACK_DRAFT_OPTIONS_RX = /^[^\S\n]*│.*?\d+ to review\b.*?\d+ to send\b.*?\d+ to dismiss\b/
+const PROMPT_MARKER_RX = /^[^\S\n]*❯/
 
 export function detectsFeedbackDraftModal(pane: string): boolean {
   if (!pane || !pane.trim()) return false
@@ -642,7 +662,21 @@ export function detectsFeedbackDraftModal(pane: string): boolean {
   }
   const footerRegion = lines.slice(-LIVE_FOOTER_REGION_LINES).join('\n')
   if (BUSY_ESC_TO_INTERRUPT_RX.test(footerRegion)) return false
-  return FEEDBACK_DRAFT_OPTIONS_RX.test(pane)
+
+  const liveFrom = Math.max(0, lines.length - BUSY_LIVE_REGION_LINES)
+  let optionsAt = -1
+  for (let i = lines.length - 1; i >= liveFrom; i--) {
+    if (FEEDBACK_DRAFT_OPTIONS_RX.test(lines[i])) { optionsAt = i; break }
+  }
+  if (optionsAt < 0) return false
+
+  let lastPromptAt = -1
+  for (let i = lines.length - 1; i > optionsAt; i--) {
+    if (PROMPT_MARKER_RX.test(lines[i])) { lastPromptAt = i; break }
+  }
+  // No prompt marker below the box means the option line is inside the input
+  // box (or the pane is mid-render): not an actionable modal.
+  return lastPromptAt > optionsAt
 }
 
 // The follow-up Claude Code shows immediately after the draft modal is
