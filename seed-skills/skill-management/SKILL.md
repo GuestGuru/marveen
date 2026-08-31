@@ -231,6 +231,24 @@ grep -a '| >' ~/.claude/skills/.skill-index.md   # must return nothing
   The same applies to the executable bit: `cp -p`, and verify with
   `git ls-tree <ref> <path>` that `100755` survived the round trip.
 
+  ⚠️ **De a `cp -p` ára: az mtime többé nem jelzés.** Egy mtime-őrző másolat után
+  UGYANAZ a percbélyeg takarhat két különböző tartalmat -- reprodukálva
+  2026-08-31: két `cp -p`-vel készült fájl azonos `15:42:41` mtime-mal, eltérő
+  tartalommal. Ez nem zajos jel, hanem NÉMA: aki időbélyegre épít, nem
+  bizonytalanságot kap, hanem téves bizonyosságot.
+  **Következmény két ágens párhuzamos szerkesztésénél:** a „ki a frissebb"
+  kérdésre az mtime NEM válaszol. A döntő a tartalom, három irányban, és olcsó:
+  ```bash
+  diff -q <elo> <tukor>
+  git show origin/main:<tukor-utvonal> > /tmp/om && diff -q <tukor> /tmp/om
+  ```
+  (2026-08-31, jean jelzésére. A konkrét esetben a riasztás HAMIS volt -- a három
+  példány karakterre azonos volt --, és **a `cp -p` mint ok nem bizonyított**: a
+  `gg-skill-tukor-sync.sh` maga `cp -r`-t használ, ami nem őrzi az mtime-ot.
+  A csapda tehát általánosan létezik és a saját eljárásaink hívják elő, de ezt a
+  konkrét eltérést nem ő okozta. Fájl-állapotot tartalommal ellenőrzünk, sosem
+  időbélyeggel.)
+
   🔴 **És a fordítottja a veszélyesebb: a HELPER fájl az ÉLŐ oldalon lehet
   ELAVULTABB, és egy `--fix` némán visszacsinálja a repo-oldali javítást.**
   2026-08-31: javítottam a `seed-skills/fleet-helper/scripts/fleet.py`-t (stdin-út
