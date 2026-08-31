@@ -91,6 +91,28 @@ const BORDER_QUOTED_IN_SCROLLBACK_PANE = [
   '  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents',
 ].join('\n')
 
+// The SECOND live rendering, captured during the 09:07 stall: the modal is
+// taller (a second draft is queued behind it) and the idle footer is NOT on
+// screen -- the pane ends at the prompt marker. This is the variant that made
+// the readiness gate refuse, which is why the dismissal cannot live only in
+// the send path: the gate short-circuits before any send is attempted.
+const REAL_MODAL_NO_FOOTER_PANE = [
+  '  szerint még nem kartyázom (a negyediknél), de ha eljön, felveszem.',
+  '',
+  '✻ Brewed for 4m 25s · done 9:02',
+  '',
+  '╭──────────────────────────────────────────────────────────────────────────────╮',
+  '│ ✻ Bug report drafted: Diagnosed a red test from its output name, without re… │',
+  '│ │ What happened: A shell test printed "MAIN_AGENT_ID NOT substituted in      │',
+  '│ │ SKILL.md buktatok" (19/20). I took the output name literally and reported  │',
+  '│ 1 to review · 2 to send · 0 to dismiss · +1 more queued                      │',
+  '╰──────────────────────────────────────────────────────────────────────────────╯',
+  '',
+  '',
+  '───────────────────────────────────────────────────────────────────────── Samu ─',
+  '❯',
+].join('\n')
+
 describe('detectsFeedbackDraftModal', () => {
   it('fires on the real captured modal (known positive)', () => {
     expect(detectsFeedbackDraftModal(REAL_MODAL_PANE)).toBe(true)
@@ -132,6 +154,15 @@ describe('detectsFeedbackDraftModal', () => {
     const noPrompt = REAL_MODAL_PANE.replace('❯ ', '  ')
     expect(noPrompt).not.toBe(REAL_MODAL_PANE)
     expect(detectsFeedbackDraftModal(noPrompt)).toBe(false)
+  })
+
+  it('fires on the footerless live rendering, and that pane does NOT read idle', () => {
+    // Both halves matter. The detector must see the modal in this variant too,
+    // AND the pane state explains why delivery refused: without the idle footer
+    // the state is not 'idle', so isSessionReadyForPrompt says not-ready and
+    // the send path -- where the pre-flight dismissal lives -- is never reached.
+    expect(detectsFeedbackDraftModal(REAL_MODAL_NO_FOOTER_PANE)).toBe(true)
+    expect(detectPaneState(REAL_MODAL_NO_FOOTER_PANE)).not.toBe('idle')
   })
 
   it('does NOT fire on an empty or blank pane', () => {
