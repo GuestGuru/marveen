@@ -231,6 +231,23 @@ grep -a '| >' ~/.claude/skills/.skill-index.md   # must return nothing
   The same applies to the executable bit: `cp -p`, and verify with
   `git ls-tree <ref> <path>` that `100755` survived the round trip.
 
+  🔴 **És a fordítottja a veszélyesebb: a HELPER fájl az ÉLŐ oldalon lehet
+  ELAVULTABB, és egy `--fix` némán visszacsinálja a repo-oldali javítást.**
+  2026-08-31: javítottam a `seed-skills/fleet-helper/scripts/fleet.py`-t (stdin-út
+  a content argumentumokhoz), felvittem a láncon -- majd egy későbbi
+  `gg-skill-tukor-sync.sh --fix` a `~/.claude/skills/fleet-helper/` **augusztus
+  2-i** másolatából visszaírta a régi fájlt, 25 sor törlésével. A SKILL.md maga
+  szinkronban volt; csak a mellette lakó szkript nem, és a paritás-mérő
+  „szinkronizálva" sort írt, nem hibát.
+  **Két dolog vezetett ide, és mindkettő elkerülhető:**
+  (1) a `--fix`-et `>/dev/null 2>&1`-gyel futtattam, tehát nem láttam, MIT nyúlt meg;
+  (2) egy skill helper-fájljának két példánya volt, és senki nem ellenőrizte,
+  melyik a frissebb -- pedig a projekt-gyökér alatti a futtatott, az élő skill
+  alatti csak árnyék.
+  **Eljárás:** a `--fix` kimenetét MINDIG olvasd el, és ha egy skillnek van
+  helper-fájlja, a szinkron UTÁN nézd meg a `git diff --stat`-ot: ha a mirror-írás
+  TÖRÖL sorokat egy szkriptből, az majdnem biztosan visszalépés, nem szinkron.
+
 - **Never conclude "this skill is unversioned" from a single directory.** A
   versioned copy can live in any of several places, and this install has five:
   `seed-skills/` (goes to every install), `gg-skills/` (machine/org-specific,
