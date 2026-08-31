@@ -613,6 +613,53 @@ export function detectsModelConsentDialog(pane: string): boolean {
     && MODEL_CONSENT_CONFIRM_RX.test(footerRegion)
 }
 
+// Claude Code's self-drafted feedback modal (first observed 2026-08-31 on
+// agent-samu, which sat not-ready for 10 minutes with 5 inter-agent messages
+// queued behind it). When the model drafts a feedback report it parks the TUI
+// on a bordered box above the prompt:
+//   ╭──────────────────────────────────────────────╮
+//   │ ✻ Bug report drafted: <one-line summary>…    │
+//   │ 1 to review · 2 to send · 0 to dismiss       │
+//   ╰──────────────────────────────────────────────╯
+// Unlike the resume/consent modals this one leaves the NORMAL IDLE FOOTER on
+// screen ("bypass permissions on … · 1 feedback draft"), so detectPaneState
+// still reads the pane as idle and delivery keeps "succeeding" into a pane
+// that swallows the keystrokes. IDLE_FOOTER_RX is therefore NOT usable as a
+// negative guard here, and quote-proofing has to come from somewhere else:
+// the option line must sit INSIDE the modal's box border. A message that
+// merely quotes "1 to review · 2 to send · 0 to dismiss" renders in the
+// prompt input (no box border on that line) and can never trigger a
+// keystroke. The busy guard follows detectsModelConsentDialog's discipline:
+// a pane mid-turn is never an actionable modal.
+const FEEDBACK_DRAFT_OPTIONS_RX = /^[^\S\n]*│.*?\d+ to review\b.*?\d+ to send\b.*?\d+ to dismiss\b/m
+
+export function detectsFeedbackDraftModal(pane: string): boolean {
+  if (!pane || !pane.trim()) return false
+  const lines = pane.split('\n')
+  const busyRegion = lines.slice(-BUSY_LIVE_REGION_LINES).join('\n')
+  for (const rx of BUSY_INDICATORS) {
+    if (rx.test(busyRegion)) return false
+  }
+  const footerRegion = lines.slice(-LIVE_FOOTER_REGION_LINES).join('\n')
+  if (BUSY_ESC_TO_INTERRUPT_RX.test(footerRegion)) return false
+  return FEEDBACK_DRAFT_OPTIONS_RX.test(pane)
+}
+
+// The follow-up Claude Code shows immediately after the draft modal is
+// dismissed: "Turn off Claude-drafted feedback? 0 to turn off · Esc to keep".
+// Only ever consulted in the frame right after we send the dismiss key. It
+// renders ABOVE the prompt box (measured: ~7 lines up from the footer, so
+// LIVE_FOOTER_REGION_LINES is too narrow for it) and is scoped to the live
+// region so a quoted mention in scrollback cannot answer it. Answering it with a second "0" would silently disable
+// feedback drafting for that agent -- the dismisser answers Esc (keep).
+const FEEDBACK_OPTOUT_RX = /Turn off Claude-drafted feedback/
+
+export function detectsFeedbackOptOutPrompt(pane: string): boolean {
+  if (!pane || !pane.trim()) return false
+  const liveRegion = pane.split('\n').slice(-BUSY_LIVE_REGION_LINES).join('\n')
+  return FEEDBACK_OPTOUT_RX.test(liveRegion)
+}
+
 export interface DetectPaneStateOptions {
   /** If true, the 'typing' state (text parked in input box) is
    * merged into 'busy'. Default false -- callers that care about

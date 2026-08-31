@@ -21,6 +21,8 @@ import {
   idleConsideringDimGhost,
   detectsFirstRunGate,
   detectsModelConsentDialog,
+  detectsFeedbackDraftModal,
+  detectsFeedbackOptOutPrompt,
   type FirstRunGateKind,
 } from '../pane-state.js'
 import { agentDir, listAgentNames, readAgentModel, readAgentClaudeConfigDir, readAgentClaudePlan, readAgentChannelProvider, readAgentAuthMode, readAgentDisplayName, readAgentRemoteConfig, readAgentRemoteHost, readAgentMemoryIsolation } from './agent-config.js'
@@ -1515,6 +1517,38 @@ export async function dismissResumeSummaryModalIfPresent(session: string, host: 
   }
 }
 
+// Claude Code drafts feedback reports on its own and parks them in a bordered
+// modal above the prompt input ("Bug report drafted: …" + "1 to review · 2 to
+// send · 0 to dismiss"). It swallows the next keystroke exactly like the
+// session-rating modal, but it is NASTIER to detect: it leaves the normal idle
+// footer on screen, so detectPaneState() reports the pane idle, deliveries are
+// marked delivered, and the messages pile up in the input box unsent. Measured
+// live on agent-samu 2026-08-31: 10 minutes not-ready, 5 queued messages, and
+// a peer's report parked unsubmitted in the prompt.
+//
+// Dismissal takes TWO steps, measured on that same pane: "0" closes the draft,
+// then Claude Code immediately offers "Turn off Claude-drafted feedback? 0 to
+// turn off · Esc to keep". A second "0" there would silently disable feedback
+// drafting for that agent, so the follow-up is answered with Esc (keep) -- and
+// only when its own detector fires, never blind: a bare Esc into a prompt box
+// that holds a parked delivery is not a keystroke worth firing on spec.
+export async function dismissFeedbackDraftModalIfPresent(session: string, host: string | null = null): Promise<void> {
+  try {
+    const pane = captureTmux(host, ['capture-pane', '-t', session, '-p'])
+    if (!detectsFeedbackDraftModal(pane)) return
+    runTmux(host, ['send-keys', '-t', session, '0'], { timeout: 5000 })
+    await delay(300)
+    const after = captureTmux(host, ['capture-pane', '-t', session, '-p'])
+    if (detectsFeedbackOptOutPrompt(after)) {
+      runTmux(host, ['send-keys', '-t', session, 'Escape'], { timeout: 5000 })
+      await delay(300)
+    }
+    logger.info({ session }, 'Dismissed Claude Code feedback-draft modal before sending prompt (feedback drafting left ON)')
+  } catch (err) {
+    logger.warn({ err, session }, 'Failed to probe/dismiss feedback-draft modal')
+  }
+}
+
 // Runtime backstop for the model overage-consent dialog ("Fable 5 now uses
 // usage credits" -- see detectsModelConsentDialog in pane-state.ts for the
 // full anatomy and the drift root cause). The stampFableOverageConsent
@@ -1622,6 +1656,7 @@ export async function scheduleIdentitySetup(session: string, displayName: string
         await dismissSurveyModalIfPresent(session, host)
         await dismissResumeSummaryModalIfPresent(session, host)
         await dismissModelConsentDialogIfPresent(session, host)
+        await dismissFeedbackDraftModalIfPresent(session, host)
       } catch (err) {
         logger.warn({ err, session }, 'Post-restart modal dismiss failed')
       }
@@ -1804,6 +1839,7 @@ export async function sendPromptToSession(
     await dismissSurveyModalIfPresent(session, host)
     await dismissResumeSummaryModalIfPresent(session, host)
     await dismissModelConsentDialogIfPresent(session, host)
+    await dismissFeedbackDraftModalIfPresent(session, host)
   } else {
     const releaseDismissLane = tryAcquireSessionSendLane(session, host)
     if (releaseDismissLane) {
@@ -1811,6 +1847,7 @@ export async function sendPromptToSession(
         await dismissSurveyModalIfPresent(session, host)
         await dismissResumeSummaryModalIfPresent(session, host)
         await dismissModelConsentDialogIfPresent(session, host)
+        await dismissFeedbackDraftModalIfPresent(session, host)
       } finally {
         releaseDismissLane()
       }
