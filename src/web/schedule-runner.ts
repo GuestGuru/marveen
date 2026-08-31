@@ -47,12 +47,13 @@ import {
   sendEnterToSession,
   clearStaleParkedInput,
   resolveAgentProvider,
+  dismissFeedbackDraftModalIfPresent,
 } from './agent-process.js'
 import { MAIN_CHANNELS_SESSION } from './main-agent.js'
 import { runCommandTask } from './command-task.js'
 import { decideQuotaAction, type QuotaWorkClass } from '../quota-gate.js'
 import { readQuotaSnapshot } from '../quota-snapshot.js'
-import { paneShowsContextSaturation, detectsFirstRunGate, detectPaneState, type PaneState } from '../pane-state.js'
+import { paneShowsContextSaturation, detectsFirstRunGate, detectsFeedbackDraftModal, detectPaneState, type PaneState } from '../pane-state.js'
 import { withSessionSendLock } from './session-send-lock.js'
 
 // How many bare-Enter attempts the post-send resubmit tries before escalating
@@ -680,8 +681,26 @@ async function attemptFireTask(
       logger.warn({ task: task.name, agent: agentName, session, gate }, 'Schedule target session parked on a Claude Code first-run dialog, deferring to retry queue')
       return 'first-run'
     }
-    logger.warn({ task: task.name, agent: agentName, session }, 'Schedule target session busy or has pending input, will retry')
-    return 'busy'
+    // A self-drafted feedback modal reads as not-ready here, and the pre-flight
+    // dismissal in sendPromptToSession never gets the chance to clear it --
+    // this gate short-circuits first. Measured twice on 2026-08-31: agent-samu
+    // sat not-ready for 10 minutes with 10 queued messages while the modal held
+    // the pane, AFTER the pre-flight dismissal had already shipped. So the
+    // dismissal has to live on the refusal path too, the same way the first-run
+    // gate is answered above, and readiness is then re-read ONCE.
+    if (notReadyPane != null && detectsFeedbackDraftModal(notReadyPane)) {
+      logger.warn({ task: task.name, agent: agentName, session }, 'Schedule target session held by a Claude Code feedback-draft modal, dismissing and re-reading readiness')
+      await dismissFeedbackDraftModalIfPresent(session, host)
+      if (await isSessionReadyForPrompt(session, host)) {
+        logger.info({ task: task.name, agent: agentName, session }, 'Feedback-draft modal cleared, session is ready -- proceeding')
+      } else {
+        logger.warn({ task: task.name, agent: agentName, session }, 'Schedule target session still not ready after dismissing the feedback-draft modal, will retry')
+        return 'busy'
+      }
+    } else {
+      logger.warn({ task: task.name, agent: agentName, session }, 'Schedule target session busy or has pending input, will retry')
+      return 'busy'
+    }
   }
 
   if (task.forceSend) {
