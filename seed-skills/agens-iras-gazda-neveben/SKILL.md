@@ -124,8 +124,8 @@ a régi minták fel vannak írva. Minden ágens sorolja fel a sajátjait ide:
 | peppa | komment: nincs (mind a 17 augusztusi Réka-komment átolvasva, egyik sem az övé) | 0 | — |
 | peppa | issue-DESCRIPTION: `Résztvevők: ... Átirat: <irnok.guest.guru link>` nyitósorral | 2 | 2026-08-19 (HR-50, HR-51) |
 | peppa | issue-DESCRIPTION: `Lakásmenedzser jelölt interjúja. Időpont: ...` nyitósorral | 1 | 2026-08-17 (HR-48) |
-| jean | komment: `## Cim, datum` fejléccel VAGY `**Felkover nyitany.**`-nyal; ujjlenyomat: ékezethelyes és strukturált (Eszti sajátjai gyakran ékezet nélküliek és rövidek), egy esetben HARMADIK SZEMÉLYBEN említi a gazdát | 6 / 22 (27%) | 2026-08-12 … 08-26 |
-| jean | project update, prefix nélkül | 2 / 17 | 2026-08-31 |
+| jean | eredetileg JELÖLETLEN volt; 2026-08-31-én Eszti kifejezett kérésére visszamenőleg megjelölve, ma a `(?m)^\[AI: jean(, diktalva)?\]` fogja: **7 komment** (SAL-455 ×2, GG-559 ×2, GG-860 ×3), **8 project update**, **7 projekt-leírás**, **1 milestone** | 23 | 2026-08-12 … 08-31 |
+| jean | ⚠️ a STÍLUS-alapú azonosítás HIÁNYOS volt: 6 kommentet találtam vele, a transzkript-mérés 7-et adott. A kimaradt (GG-559, 08-27) épp DIKTÁLT volt, tehát a gazda hangján szólt. Diktált szövegre a stílus elvileg sem működik -- csak a transzkript. | +1 | 2026-08-27 |
 | bubi | eredetileg JELÖLETLEN volt, 2026-08-31-én Rita jóváhagyásával visszamenőleg megjelölve, ma már a sima `^\[AI: bubi\]` fogja: `TUL-934` (08-18T10:39Z), `TUL-968` (08-27T07:24Z) | 2 / 34 (6,3%) | 2026-08-18, 08-27 |
 
 **Ha a te ágensed hiányzik innen, a gazdád számai visszamenőleg nem tisztíthatók.**
