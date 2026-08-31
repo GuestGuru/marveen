@@ -141,12 +141,33 @@ async function felhasznaloiToken(args: Args): Promise<string> {
   }
 }
 
+/**
+ * Az anon kulcs CSAK az interaktiv (email+jelszo) bejelentkezeshez kell -- a
+ * masik ket bekotesi ut nelkule is megy.
+ *
+ * MIERT NINCS BEEGETETT ALAPERTELMEZESE, holott a kulcs PUBLIKUS (megmerve:
+ * benne van a kiszolgalt kliens-bundle-ben): a repo secret-gate-jenek van
+ * JWT-mintaja, es az nem tudja megkulonboztetni alak alapjan a publikus anon
+ * kulcsot a service_role kulcstol. Egy beegetett default miatt EZT A
+ * PRODUCTION FAJLT kellene allowlistelni JWT-re -- vagyis pont ott nyitnank
+ * lyukat, ahova kesobb egy VALODI titok kerulhet eszrevetlenul. A kenyelem
+ * nem eri meg a vak foltot.
+ */
 function anonKulcs(): string {
   const k = process.env.MARVEEN_ANON_KEY
   if (!k) {
+    // NEM MONDJUK MEG, HOL TALALJA, MERT NEM TUDJUK. Megmerve: a
+    // MARVEEN_ANON_KEY sem a doksikban, sem a telepitokben, sem a
+    // dashboardon nem szerepel. Egy talalgatott hely rosszabb a hianynal:
+    // a tag keresne valamit, ami nincs ott. Helyette a ket ut, ami MA
+    // mukodik.
     fail(
-      'hianyzik a MARVEEN_ANON_KEY (a marveen.io publikus anon kulcsa).\n' +
-        '  A bekoteshez ez kell; a dashboardon vagy a telepitesi utmutatoban talalod.',
+      'az interaktiv bejelentkezeshez a MARVEEN_ANON_KEY kornyezeti valtozo kell,\n' +
+        '  es az ezen a gepen nincs beallitva. Ket ut mukodik nelkule:\n' +
+        '    npm run skill -- enroll --access-token <token>\n' +
+        '      (vagy MARVEEN_ACCESS_TOKEN kornyezeti valtozokent)\n' +
+        '    npm run skill -- enroll --key-id <id> --attest-key <titok> --member-id <uuid>\n' +
+        '      (a kulcsot a marveen.io feluleten kapod meg)',
     )
   }
   return k
