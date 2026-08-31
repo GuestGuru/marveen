@@ -242,12 +242,33 @@ grep -a '| >' ~/.claude/skills/.skill-index.md   # must return nothing
   diff -q <elo> <tukor>
   git show origin/main:<tukor-utvonal> > /tmp/om && diff -q <tukor> /tmp/om
   ```
-  (2026-08-31, jean jelzésére. A konkrét esetben a riasztás HAMIS volt -- a három
-  példány karakterre azonos volt --, és **a `cp -p` mint ok nem bizonyított**: a
-  `gg-skill-tukor-sync.sh` maga `cp -r`-t használ, ami nem őrzi az mtime-ot.
-  A csapda tehát általánosan létezik és a saját eljárásaink hívják elő, de ezt a
-  konkrét eltérést nem ő okozta. Fájl-állapotot tartalommal ellenőrzünk, sosem
-  időbélyeggel.)
+  (2026-08-31-én mérve, önálló reprodukcióval. **A csapda általános, de KONKRÉT
+  esetet ne írj mellé példaként:** aznap két magyarázat is felmerült egy vélt
+  eltérésre -- az mtime-ütközés és egy időrendi csúszás --, és VÉGÜL EGYIK SEM
+  volt igaz, lásd a következő buktatót. Fájl-állapotot tartalommal ellenőrzünk,
+  sosem időbélyeggel; de ettől még nem minden eltérés mtime-probléma.)
+
+- 🔴 **NULLA TALÁLATNÁL ELŐSZÖR A MINTÁT GYANÚSÍTSD, NE A VALÓSÁGOT.** jean
+  fogalmazta meg 2026-08-31-én, miután a saját hibás keresése két ágens két körét
+  elvitte. A konkrét hiba: **`grep -E` módban a `\|` NEM alternáció, hanem
+  LITERÁLIS pipe** -- extendedben az alternáció a csupasz `|`. Így a
+  `grep -cE 'VALAMI\|valami'` azt az egy összefüggő szöveget keresi, hogy
+  `VALAMI|valami`, ami természetesen nincs sehol. Mérve ugyanazon a fájlon:
+  ```
+  grep -cE 'HASZNÁLHATATLAN\|x'   -> 0     # literális pipe, hamis nulla
+  grep -cE 'HASZNÁLHATATLAN|x'     -> 25    # helyes alternáció
+  grep -c  'HASZNÁLHATATLAN\|x'   -> 25    # basic regexben a \| a helyes alak
+  ```
+  Három ilyen keresés adott nullát, és ettől RENDSZERnek látszott, ami elgépelés volt.
+  **Olcsó ellenszer: nulla találatnál futtass KONTROLL-keresést ugyanazzal a
+  mintával olyasmire, amiről tudod, hogy benne van.** Ha az is nullát ad, a minta
+  a hibás:
+  ```bash
+  grep -cE 'name:\|barmi' <fajl>   # 0  <- pedig a "name:" biztosan benne van
+  grep -cE 'name:' <fajl>          # 1  <- tehat a MINTA volt rossz
+  ```
+  Ez ugyanaz a hibaosztály, mint a némán üres API-szűrő: **a nulla találat nem
+  adat, amíg nem igazoltad, hogy a mérőeszköz működik.**
 
   🔴 **És a fordítottja a veszélyesebb: a HELPER fájl az ÉLŐ oldalon lehet
   ELAVULTABB, és egy `--fix` némán visszacsinálja a repo-oldali javítást.**
