@@ -3,11 +3,12 @@
  * `npm run skill -- <alparancs>` -- a marveen.io skill-parancs (MIOCLISKILL831).
  *
  * HAROM ALPARANCS:
- *   enroll   EGYSZERI bekotes: attest-kulcs kerese es HELYI tarolasa (0600),
- *            a skillek/szabalyok letoltese a helyukre, kis config.
+ *   enroll   EGYSZERI bekotes: attest-kulcs kerese es HELYI tarolasa (0600).
+ *            A skillek/szabalyok NEM innen jonnek: a telepitessel es a
+ *            frissitessel erkeznek (seed-skills/), nem HTTP-n.
  *   upload   feltoltes: beolvas -> LEFUTTATJA A HELYI SZKENT -> talalatnal
  *            TAGAD -> ha tiszta: HMAC-alairas + felkuldes.
- *   update   a skillek/szabalyok ujrahuzasa.
+ *   update   tavoli skill-csomag ujrahuzasa, HA valaha lesz ilyen.
  *
  * MIERT A CLI SAJAT FOLYAMATABAN SZKENNEL (spec, msg 16930/b): a hatokor
  * MINDEN app.marveen.io-s regisztralo, nem csak a Claude Code alatt futo
@@ -91,7 +92,7 @@ function sugo(): void {
   console.log(`marveen skill -- skillek es feltoltes a marveen.io kozossegbe
 
   npm run skill -- enroll [--user|--project] [--rotate]
-      Egyszeri bekotes: attest-kulcs kerese, helyi tarolas (0600), skillek letoltese.
+      Egyszeri bekotes: attest-kulcs kerese es helyi tarolas (0600).
       Hitelesites: MARVEEN_ACCESS_TOKEN vagy --access-token; enelkul email+jelszo bekerese.
 
   npm run skill -- enroll --key-id <id> --attest-key <titok> --member-id <uuid>
@@ -102,7 +103,8 @@ function sugo(): void {
       Helyi szken, majd tiszta eredmeny eseten alairt feltoltes.
 
   npm run skill -- update [--user|--project]
-      A skillek/szabalyok ujrahuzasa.
+      Tavoli skill-csomag ujrahuzasa, HA van ilyen. A beepitett skillek es
+      szabalyok a telepitessel/frissitessel erkeznek, nem innen.
 
   npm run skill -- status
       Mi van bekotve, hova, es milyen jogosultsaggal.`)
@@ -172,7 +174,9 @@ async function enroll(args: Args): Promise<void> {
     console.log(`Tarolva: ${ut} (0600)`)
     // A skilleket ezen az uton NEM toltjuk le: ahhoz felhasznaloi token kell,
     // es ez az ut epp azt kerulte meg. Ezt kimondjuk, nem hallgatjuk el.
-    console.log('A skillek letoltesehez bejelentkezes kell: npm run skill -- update')
+    // Ugyanaz a pontossag, mint a fenti agon: NEM kuldjuk a tagot egy
+    // parancsra, ami ma nem tud mit csinalni.
+    console.log('A hasznalati szabalyok es a skillek a telepitessel es a frissitessel erkeznek.')
     return
   }
 
@@ -229,7 +233,18 @@ async function skillekLetoltese(args: Args, token: string): Promise<void> {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) {
-    console.log(`(a skill-csomag most nem erheto el: HTTP ${res.status} -- keszen allsz feltoltesre, a skilleket kesobb huzd le: npm run skill -- update)`)
+    // NINCS TAVOLI SKILL-CSOMAG, ES EZT KI KELL MONDANI. Korabban ez a sor a
+    // `npm run skill -- update`-re kuldte a tagot -- egy parancsra, ami
+    // UGYANEZT a nem letezo vegpontot hivja, tehat garantaltan nem csinal
+    // semmit. Egy nem-letezo utra iranyitas rosszabb, mint a hiany
+    // kimondasa: a tag azt hiszi, van meg egy lepese.
+    //
+    // A hasznalati szabalyok es a skillek a TELEPITESSEL es a FRISSITESSEL
+    // erkeznek (seed-skills/), nem HTTP-n. A fetch-ag azert marad, mert ha
+    // valaha lesz kuratalt, koddal NEM utazo skill-csomag, ez a hely varja.
+    console.log('A bekotes kesz, feltoltesre keszen allsz.')
+    console.log('A hasznalati szabalyok es a skillek a telepitessel es a frissitessel erkeznek;')
+    console.log('tavoli skill-csomag jelenleg nincs.')
     return
   }
   const body = (await res.json()) as { files?: Array<{ path: string; content: string }> }
