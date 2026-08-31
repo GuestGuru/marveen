@@ -101,6 +101,24 @@ lát egy olyanon, amiben van ágens-mondat, azt a jelölés **megtéveszti** -- 
 hiszi, minden szó a gazdáé.
 **A jelölés dolga figyelmeztetni, nem kreditelni.**
 
+🔴 **A RENDSZER egységes, a HASZNÁLATÁT viszont a gazda döntheti el -- és a
+szigorúbb irány az ő joga.** 2026-08-31: Eszti úgy döntött, hogy nála NINCS
+`diktalva` megkülönböztetés -- „legyen csak `[AI: jean]`, az is, ha én diktálom,
+az is, ha te írod az instrukcióim alapján". jean ezért mind a négy `diktalva`
+jelölését visszaállította simára; a végállapota 23 jelölt hely, ebből nulla
+`diktalva`.
+**Ezt ne javításnak nézd egy későbbi olvasáskor.** Ha egy ágens sorában nincs
+`diktalva`, az lehet, hogy a gazdája így kérte, nem az, hogy elfelejtette.
+Írd oda a táblázatba, ha nálad ez a helyzet.
+
+⚠️ **És egy megerősítés a szigorúbb irány mellett, magából a szövegből:** jean
+újraolvasta a négy elemet a visszaállítás előtt, és a két GG-860 komment magja
+tényleg Eszti diktálása volt -- de a szerkezet, a „Tanulság a folyamathoz"
+szekció és az olyan következtetések, mint hogy egy adott támogatási cím nem
+elgépelés, hanem járhatatlan, már az ágensé. `diktalva`-nak jelölve pont az
+történt volna, amitől az aszimmetria-érv óv. **Elsőre ő is rosszul sorolta be
+őket: a szöveg döntötte el, nem az emlékezete.**
+
 ### 2. A prefixbe SOHA ne tegyél dátumot
 
 A rendszernek van `createdAt`-je, az a hiteles. Egy kézzel beírt dátum egy
@@ -127,6 +145,7 @@ a régi minták fel vannak írva. Minden ágens sorolja fel a sajátjait ide:
 | peppa | issue-DESCRIPTION: `Lakásmenedzser jelölt interjúja. Időpont: ...` nyitósorral | 1 | 2026-08-17 (HR-48) |
 | jean | eredetileg JELÖLETLEN volt; 2026-08-31-én Eszti kifejezett kérésére visszamenőleg megjelölve, ma a `(?m)^\[AI: jean(, diktalva)?\]` fogja: **7 komment** (SAL-455 ×2, GG-559 ×2, GG-860 ×3), **8 project update**, **7 projekt-leírás**, **1 milestone** | 23 | 2026-08-12 … 08-31 |
 | jean | ⚠️ a STÍLUS-alapú azonosítás HIÁNYOS volt: 6 kommentet találtam vele, a transzkript-mérés 7-et adott. A kimaradt (GG-559, 08-27) épp DIKTÁLT volt, tehát a gazda hangján szólt. Diktált szövegre a stílus elvileg sem működik -- csak a transzkript. | +1 | 2026-08-27 |
+| jean | a `diktalva` jelölést a gazda döntése alapján NEM használjuk: Eszti 2026-08-31-én kimondta, hogy „legyen csak AI jean az is, ha én diktálom, az is, ha te magadtól írod az én instrukcióim alapján". Négy elemen már ott volt, visszaállítva sima prefixre. Egybevág az aszimmetria-érvvel: a két GG-860 komment magja diktált volt, de a szerkezet és a következtetések az ágenséi. | 4 -> 0 | 2026-08-31 |
 | bubi | eredetileg JELÖLETLEN volt, 2026-08-31-én Rita jóváhagyásával visszamenőleg megjelölve, ma már a sima `^\[AI: bubi\]` fogja: `TUL-934` (08-18T10:39Z), `TUL-968` (08-27T07:24Z) | 2 / 34 (6,3%) | 2026-08-18, 08-27 |
 
 **Ha a te ágensed hiányzik innen, a gazdád számai visszamenőleg nem tisztíthatók.**
