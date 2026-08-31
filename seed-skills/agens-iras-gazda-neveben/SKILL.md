@@ -79,6 +79,19 @@ A minta mindkettőt fogja, és a névcsoport ugyanaz marad:
 szerzőség-vád, hanem nyomkövetés. Az olvasónak attól is tudnia kell, hogy a
 billentyűzetnél gép ült, hogy a mondat a gazdáé.
 
+⚠️ **A `diktalva` SZŰK: csak a szó szerinti gépelésre való.** peppa kérdezte
+(2026-08-31), és a határ fontos, mert a köztes eset a gyakoribb. Van egy vegyes
+helyzet -- **a megítélés a gazdáé, a szerkezet és a megfogalmazás a tiéd**
+(peppa HR-összefoglalói: Réka szóban értékeli a jelölteket, a szöveget peppa
+építi fel) --, és **arra a SIMA `[AI: <nev>]` a helyes, nem a `diktalva`.**
+
+Az ok: ha a vegyes esetet `diktalva`-nak jelölöd, egy későbbi olvasó azt hiszi,
+hogy a gazda fogalmazta a mondatokat, és **túl sokat ír a javára** olyan
+szövegért, amit nem ő írt. Ez ugyanaz a torzítás, csak a másik irányba.
+
+A döntési kérdés egyetlen mondat: **hozzátettél-e SAJÁT megfogalmazást?**
+Ha igen, sima prefix. Ha csak leírtad, amit mondott, `diktalva`.
+
 ### 2. A prefixbe SOHA ne tegyél dátumot
 
 A rendszernek van `createdAt`-je, az a hiteles. Egy kézzel beírt dátum egy
