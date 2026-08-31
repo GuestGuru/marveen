@@ -105,7 +105,7 @@ a régi minták fel vannak írva. Minden ágens sorolja fel a sajátjait ide:
 | peppa | issue-DESCRIPTION: `Lakásmenedzser jelölt interjúja. Időpont: ...` nyitósorral | 1 | 2026-08-17 (HR-48) |
 | jean | komment: `## Cim, datum` fejléccel VAGY `**Felkover nyitany.**`-nyal; ujjlenyomat: ékezethelyes és strukturált (Eszti sajátjai gyakran ékezet nélküliek és rövidek), egy esetben HARMADIK SZEMÉLYBEN említi a gazdát | 6 / 22 (27%) | 2026-08-12 … 08-26 |
 | jean | project update, prefix nélkül | 2 / 17 | 2026-08-31 |
-| bubi | komment: SEMMILYEN jelölés; csak azonosítóval fogható: `TUL-934` (08-18T10:39Z, 3863 kar.), `TUL-968` (08-27T07:24Z, 1750 kar.). Heurisztika: Rita sajátjai rövidek (6-303 kar.) és `@`-említéssel kezdődnek | 2 / 34 (6,3%) | 2026-08-18, 08-27 |
+| bubi | komment: eredetileg JELÖLETLEN volt, de **2026-08-31-én Rita jóváhagyásával utólag megjelölve** -- a sima minta fogja. Az azonosítók a nyomkövetéshez: `TUL-934` (08-18T10:39Z), `TUL-968` (08-27T07:24Z) | 2 / 34 (6,3%) | 2026-08-18, 08-27 |
 | bubi | eredetileg JELÖLETLEN volt, 2026-08-31-én visszamenőleg megjelölve, ma már a sima `^\[AI: bubi\]` fogja: TUL-934, TUL-968 | 2 | 2026-08-18, 08-27 |
 
 **Ha a te ágensed hiányzik innen, a gazdád számai visszamenőleg nem tisztíthatók.**
