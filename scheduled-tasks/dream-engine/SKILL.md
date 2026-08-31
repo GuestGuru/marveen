@@ -325,6 +325,19 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
   az elo nem, es azt a `--fix` FELULIRNA. Ilyenkor eloszor olvasd el a `>` sorokat
   (lehet sablon-magyarazat vagy elmaradt szinkron), es csak utana javits.
   Ahol `csak-repo=0`, ott a masolas biztonsagos: az elo szigoruan tobbet tud.
+  ⚠️ **DE a `csak-repo > 0` KET, nagyon kulonbozo dolgot jelenthet, es a szabaly
+  fenti alakja csak az egyiket irja le.** 2026-08-31: a `gg-fork-push-lanc`
+  tukrenel `csak-repo=3` volt, es en `--fix`-eltem anelkul, hogy elolvastam volna
+  oket. Utolag ellenoriztem: a harom sor PONTOSAN az volt, amit a sajat percekkel
+  korabbi patchem CSERELT LE, es a tartalmuk bent van az uj, bovebb blokkban.
+  Vagyis: ha TE magad szerkesztetted az elo peldanyt ebben a korben, a `csak-repo`
+  sorok jellemzoen a sajat torlesed nyomai -- ez a szokvanyos eset, nem veszely.
+  A VESZELYES eset az, amikor NEM nyultal az elohoz, es megis van `csak-repo`:
+  akkor a repo tenyleg tud valamit, amit az elo nem.
+  **A megkulonboztetes egy `git diff`, nem talalgatas:** `--fix` UTAN nezd meg,
+  mit tuntetett el (`git diff <tukor-fajl> | grep '^-'`), es gyozodj meg rola,
+  hogy az eltunt tartalom benne van az uj szovegben. Ha nem, `git checkout`-tal
+  visszahozhatod -- addig a repo meg erintetlen.
 - ✅ **A drift-merest 2026-08-21 ota SZKRIPT vegzi, ne kezzel rakd ossze.**
   `scripts/scheduled-task-drift.sh` -- vegigmegy a `~/.claude/scheduled-tasks/`
   minden feladatan, megkeresi a sablont (`scheduled-tasks/`, `seed-scheduled-tasks/`
