@@ -315,6 +315,23 @@ grep -a '| >' ~/.claude/skills/.skill-index.md   # must return nothing
   A felvitel a `gg-fork-push-lanc` szerint megy. Ha a gazda nem kéri, legalább
   **JELEZD** — a hallgatás azt üzeni, hogy a javítás a repóban van, pedig nincs.
 
+- ✅ **2026-08-31 óta ez a szivárgás GÉPESÍTVE van, ne írj rá negyedik bekezdést.**
+  A „patch után írd vissza a tükörbe" szabály háromszor bukott meg (08-19, 08-28,
+  08-31), mindháromszor MÁS okból — vagyis nem figyelmetlenség volt, hanem hiányzó
+  automatizmus. A mérő eddig is megvolt (`scripts/gg-skill-tukor-sync.sh`), a
+  kiváltó hiányzott. Most `scripts/hooks/skill-mirror-guard.py` **Stop hookként**
+  fut, és a kör végén jelzi, ha egy élő skill eltér a követett tükrétől; a
+  bekötést a `scripts/install-skill-mirror-hook.sh` végzi, amit a `sync-hooks.sh`
+  minden `update.sh`-nál lefuttat.
+  🔴 **A tervezési tanulság általánosítható, és ez a lényeg: az EREDMÉNYRE illessz,
+  ne a TOOL NEVÉRE.** A kézenfekvő megoldás egy `PostToolUse` hook lett volna a
+  `Write|Edit`-re — és pont a hibát okozó esetet hagyta volna ki, mert a skill-fájlt
+  aznap Bash-heredocból patcheltem. Ugyanez áll a `sed`-re és minden szkriptelt
+  szerkesztésre. Ha egy szabály betartását automatizálod, kérdezd meg, hány úton
+  lehet megszegni; ha többön, akkor az állapotot mérd, ne az utat.
+  A hook szándékosan sosem blokkol (hibás payloadon és mérési hibán is exit 0), és
+  egy órán belül nem ismétel — egy nagáló őr az első napon ki lenne kapcsolva.
+
 ## Relation to other mechanisms
 
 | Mechanism | Skill-management's role |
