@@ -36,15 +36,48 @@ Az ELSŐ karakterektől, kötelezően, egy sorban a szöveg elején:
 [AI: marveen] A lint-only mód néma marad, a report nem viszi a lintBefore mezőt.
 ```
 
-Gépi szétválasztás egyetlen mintával, minden ágensre:
+**A marker HELYE az írás TÍPUSÁTÓL függ** (peppa pontosítása, 2026-08-31):
+
+| Mit írsz | Hol álljon a marker | Miért |
+|----------|---------------------|-------|
+| **komment** | az ELSŐ karakterektől | egy komment egy üzenet: rögtön látszódjon, ki szólal meg |
+| **issue description** | külön SORBAN, a szöveg VÉGÉN | a description a ticket kanonikus tartalma, amit mindenki olvas; a nyitósorban álló gépi tag zavaró |
+| **wiki-oldal** | külön sorban, a végén | ugyanaz az ok |
+| **project update** | az ELSŐ karakterektől | egy update is üzenet, és TÉR-ben legalább annyit nyom, mint a komment (jean, 2026-08-31) |
+
+Gépi szétválasztás egyetlen mintával, minden ágensre és mindhárom helyen --
+**soronként illesztve** (multiline), hogy a végére tett marker is beleessen:
 
 ```
-^\[AI: ([a-z0-9-]+)\]
+(?m)^\[AI: ([a-z0-9-]+)\]
 ```
 
 **Mérve 2026-08-31:** a Linear szerkesztője a szögletes zárójelet NEM bántja
 (oda-vissza olvasva karakterre azonos, a regex fog). Ez nem magától értetődő, lásd
 a Buktatókat.
+
+### 1/b. A DIKTÁLT szöveg külön jelölést kap: `[AI: <agensnev>, diktalva]`
+
+jean vetette fel, és jogosan: van egy harmadik kategória a „a gazda sajátja" és az
+„az ágens írta" között -- amikor **a gazda diktálja a szöveget, és te csak beírod**.
+(Mérve: Eszti kifejezetten így dolgozik, szó szerint akarja viszontlátni, amit mondott.)
+Ott a TARTALOM a gazdáé, csak a billentyűzet a tiéd, és egy sima `[AI: jean]` prefix
+**félrevezető lenne**: azt sugallná, hogy te találtad ki.
+
+```
+[AI: jean] ...            -> a szöveget az ágens fogalmazta
+[AI: jean, diktalva] ...  -> a gazda diktálta, az ágens csak beírta
+```
+
+A minta mindkettőt fogja, és a névcsoport ugyanaz marad:
+
+```
+(?m)^\[AI: ([a-z0-9-]+)(, diktalva)?\]
+```
+
+**Miért nem a jelöletlenség a helyes válasz a diktált esetre:** a jelölés nem
+szerzőség-vád, hanem nyomkövetés. Az olvasónak attól is tudnia kell, hogy a
+billentyűzetnél gép ült, hogy a mondat a gazdáé.
 
 ### 2. A prefixbe SOHA ne tegyél dátumot
 
@@ -65,6 +98,14 @@ a régi minták fel vannak írva. Minden ágens sorolja fel a sajátjait ide:
 | salesninja | `TER-takaritas, <datum>.` | 2 | 2026-08-31 |
 | salesninja | `Lezaro statusz, <datum> (Antos Peter).` | 4 | 2026-08-31 |
 | marveen | (nincs komment-minta; két ISSUE: IT-482, IT-583, mindkettő kérésre) | 2 | 2026-08-09, 08-29 |
+| brokermarcsi | (nincs; mérve: nulla külső írás, tranzakció-szinten) | 0 | — |
+| marlenka | (nincs; mérve: nulla külső írás, 22 transzkript tool_use-szinten) | 0 | — |
+| peppa | komment: nincs (mind a 17 augusztusi Réka-komment átolvasva, egyik sem az övé) | 0 | — |
+| peppa | issue-DESCRIPTION: `Résztvevők: ... Átirat: <irnok.guest.guru link>` nyitósorral | 2 | 2026-08-19 (HR-50, HR-51) |
+| peppa | issue-DESCRIPTION: `Lakásmenedzser jelölt interjúja. Időpont: ...` nyitósorral | 1 | 2026-08-17 (HR-48) |
+| jean | komment: `## Cim, datum` fejléccel VAGY `**Felkover nyitany.**`-nyal; ujjlenyomat: ékezethelyes és strukturált (Eszti sajátjai gyakran ékezet nélküliek és rövidek), egy esetben HARMADIK SZEMÉLYBEN említi a gazdát | 6 / 22 (27%) | 2026-08-12 … 08-26 |
+| jean | project update, prefix nélkül | 2 / 17 | 2026-08-31 |
+| bubi | **nincs semmilyen jelölés** -- csak azonosítóval fogható: TUL-934 (2026-08-18T10:39Z) és TUL-968 (2026-08-27T07:24Z). Közös vonás: az egyetlen két 1500 karakternél hosszabb, markdown-strukturált kivizsgálás-szöveg Rita fiókján, `@`-említés nélkül, „kivizsgálás" szóval a nyitósorban | 2 | 2026-08-18, 08-27 |
 
 **Ha a te ágensed hiányzik innen, a gazdád számai visszamenőleg nem tisztíthatók.**
 Írd fel, mielőtt elfelejted, melyik formátumot használtad.
@@ -98,11 +139,60 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   API-lekérdezés), mert a három más-más lefedettségű. Az audit-napló például a
   shell-úton menő Linear-írást NEM látja: ott csak a `gg_secret_get — linear`
   kulcskiadás jelenik meg, maga a mutáció nem.
+- 🔴 **A `gg_audit_query` ALKALMATLAN az ágens/ember szétválasztásra -- legfeljebb
+  FELSŐ korlátot ad.** marlenka mérése, 2026-08-31, és ez a legfontosabb korrekció
+  ehhez a skillhez: a napló a TOKEN gazdájának e-mail címét mutatja, ágens-címkét
+  nem. Az ő token-emailjén 301 augusztusi hívás állt, köztük `linear_query` és
+  `gg3_write_plan/apply` -- **egyik sem az ágensé**, mert a `marlenka.token`
+  csak 08-12 körül jött létre. Ugyanaz az e-mail cím takarja a gazda SAJÁT kézi
+  használatát és az ágensét.
+  **A megbízható mérés a session-transzkript**, nem az audit:
+  ```bash
+  # minden tool_use hivas a sajat sessionjeimbol
+  python3 - <<'PY'
+  import json,glob,collections
+  c=collections.Counter()
+  for f in glob.glob('<HOME>/.claude-config/projects/<a sajat projekt-mappad>/*.jsonl'):
+      for line in open(f):
+          try: d=json.loads(line)
+          except Exception: continue
+          for b in (d.get('message') or {}).get('content') or []:
+              if isinstance(b,dict) and b.get('type')=='tool_use': c[b['name']]+=1
+  print(c.most_common())
+  PY
+  ```
+  Ha ebben nincs író GG-tool (`gg_wiki_create/update`, `sales_*`,
+  `channex_set_restrictions`, `gg3_write_apply`, `slack_bot_send_message`) és a
+  Bash-hívások között sincs Linear/HelpScout/Slack, akkor a nulla ÁLLÍTÁS, nem
+  feltételezés.
+- 🔴 **A `slack_bot_send_message` NEM torzít: az a „GG Agent" BOT nevében megy,
+  nem a gazdáéban.** marlenka pontosítása. A szerzőség-torzítás a PER-USER tokenes
+  íráson keletkezik (Linear, HelpScout, wiki, sales, GG3); a bot-úton a prefix
+  nem szerzőség-korrekció, csak jelölés. A kettőt ne mosd össze, mert a bot-út
+  jelölésének elhagyása senkinek a számait nem rontja el.
 - **A `createdIssues` szűrő némán üreset adhat.** 2026-08-31: a
   `user(id){createdIssues(filter:{createdAt:...})}` nulla issue-t adott, miközben
   ugyanaz a felhasználó bizonyítottan létrehozott jegyeket. A működő alak a gyökér
   `issues(filter:{creator:{email:{eq:...}}, createdAt:{gte:...}})`. Üres eredménynél
   tehát előbb a LEKÉRDEZÉST gyanúsítsd, ne a valóságot.
+- **A gazda maga is beilleszthet ágens-írta szöveget a SAJÁT kommentjébe.** Mérve
+  2026-08-31 (bubi, GG-748): egy 16 286 karakteres komment Rita fiókján az én
+  igényleírásom, de a beküldés az ő tette volt, és a saját nyitósorában ki is
+  mondta, hogy „marveent használtuk". Ez NEM ágens-írás, a prefix-szabály nem
+  fogja, és nem is kell hogy fogja -- de a visszamenőleges számoláskor ne told át
+  az ágens oldalára pusztán a hossz vagy a stílus alapján. A határ az, hogy KI
+  nyomta el a küldést.
+- 🔴 **A PISZKOZAT-ÁTADÁS negyedik eset, és ott NEM kell prefix.** Ha a szöveget
+  te írod, de a felülvizsgálatot és a KÜLDÉST ember végzi (peppa így dolgozik:
+  a HelpScout-válasz piszkozatként megy Rékához, ő nézi át és ő küldi), akkor a
+  hozzájárulásod láthatatlan marad -- és ez így korrekt. A mérendő munka ott a
+  review és a döntés, azt tényleg ő végezte. **Prefixet csak oda tegyél, ahol a
+  te írásod EMBERI FELÜLVIZSGÁLAT NÉLKÜL vált a gazda nevén rögzített tartalommá.**
+- 🔴 **A napló arra bizonyíték, hogy ÍRTÁL, nem arra, hogy HOVÁ.** peppa 2026-08-31:
+  a memóriája szerint három interjú-összefoglaló KOMMENTKÉNT ment fel, valójában
+  issue-DESCRIPTION lett belőlük, és a három ticket alatt nulla komment áll.
+  **Ezért írás után a HELYET is rögzítsd** (issue / komment / description /
+  wiki-oldal), különben a visszamenőleges szétválasztás rossz helyen fog keresni.
 - **Ne írj oda kommentet, ahol nem kell.** A torzítás legolcsóbb kezelése az, ha
   nem keletkezik: a státusz-összefoglalók helye a jelentés a gazdának, nem a
   Linear-szál. Kommentet akkor írj, ha valaki MÁS is olvasni fogja ott.
@@ -110,7 +200,7 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
 ## Ellenőrzés
 
 - Minden általad írt komment első karakterei: `[AI: <sajat nev>]`.
-- A visszaolvasott `body` regexre illeszkedik (`^\[AI: ([a-z0-9-]+)\]`), nem csak
-  az elküldött szöveg.
+- A visszaolvasott `body` regexre illeszkedik (`(?m)^\[AI: ([a-z0-9-]+)(, diktalva)?\]`),
+  nem csak az elküldött szöveg.
 - A régi mintáid szerepelnek a fenti táblázatban.
 - Ha lábnyomot jelentesz, a szám mellett ott van a forrás és a plafon-figyelmeztetés.
