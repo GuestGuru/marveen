@@ -25,9 +25,11 @@ a vevő folytatja-e a rövid távú kiadást.
      `checkout_date >= current_date`.
    - Számold ki, ha MA indulna a 90 nap, mely foglalások esnek túl rajta.
 4. **A piszkozat hat pontja** (ez a bevált szerkezet):
-   felmondási idő 90 nap · foglalások és a nettó 10 000 Ft/foglalás kezelési költség ·
+   felmondási idő 90 nap · foglalások és a lemondás foglalásonkénti kezelési költsége ·
    az engedély névre szól · ha a vevő folytatja · ha megszűnik a működés (hatósági kör,
-   15 000 Ft-os teljes körű ügyintézés) · átadás (textil, kulcs, jegyzőkönyv, hozzáférések).
+   díjas teljes körű ügyintézés) · átadás (textil, kulcs, jegyzőkönyv, hozzáférések).
+   ⚠️ A konkrét összegeket NE innen vedd: a `lakasok/felmondas/folyamat` wiki-oldalról
+   olvasd ki minden alkalommal, mert változhatnak.
 5. **A piszkozat a gazdánál marad.** Semmit nem küldesz ki.
 6. Jelezd külön, ami tudatosan kimaradt a levélből (l. Buktatók).
 
@@ -36,7 +38,7 @@ a vevő folytatja-e a rövid távú kiadást.
 - 🔴 **A havonkénti naptárnyitást magadtól SOHA ne írd a levélbe — de a vezetőség
   felülírhatja.** A wiki alapértelmezése: „Előre ezt semmiképp ne ajánljuk fel a
   tulajdonosnak". Ezért az első piszkozatba ne tedd bele, hanem a gazdának jelezd
-  külön, tartalékként. **Mérve 2026-08-31-én (HS 51586):** a vezetőség pont ezt
+  külön, tartalékként. **Mérve 2026-08-31-én:** a vezetőség pont ezt
   írta felül, és kérte, hogy ajánljuk ki a havi naptárnyitást, a rugalmas kezelést
   az eladásig, és 30 napos felmondási időt a birtokba adáshoz igazítva. Vagyis a
   helyes sorrend: alapból wiki szerint, de a piszkozat átadásakor tedd fel a
