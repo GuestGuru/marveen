@@ -47,13 +47,13 @@ import {
   sendEnterToSession,
   clearStaleParkedInput,
   resolveAgentProvider,
-  dismissFeedbackDraftModalIfPresent,
+  clearFeedbackModalAndRecheck,
 } from './agent-process.js'
 import { MAIN_CHANNELS_SESSION } from './main-agent.js'
 import { runCommandTask } from './command-task.js'
 import { decideQuotaAction, type QuotaWorkClass } from '../quota-gate.js'
 import { readQuotaSnapshot } from '../quota-snapshot.js'
-import { paneShowsContextSaturation, detectsFirstRunGate, detectsFeedbackDraftModal, detectPaneState, type PaneState } from '../pane-state.js'
+import { paneShowsContextSaturation, detectsFirstRunGate, detectPaneState, type PaneState } from '../pane-state.js'
 import { withSessionSendLock } from './session-send-lock.js'
 
 // How many bare-Enter attempts the post-send resubmit tries before escalating
@@ -688,15 +688,8 @@ async function attemptFireTask(
     // the pane, AFTER the pre-flight dismissal had already shipped. So the
     // dismissal has to live on the refusal path too, the same way the first-run
     // gate is answered above, and readiness is then re-read ONCE.
-    if (notReadyPane != null && detectsFeedbackDraftModal(notReadyPane)) {
-      logger.warn({ task: task.name, agent: agentName, session }, 'Schedule target session held by a Claude Code feedback-draft modal, dismissing and re-reading readiness')
-      await dismissFeedbackDraftModalIfPresent(session, host)
-      if (await isSessionReadyForPrompt(session, host)) {
-        logger.info({ task: task.name, agent: agentName, session }, 'Feedback-draft modal cleared, session is ready -- proceeding')
-      } else {
-        logger.warn({ task: task.name, agent: agentName, session }, 'Schedule target session still not ready after dismissing the feedback-draft modal, will retry')
-        return 'busy'
-      }
+    if (await clearFeedbackModalAndRecheck(session, host)) {
+      logger.info({ task: task.name, agent: agentName, session }, 'Feedback-draft modal cleared, session is ready -- proceeding')
     } else {
       logger.warn({ task: task.name, agent: agentName, session }, 'Schedule target session busy or has pending input, will retry')
       return 'busy'

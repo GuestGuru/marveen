@@ -1532,6 +1532,32 @@ export async function dismissResumeSummaryModalIfPresent(session: string, host: 
 // drafting for that agent, so the follow-up is answered with Esc (keep) -- and
 // only when its own detector fires, never blind: a bare Esc into a prompt box
 // that holds a parked delivery is not a keystroke worth firing on spec.
+// The not-ready-path companion to the pre-flight dismissal above, and the
+// reason it exists: every prompt injector asks isSessionReadyForPrompt FIRST
+// and gives up before any send is attempted, so a dismissal that lives only in
+// the send path never runs for the case it was written for (measured twice on
+// 2026-08-31 -- see the detector's note in pane-state.ts). Four injectors share
+// that shape: message-router, schedule-runner, inbox-nudge-watcher and
+// telegram-inbox-wake. They call this on their refusal branch instead of each
+// re-implementing the probe, so the fifth injector added later has one obvious
+// thing to call rather than three lines to remember.
+//
+// Returns true only if the modal was actually there AND the pane became ready
+// after clearing it -- a false keeps the caller on its existing skip path, so
+// nothing about the busy case changes.
+export async function clearFeedbackModalAndRecheck(session: string, host: string | null = null): Promise<boolean> {
+  try {
+    const pane = capturePane(session, host)
+    if (pane == null || !detectsFeedbackDraftModal(pane)) return false
+    logger.warn({ session }, 'pane held by a Claude Code feedback-draft modal on the not-ready path, dismissing')
+    await dismissFeedbackDraftModalIfPresent(session, host)
+    return await isSessionReadyForPrompt(session, host)
+  } catch (err) {
+    logger.warn({ err, session }, 'Failed to clear the feedback-draft modal on the not-ready path')
+    return false
+  }
+}
+
 export async function dismissFeedbackDraftModalIfPresent(session: string, host: string | null = null): Promise<void> {
   try {
     const pane = captureTmux(host, ['capture-pane', '-t', session, '-p'])
