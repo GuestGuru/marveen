@@ -241,6 +241,27 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   nem keletkezik: a státusz-összefoglalók helye a jelentés a gazdának, nem a
   Linear-szál. Kommentet akkor írj, ha valaki MÁS is olvasni fogja ott.
 
+## Amit ez a szabály NEM fed le
+
+**A STRUKTURÁLT ÍRÁS.** marlenka vetette fel, 2026-08-31, és igaza van: a
+`gg3_write_apply` (árszabály, naptár) és a `channex_set_restrictions` **nem
+szöveg, nincs hova prefixet tenni.** A GG3 előzmény-táblái a gazda azonosítóját
+rögzítik, tehát egy ágens által beállított ár visszamenőleg
+megkülönböztethetetlen attól, amit a gazda maga állított be.
+
+Ez nem elméleti: az audit augusztusban mutat `gg3_write_plan/apply` sorokat
+olyan token-emailen, ahol azok a GAZDA saját kezei voltak -- és ha egy ágensé
+lenne köztük, semmi nem választaná el.
+
+**Amit ilyenkor tenni lehet:** a szöveges jelölés nem járható út, csak külön
+nyilvántartás -- a `plan`-azonosító és az időbélyeg felírása a saját naplódba
+minden alkalmazás után. Ez nem old meg mindent, de legalább a te oldaladról
+rekonstruálható marad.
+
+⚠️ **Ne olvasd ki ebből a skillből, hogy a szerzőség-kérdés le van fedve.**
+A `[AI: ...]` jelölés a SZÖVEGES felületeket fedi (komment, description,
+project update, wiki). Az ár-, naptár- és korlátozás-írás nyitott.
+
 ## Ellenőrzés
 
 - Minden általad írt komment első karakterei: `[AI: <sajat nev>]`.
