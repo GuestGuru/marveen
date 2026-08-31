@@ -329,6 +329,17 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   ```
   majd a PR-lanc a MCP-toolokkal (`github_open_pr` -> `github_merge_pr` ketszer),
   mert azok a proxyn at hitelesitenek, nem a git credential helperen.
+  ⚠️ **Ugyanaznap 13:30-ra a sima `git fetch origin` IS elzarodott** (valoszinuleg
+  anonim rate limit), tehat a fenti kezi recept sem volt hasznalhato: nem volt
+  `origin/<ag>` ref. **Ilyenkor a verifikacio is MCP-n megy:**
+  ```
+  github_read_file(repo: "marveen", path: "<utvonal>", ref: "<ag>")
+  ```
+  Ez a remote tartalmat adja vissza, tehat pontosan azt bizonyitja, amit a
+  `git show origin/<ag>:<utvonal>` bizonyitana -- csak hitelesitett uton.
+  A sorrend altalanosan: git (olcso) -> ha elzarodik, MCP (mindig megy).
+  Fel ora mulva az anonim fetch magatol visszajott, tehat ez atmeneti allapot;
+  ne kezdj credential helpert allitani miatta.
   ⚠️ **Es egy csapda a vegen: a `gg-skill-tukor-sync.sh` ilyenkor ZOLDET mutat,
   miközben az origin meg nem tud a fajlrol.** A meroje `git ls-files`, ami a LOKALIS
   commitot latja -- a szkript lokalisan mar commitolt, mielott a lanc elszallt.
