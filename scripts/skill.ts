@@ -58,7 +58,7 @@ interface Args {
   apiBase: string
   accessToken?: string
   rotate: boolean
-  /** (B) ut: a webfeluletrol beillesztett kulcs. Kapcsolo, nem alapertelmezes. */
+  /** (B) ut: MAS GEPEN mar kiadott kulcs atvitele. Kapcsolo, nem alapertelmezes. */
   keyId?: string
   attestKey?: string
   memberId?: string
@@ -96,8 +96,9 @@ function sugo(): void {
       Hitelesites: MARVEEN_ACCESS_TOKEN vagy --access-token; enelkul email+jelszo bekerese.
 
   npm run skill -- enroll --key-id <id> --attest-key <titok> --member-id <uuid>
-      Ugyanaz, de a webfeluletrol MASOLT kulccsal, szerver-hivas nelkul.
-      Akkor hasznos, ha a gepnek nincs bejelentkezese, csak a kulcs.
+      Ugyanaz, de egy MAR KIADOTT kulccsal, szerver-hivas nelkul.
+      Ez a kulcs atvitele: egy masik gepen az enroll paranccsal kiadatod,
+      majd ide beirod. Fej nelkuli gepnek, aminek nincs bejelentkezese.
 
   npm run skill -- upload <fajl>
       Helyi szken, majd tiszta eredmeny eseten alairt feltoltes.
@@ -167,16 +168,23 @@ function anonKulcs(): string {
         '    npm run skill -- enroll --access-token <token>\n' +
         '      (vagy MARVEEN_ACCESS_TOKEN kornyezeti valtozokent)\n' +
         '    npm run skill -- enroll --key-id <id> --attest-key <titok> --member-id <uuid>\n' +
-        '      (a kulcsot a marveen.io feluleten kapod meg)',
+        '      (egy MASIK gepen kiadott kulcs atvitele; a kulcsot ott az\n' +
+        '       `enroll --access-token` adja ki, egyszer)',
     )
   }
   return k
 }
 
 async function enroll(args: Args): Promise<void> {
-  // (B) UT: a tag a webfeluleten kapta a kulcsot es beilleszti. Nem
-  // alapertelmezes, hanem kapcsolo -- de valodi ut: egy gepnek lehet, hogy
-  // sosem lesz marveen.io-bejelentkezese, csak a kulcsa.
+  // (B) UT: EGY MAR KIADOTT KULCS ATVITELE MASIK GEPRE. Nem alapertelmezes,
+  // hanem kapcsolo -- de valodi ut: egy fej nelkuli gepnek lehet, hogy sosem
+  // lesz marveen.io-bejelentkezese, csak a kulcsa.
+  //
+  // ES NEM WEBFELULETROL JON. Megmerve (Samu leletebol, sajat kontrollal
+  // ismetelve): az `attest` szo 0 TALALAT az apps/app/src egeszeben,
+  // mikozben mas edge-fn-hivasok OT fajlban ott vannak -- tehat a mero nem
+  // vak, es attest-kulcs UI egyszeruen NINCS. A kulcsot ma KIZAROLAG az
+  // `enroll --access-token` ut adja ki, egyszer, plaintextben.
   if (args.attestKey || args.keyId || args.memberId) {
     if (!args.attestKey || !args.keyId || !args.memberId) {
       fail('a beillesztett bekoteshez MINDHAROM kell: --key-id, --attest-key, --member-id')
