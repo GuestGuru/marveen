@@ -135,6 +135,28 @@ def _out(v):
     print(json.dumps(v, ensure_ascii=False, indent=2) if isinstance(v, (dict, list)) else v)
 
 
+def _arg(value):
+    """Return the argument, or the whole of stdin when it is exactly "-".
+
+    WHY this exists: the JSON body is built with json.dumps, so the JSON side has
+    no quoting pitfalls -- but the SHELL side does, and it fails SILENTLY. Inside a
+    double-quoted argument the shell expands `backticks`, $VAR and $(...), and an
+    unescaped double quote inside the text breaks the JSON the caller hand-built.
+    Measured 2026-08-31: two /api/daily-log writes were rejected with HTTP 500
+    (`SyntaxError ... in JSON at position 722`) because the content contained a
+    plain `"quoted"` word, and an inter-agent message lost every backticked path
+    while still reporting success.
+
+    So for anything containing quotes, backticks, $ or code, pass "-" and pipe the
+    text in from a QUOTED heredoc -- the quoted 'EOF' is what disables expansion:
+
+        cat <<'EOF' | fleet.py daily-log marveen -
+        ## 10:00 -- "idezojel", `backtick` and $var all survive
+        EOF
+    """
+    return sys.stdin.read() if value == "-" else value
+
+
 def main(argv):
     if not argv:
         print(__doc__)
@@ -143,14 +165,14 @@ def main(argv):
     if cmd == "mdv2":
         print(escape_mdv2(rest[0] if rest else sys.stdin.read()))
     elif cmd == "mem-save":
-        _out(save_memory(rest[0], rest[1], rest[2] if len(rest) > 2 else "warm",
+        _out(save_memory(rest[0], _arg(rest[1]), rest[2] if len(rest) > 2 else "warm",
                          rest[3] if len(rest) > 3 else ""))
     elif cmd == "mem-search":
         _out(search_memory(rest[0], rest[1], rest[2] if len(rest) > 2 else None))
     elif cmd == "daily-log":
-        _out(daily_log(rest[0], rest[1]))
+        _out(daily_log(rest[0], _arg(rest[1])))
     elif cmd == "msg":
-        _out(send_message(rest[0], rest[1], rest[2]))
+        _out(send_message(rest[0], rest[1], _arg(rest[2])))
     elif cmd == "agents":
         _out([{"name": a.get("name"), "running": a.get("running"),
                "model": a.get("model")} for a in list_agents()])
