@@ -390,19 +390,29 @@ grep -a '| >' ~/.claude/skills/.skill-index.md   # must return nothing
   TÖRÖL sorokat egy szkriptből, az majdnem biztosan visszalépés, nem szinkron.
 
 - **Never conclude "this skill is unversioned" from a single directory.** A
-  versioned copy can live in any of several places, and this install has five:
-  `seed-skills/` (goes to every install), `gg-skills/` (machine/org-specific,
-  never seeded), `skills/`, plus `seed-scheduled-tasks/` and
-  `templates/scheduled-tasks/` on the scheduled-task side. Measure with a full
-  set difference — live set minus ALL of them — never by the absence of one:
+  versioned copy can live in any of several places, and they are **in two
+  different repos**: in the marveen fork `seed-skills/` (goes to every install)
+  and `skills/` (the upstream project's own), plus `seed-scheduled-tasks/` and
+  `templates/scheduled-tasks/` on the scheduled-task side -- and in the PRIVATE
+  `GuestGuru/gg-agent-skills` repo `skills/`, where every GG-specific skill has
+  lived since 2026-09-01. Measure with a full set difference -- live set minus
+  ALL of them -- never by the absence of one:
   ```bash
+  cd "${MARVEEN_ROOT:-$HOME/marveen}"
+  PRIV="${GG_PRIVATE_SKILLS:-$HOME/gg-agent-skills}"
   for s in $(ls ~/.claude/skills/); do
-    git ls-files --error-unmatch "gg-skills/$s/SKILL.md" >/dev/null 2>&1 ||
     git ls-files --error-unmatch "seed-skills/$s/SKILL.md" >/dev/null 2>&1 ||
     git ls-files --error-unmatch "skills/$s/SKILL.md" >/dev/null 2>&1 ||
+    git -C "$PRIV" ls-files --error-unmatch "skills/$s/SKILL.md" >/dev/null 2>&1 ||
     echo "MISSING: $s"
   done
   ```
+  🔴 **A fork `gg-skills/` mappája 2026-09-01 óta ÜRES**, csak mutató README van
+  benne. Az a ciklus, amelyik még azt nézi, MINDEN GG-skillt verziózatlannak
+  jelent: aznap mérve **32 skillből 20 hamis riasztás** -- pont abban a
+  szekcióban, amelyik a hamis riasztások ellen szól. Amikor a gépezet költözik, a
+  róla szóló MÉRÉS a biztonságosnak látszó irányba avul: túljelent, a túljelentés
+  pedig alaposságnak olvasódik.
   2026-08-17: two separate false alarms in one morning from the one-directory
   shortcut — "7 unversioned scheduled tasks" (all seven were in
   `seed-scheduled-tasks/` / `templates/scheduled-tasks/`) and a miscount that
@@ -446,18 +456,25 @@ grep -a '| >' ~/.claude/skills/.skill-index.md   # must return nothing
   **egyáltalán nincs repo-másolata**. Egy friss telepítés tehát egyik mai
   tanulságot sem kapná meg.
   **Ezért patch után KÉRDEZD MEG magadtól: van-e ennek repo-párja?** ⚠️ KÉT helye
-  lehet, és a választás nem ízlés kérdése: a `seed-skills/` **verbatim** megy ki
-  minden telepítésre, tehát oda csak gép-független skill kerülhet; a gép- vagy
-  GG-specifikus a `gg-skills/` alá való (verziózva, de nem seedelve). A teljes
-  táblázat: `docs/gg-fork-konvenciok.md` 4b. szakasz.
+  lehet, és a választás nem ízlés kérdése: a fork `seed-skills/` mappája
+  **verbatim** megy ki minden telepítésre, tehát oda csak gép-független skill
+  kerülhet; a gép- vagy GG-specifikus a **privát `GuestGuru/gg-agent-skills` repo
+  `skills/`** mappájába való. (2026-09-01 előtt ez a fork `gg-skills/`-e volt --
+  az ma üres. Ok: a fork PUBLIKUS, és a tükör-szinkron magától kivitte volna oda a
+  MEGLÉVŐ skillek jövőbeli szerkesztéseit is, nem csak az új skilleket.)
+  A táblázat: `gg-skills/README.md` és `docs/gg-fork-konvenciok.md` 4b. szakasz.
   ```bash
   cd "${MARVEEN_ROOT:-$HOME/marveen}"
+  PRIV="${GG_PRIVATE_SKILLS:-$HOME/gg-agent-skills}"
   N=<nev>
-  for R in "seed-skills/$N/SKILL.md" "gg-skills/$N/SKILL.md"; do
+  for R in "seed-skills/$N/SKILL.md" "$PRIV/skills/$N/SKILL.md"; do
     [ -f "$R" ] && { diff -q "$R" ~/.claude/skills/$N/SKILL.md >/dev/null \
       && echo "szinkronban: $R" || echo "ELTER -> felvinni: $R"; }
   done
   ```
+  ⚠️ **A MÁSOLÁS ÉS A FELKÜLDÉS KÉT KÜLÖN LÉPÉS**, és a második az, ami elmarad:
+  a `gg-skill-tukor-sync.sh --fix` csak LEMEZRE másol, a privát repót KÜLÖN kell
+  pusholni -- az nem megy a marveen push-láncán.
   ⚠️ **És NE a `git status`-ra vagy a követett fájlok számára hagyatkozz: ebben az
   esetben MINDKETTŐ tisztát mutat.** 2026-08-26: két skillt patcheltem, egyiknek a
   tükörmásolatát sem frissítettem, és a `git status` üres volt (a követett fájlhoz
