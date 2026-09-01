@@ -222,6 +222,22 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   „szemrevételezés, nem mérés".
   Ugyanez áll az élő ügyfél-ügyszámra (HelpScout-jegy) és a konkrét összegekre:
   egyik sem titok, mindhárom blokkoló egy publikus repóban.
+  ✅ **A MŰKÖDŐ MEGOLDÁS: ne TERMINUST keress, hanem ALAKOT** (bubi, 2026-09-01).
+  A terminus-lista csak azt fogja, amit már ismersz; az alak-minta az ISMERETLEN
+  új azonosítót is:
+  ```bash
+  # lakas-slug: Nagybetu + betuk + szamjegyek (Pelda12, Pelda12-3em4)
+  grep -noE '\b[A-ZÁÉÍÓÖŐÚÜŰ][a-záéíóöőúüűa-z]{2,}[0-9]+[a-z0-9-]*' <fajl>
+  # elo ugyszam: 4-6 jegyu szam, az evszamok kiszurve
+  grep -noE '\b[0-9]{4,6}\b' <fajl> | grep -vE ':(19|20)[0-9]{2}$'
+  ```
+  **Mérve ugyanaznap, és többet talált, mint amiért indult:** egyetlen futásra
+  kifogta a frissen írt szakasz azonosítóját ÉS egy MÁSIK szerző 15 napja bent
+  álló lakás-nevét ugyanabban a fájlban (a `116e06a` commit óta, 2026-08-17).
+  Azt a kört a szokásos titok- és cím-szűrés tisztának minősítette.
+  **Ez a kettő nem alternatíva, hanem sorrend:** előbb az alak-minta (ismeretlen
+  azonosítók), utána a `leak-check.py` futásidejű terminusokkal (ismert nevek).
+  A kézi `--term` felsorolás a leggyengébb, és önmagában NEM elég.
 - 🔴 **TÜKRÖZÖTT fájlnál az ÉLŐ példányt sanitizáld, ne a forkot -- különben a
   következő szinkron visszateszi.** 2026-08-31, peppa érve, és jobb volt az enyémnél:
   ha csak a `gg-skills/` alatti másolatból veszed ki az érzékeny részt, az élő skill
