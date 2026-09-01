@@ -101,7 +101,25 @@ telepítésre anélkül, hogy hazudna?*
 | `seed-scheduled-tasks/` | minden telepítésnek | template (`{{INSTALL_DIR}}`, `{{MAIN_AGENT_ID}}`, …) |
 | `templates/scheduled-tasks/` | telepítéskori scaffold, csak ha a cél még nem létezik | template |
 | `scheduled-tasks/` | **ennek** a telepítésnek a saját feladatai | template, de nem seedeli semmi |
-| `a privát `gg-agent-skills` repo `skills/` mappája (2026-09-01 óta; korábban gg-skills/)` | **ennek** a telepítésnek a GG-specifikus skilljei | verzió, nem seed |
+| `gg-skills/` | ~~ennek a telepítésnek a GG-specifikus skilljei~~ **ÜRES 2026-09-01 óta** | csak mutató README |
+
+🔴 **2026-09-01: a GG-specifikus skillek ÁTKÖLTÖZTEK a privát
+`GuestGuru/gg-agent-skills` repo `skills/` mappájába.** Lokális checkout:
+`~/gg-agent-skills`, felülírja a `GG_PRIVATE_SKILLS` környezeti változó.
+
+Az ok nem a mappa neve volt, hanem hogy **ez a fork PUBLIKUS, és a tükrözés
+AUTOMATIKUS**: a dream-engine éjszakánként futtatja a szinkront `--fix`-szel, a
+`scripts/hooks/skill-mirror-guard.py` pedig szól, ha lemarad. Vagyis minden
+GG-skill MINDEN jövőbeli szerkesztése magától publikálódott -- és az aznapi
+majdnem-baleset épp egy MEGLÉVŐ skill szerkesztése volt, nem új skill.
+Átállítva: `gg-skill-tukor-sync.sh`, `onellenorzes.sh`, a dream-engine leírása.
+
+⚠️ **A másolás és a felküldés két külön lépés:** a `--fix` csak lemezre másol, a
+privát repót KÜLÖN kell pusholni -- az nem a marveen push-láncon megy.
+
+⚠️ **És a hatókör-szűkítés NEM visszamenőleges.** Ami korábban ide került, az a
+git-történetben publikus maradt. A titok-audit a KIKÜLDÉS ELŐTT ér valamit;
+utána már nem audit, hanem leltár. (marlenka pontja, 2026-09-01.)
 
 Két buktató, mindkettő mérve:
 
@@ -111,7 +129,7 @@ Két buktató, mindkettő mérve:
    SKILL.md sem említi a `gg-mcp`-t vagy a `guest.guru`-t, és ez szándékos
    (IT-451: a GG-tudás a `gg_knowledge_*` toolokba került, nem skillbe).
    A `gg-mcp-iras-proxy` tizenegy helyen hivatkozik a `/home/gg/gg-mcp`-re,
-   amire nincs is placeholder — ezért `a privát `gg-agent-skills` repo `skills/` mappája (2026-09-01 óta; korábban gg-skills/)`, nem `seed-skills/`.
+   amire nincs is placeholder — ezért a privát `gg-agent-skills/skills/`, nem `seed-skills/`.
 2. **A helyben patchelt seed nem vész el, de elszakad.** Az `update.sh`
    `seed_copy_is_untouched()`-e megnézi, hogy a telepített fájl egyezik-e a repo
    utolsó 25 revíziójának valamelyikével; ha nem, MEGTARTJA a helyi változatot.
