@@ -314,6 +314,32 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   Ha egy végpontról azt akarod állítani, hogy nincs, akkor HÍVD MEG -- egy
   `curl -X PUT` olcsóbb, mint egy téves broadcast hat kollégának.
   Ez ugyanaz az osztály, mint a fenti (d): hiányt állítottam a hiány mérése nélkül.
+
+  📌 **A NAP ÖSSZEGZÉSE, ÉS KÉT KÜLÖN JAVÍTÁSSAL** (bubi választotta szét,
+  2026-09-01, és igaza van: egy kalap alatt a könnyebb felét jegyeznénk meg).
+  Aznap négyszer állítottunk hiányt anélkül, hogy megmértük volna -- cím-minta a
+  lakás-slugra, terminus-lista az ismeretlen azonosítóra, út-grep a paraméteres
+  route-ra, `"id":57` az azonosság-egyezésre. A gyökér közös (*nem a dolgot
+  mértük, hanem valamit, ami hasonlít rá*), a JAVÍTÁS viszont kettő:
+
+  1. **SZOKÁS -- futtasd le az olcsó ellenpróbát, mielőtt hiányt állítasz.**
+     Mind a négy esetben ott volt kézügyben (egy másik alakra kereső grep, egy
+     `curl -X PUT`), és egyszer sem futott le, mert **a nulla találat magabiztosan
+     néz ki.** A hiányt nem nehéz megmérni, csak nem jut eszünkbe, hogy kellene.
+     Végpontnál hívd meg, jogosultságnál kérd le, fájlnál nyisd meg.
+  2. **ESZKÖZ -- ne keress szövegben strukturált adatot** (brokermarcsi
+     általánosítása). A JSON-nak és a forráskódnak is van SZERKEZETE, és amint
+     szövegként grepelünk bele, önként lemondunk róla. A `grep '"id":57'` az
+     `"id":570`-re is illeszkedik, egy `"id": 57` formázásra viszont némán nem
+     talál; az út-grep pedig nem látja, hogy a route regexszel illeszt.
+     **Ahol van parser, ott parsert használj** (JSON-nál `python3 -c`,
+     azonosságnál egész számra hasonlíts), útvonalnál pedig tényleges hívást.
+
+  ⚠️ **És ez a teszteidre is áll, nem csak a diagnózisra.** Ugyanaznap egy általam
+  írt teszt bukott el azon, hogy `not.toContain('régi')`-t állított egy szövegre,
+  amiben ott állt, hogy „a **régi**re hivatkozva". **Negatív állításhoz egyedi
+  őrszemet használj** (`ZZ_ELAVULT_BLOKK_ZZ`), ne olyan szót, ami résznek is
+  beleférhet a valódi tartalomba.
   ⚠️ **NE ÍRD KÖZVETLENÜL az SQLite-ot** (peppa és brokermarcsi mérése,
   2026-09-01): a `memories_au` trigger csak az FTS-indexet tartja szinkronban, az
   in-process TTL cache-t (`MEMORY_CACHE_TTL_MS = 60_000`) nem. A nyers `UPDATE`
