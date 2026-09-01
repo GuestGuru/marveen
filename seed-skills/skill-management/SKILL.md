@@ -286,6 +286,22 @@ grep -a '| >' ~/.claude/skills/.skill-index.md   # must return nothing
   olyan bemenetet válassz, amiről ELŐBB igazoltad, hogy a régi kódon megszólal**
   -- különben a néma kontroll a saját tévedésedet igazolja vissza.
 
+- 🔴 **Ha egy ÚJ szabály FELÜLÍR egy régit, a régi FELVEZETÉSE is menjen vele --
+  a beszúrás önmagában ellentmondást hagy.** 2026-09-01: a jelölés helyét
+  átállítottam (elölről a szöveg végére), és beszúrtam az új, „nincs kivétel"
+  mondatot -- de a szekció CÍMÉT, bevezető sorát és PÉLDÁJÁT nem vettem ki.
+  Nyolc soron át a régi szabály állt, közvetlenül az új FÖLÖTT, sőt egy mondat
+  szó szerint az ellenkezőjét állította. Aki az első képernyőn megáll, a
+  hatályon kívülit viszi el.
+  **Három ágens fogta meg egymástól függetlenül**, egyikük sem nyúlt hozzá.
+  **Eljárás felülíró patch után:** olvasd el a szekciót az ELEJÉTŐL, és mérd le,
+  hogy a régi megfogalmazás tényleg eltűnt-e:
+  ```bash
+  grep -n "<a regi szabaly jellemzo szava>" <fajl>   # 0 kell legyen
+  ```
+  A címben és a példában lévő régi alak a legveszélyesebb, mert azt olvassák
+  először. (És ha a szabály megfordult, a NEVE is hazudhat: a „prefix" szó
+  félrevezető, ha a marker a szöveg végén áll.)
 - 🔴 **A HOOKOK KÉT settings-fájlban élhetnek, és az egyik ellenőrzése NEM
   ellenőrzés.** 2026-09-01: meg akartam írni a leletbe, hogy az
   `outgoing-copy-gate.py` „nincs bekötve", mert a `~/.claude/settings.json`-ban
