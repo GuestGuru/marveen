@@ -315,6 +315,21 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   `curl -X PUT` olcsóbb, mint egy téves broadcast hat kollégának.
   Ez ugyanaz az osztály, mint a fenti (d): hiányt állítottam a hiány mérése nélkül.
 
+  🚦 **HIBAÜZENET OLVASÁSA: ÁLLAPOT vagy KORLÁT?** (brokermarcsi, 2026-09-01, és
+  ez minden 4xx-nél eldönthető.) Egy üres repóba a GitHub Git Data API-ja nem enged
+  írni, és a válasz így szól: *„Git Repository is empty"* -- **ÁLLAPOTKÉNT
+  fogalmaz, holott KORLÁTOT ír le** („ez az API nem tud üres repóval dolgozni").
+  - **Állapot-olvasat -> VÁRAKOZÁSRA tanít.** Én ezt olvastam ki, és megkértem a
+    gazdát, hogy nyomjon egy „Add a README file"-t.
+  - **Korlát-olvasat -> ÚTKERESÉSRE tanít.** A git PROTOKOLL üres távoli repóba
+    tud pusholni -- ez a normális bootstrap, nem kivétel. `git init` + első commit
+    + `git push` a proxyn át, és kész. *A saját `gg-mcp-iras-proxy` skillemben ott
+    állt, hogy az API alkalmatlanságánál a `git push` az út; a hibaüzenet
+    fogalmazása vitt el mellette.*
+  **A kettő ELLENTÉTES cselekvést ad, ezért minden 4xx-nél tedd fel a kérdést.**
+  Mellékhaszon a korlát-olvasatnál: az első commit már a SAJÁT tartalmad lehet, nem
+  egy generált fájl, amit utána felülírsz.
+
   🔴 **ÉS EGY SZINTTEL LEJJEBB: A `dist` SEM A FUTÓ DOLOG.** 2026-09-01, három
   ágens mérése. A `develop -> main` lánc végigfutott, a kód a `main`-en volt, és
   én **készként jelentettem a gazdának** -- miközben a futó szolgáltatás egy két
