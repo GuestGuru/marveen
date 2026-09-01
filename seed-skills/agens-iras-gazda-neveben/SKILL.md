@@ -28,17 +28,19 @@ brokeren ír. A gazdád számai akkor is érintettek, ha te keveset írsz.
 
 ## Eljárás
 
-### 1. Minden generált komment prefixe: `[AI: <agensnev>]`
+### 1. Minden generált szöveg markere: `[AI: <agensnev>]`
 
-Az ELSŐ karakterektől, kötelezően, egy sorban a szöveg elején:
+🔴 **A MARKER MINDIG A SZÖVEG VÉGÉN ÁLL, külön sorban, üres sorral elválasztva.
+Nincs kivétel.**
 
 ```
-[AI: marveen] A lint-only mód néma marad, a report nem viszi a lintBefore mezőt.
+A lint-only mód néma marad, a report nem viszi a lintBefore mezőt.
+
+[AI: marveen]
 ```
 
-**A marker HELYE az írás TÍPUSÁTÓL függ** (peppa pontosítása, 2026-08-31):
-
-🔴 **A MARKER MINDIG A SZÖVEG VÉGÉN ÁLL, külön sorban. Nincs kivétel.**
+Több bekezdésnél az UTOLSÓ bekezdés után jön, ugyanígy üres sorral elválasztva
+(jean kérdezte, 2026-09-01 -- így helyes).
 
 | Mit írsz | Hol álljon a marker |
 |----------|---------------------|
