@@ -272,12 +272,15 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   `issues(filter:{creator:{email:{eq:...}}, createdAt:{gte:...}})`. Üres eredménynél
   tehát előbb a LEKÉRDEZÉST gyanúsítsd, ne a valóságot.
 - 🟢 **A visszamenőleges megjelölés MŰKÖDIK, és nem rontja el a szöveget.** Mérve
-  2026-08-31 (bubi, TUL-934 és TUL-968): `commentUpdate` a lekért `body` elé fűzött
+  2026-08-31 (bubi, TUL-934 és TUL-968): `commentUpdate` a lekért `body` ELÉ fűzött
   `[AI: bubi]\n\n`-nel, majd visszaolvasva a törzs KARAKTERRE azonos maradt a
-  beküldöttel. Tehát a már kiment kommentek nem elveszettek: ha a gazda rábólint,
-  utólag a szabályos mintára hozhatók, és nem kell heurisztikára hagyatkozni. A
-  recept: kérd le a body-t, told hozzá a markert, írd vissza, majd olvasd vissza és
-  hasonlítsd össze -- ne a mutation `success` mezejére hagyatkozz.
+  beküldöttel. *(Az elé fűzés az AKKORI, 08-31-i elrendezés szerint történt; a
+  mérés érvényes marad, a hely azóta megváltozott.)* Tehát a már kiment kommentek
+  nem elveszettek: ha a gazda rábólint, utólag a szabályos mintára hozhatók, és
+  nem kell heurisztikára hagyatkozni.
+  **A MAI recept:** kérd le a body-t, **fűzd a markert a szöveg VÉGÉRE, üres
+  sorral elválasztva**, írd vissza, majd olvasd vissza és hasonlítsd össze -- ne
+  a mutation `success` mezejére hagyatkozz.
   🟢 **Ugyanez ISSUE-DESCRIPTION-re is mérve (peppa, 2026-09-01, HR-48/50/51):**
   `issueUpdate` a lekért `description` VÉGÉRE fűzött `\n\n[AI: peppa]`-val, mind a
   három `success:true`, és a visszaolvasott szöveg a `(?m)^\[AI: peppa\]` mintára
