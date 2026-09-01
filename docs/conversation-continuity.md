@@ -26,6 +26,8 @@ agent behaviour (which can fail or restart).
    **any** channel plugin's reply tool records the reply text as `direction='out'`
    (resolving the `chat_id=0` shorthand to the owner chat — Telegram only). Outbound
    rows carry `message_id=NULL`, so they are never deduped against each other.
+   > GG fork: az upstream itt provider-alakra illeszt es NEM adja vissza a providert.
+   > Nalunk a provider kell (chat-id namespace), ezert a mi valtozatunk marad.
 4. **Startup replay** — `SessionStart` hook `scripts/hooks/ledger-replay.py` injects
    hidden `additionalContext` at the top of the fresh session's context:
    - the **last N turns** of the transcript in chronological order, each prefixed
@@ -117,6 +119,10 @@ self-scope by cwd, so they are safe even if inherited. Merge this `hooks` object
     ],
     "PostToolUse": [
       { "matcher": "mcp__plugin_[a-z0-9-]+_[a-z0-9-]+__reply", "hooks": [ { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/hooks/ledger-outbound.py\"", "timeout": 15 } ] }
+      <!-- GG fork: EGY regex-matcher fedi az osszes plugint. Az upstream providerenkent
+           sorol fel egyet, es figyelmeztet, hogy a matcher nem automatikus -- a hianyzo
+           matcher NEMA hiba. Nalunk a regex alak MERTEN mukodik (a napi replay a kimeno
+           uzeneteket is hozza), ezert marad. -->
     ],
     "SessionStart": [
       { "matcher": "startup|resume|clear", "hooks": [ { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/hooks/ledger-replay.py\"", "timeout": 15 } ] }
@@ -134,6 +140,8 @@ self-scope by cwd, so they are safe even if inherited. Merge this `hooks` object
   that happens to expose a `reply` tool would therefore be recorded as an outbound
   turn. Capture is restricted to known providers, so such a row cannot become an
   open question, but the outbound side is still shape-based, not identity-based.
+  > Az upstream ugyanezt providerenkent kulon matcherrel oldja meg; ha a regex valaha
+  > nem illeszkedne egy uj plugin nevere, az a NEMA hiba esete -- ilyenkor sorold fel.
 - `SessionStart` matcher `startup|resume|clear`: the matcher is a **regex over the
   `source` field**, whose only values are `startup` / `resume` / `clear` / `compact`.
   There is no `auto` source — an `"auto"` matcher silently matches nothing, so the

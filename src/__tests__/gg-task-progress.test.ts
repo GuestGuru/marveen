@@ -80,7 +80,10 @@ describe('trackPaneProgress', () => {
 })
 
 describe('decideTaskTimeout: the stall rule', () => {
-  const entry = { injectedAt: 0, alerted: false }
+  // sawTurn: az upstream 1.36-ban kerult a Pick-be (a befecskendezes tenylegesen
+  // inditott-e fordulot). A GG progress-szabaly fuggetlen tole, ezert a fixture
+  // false-szal indul -- a teszt targya a stalledSince, nem a sawTurn.
+  const entry = { injectedAt: 0, alerted: false, sawTurn: false }
 
   it('REGRESSION 2026-08-14: a long but visibly working task is not a hang', () => {
     // The 07:45 memoria-heartbeat: twelve minutes of real work on a 5-minute
@@ -113,7 +116,7 @@ describe('decideTaskTimeout: the stall rule', () => {
   })
 
   it('alerts at most once', () => {
-    const stalled = { injectedAt: 0, alerted: true, stalledSince: 0 }
+    const stalled = { injectedAt: 0, alerted: true, sawTurn: false, stalledSince: 0 }
     expect(decideTaskTimeout(stalled, 'busy', 12 * MIN, OPTS)).toBe('hold')
   })
 })
