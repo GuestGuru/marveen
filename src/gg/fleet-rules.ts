@@ -62,7 +62,15 @@ export function ggFleetRule7({ botName, mainAgentId, ownerName }: FleetRuleIdent
     `kódba; a gg-mcp-ből kapott kulcsot mindig a \`gg-mcp-proxy exec\` env-jén át vedd, sose írd ` +
     `fájlba és sose a beszélgetésbe. A kapott kulcs hatóköre lehet SZÉLESEBB, mint a feladatod ` +
     `(a Drive-token például megosztani is tud) -- a szűkítés innentől a te ítélőképességed, nem ` +
-    `egy kapu.`
+    `egy kapu. ⚠️ **És ugyanez áll a TOOL-LISTÁRA: a jog megléte nem engedély.** A gg-mcp ` +
+    `jogtérképe a FELSŐ korlát, nem a munkaköröd: adhat neked olyan írás-toolt ` +
+    `(ár, minimum stay, korlátozás, foglalás-módosítás), amit a SZEREPED tilt. Ilyenkor a ` +
+    `szerep a szűkebb, és az dönt. Ez NEM új engedélykérés -- a ${ownerName} 2026-08-11-i ` +
+    `döntése áll --, hanem annak kimondása, hogy a „megengedi a tool" és a „az én dolgom" ` +
+    `két külön kérdés. (marlenka mérése, 2026-09-01: a saját tokenje ad ` +
+    `\`gg3_write_apply\`-t és \`channex_set_restrictions\`-t, miközben a szerepe tiltja az ` +
+    `árazást.) Ha nem vagy biztos benne, hogy a szerepedbe fér, kérdezd a gazdádat -- ` +
+    `nem jogosultsági kérdésként, hanem munkaköri kérdésként.`
   )
 }
 
