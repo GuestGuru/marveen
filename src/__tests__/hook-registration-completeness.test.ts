@@ -45,6 +45,13 @@ const EXEMPT: Record<string, string> = {
     'legacy: referenced only by a historical rebuild prompt, wired nowhere; kept pending a maintainer decision to remove it',
   'telegram-ack.py':
     'unreferenced anywhere in the repo; dead code kept pending a maintainer decision to remove it',
+  // GG fork: not a Claude Code hook despite the directory. It is a mirror-parity
+  // CHECKER, invoked by the dream-engine scheduled task (bucket 5), which is a
+  // fleet task on disk rather than a seeded one -- so it appears on none of the
+  // registration surfaces above. Wiring it to a hook event would run a git-wide
+  // diff on every tool call; the nightly cadence is the point.
+  'skill-mirror-guard.py':
+    'GG fork: mirror-parity checker driven by the dream-engine scheduled task, not by a hook event',
 }
 
 function registrationCorpus(): string {
