@@ -560,6 +560,12 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   ⚠️ **És mivel a tükör-szinkron MAGÁTÓL fut** (a dream-engine viszi), a
   sanitizálás nem a feltöltés előtti lépés, hanem **AZ ÍRÁS PILLANATÁBAN
   esedékes.**
+  ✅ **A megelőzés olcsóbb, mint a felderítés: ha a példában PLACEHOLDER áll, a
+  hatókör-kérdés fel sem merül** (bubi, 2026-09-01). **A beégetés akkor csábító,
+  amikor a SAJÁT FUTÓ PARANCSODAT másolod be a skillbe** -- és pont az a pillanat,
+  amikor a legkevésbé gondolsz arra, hogy ezt majd valaki MÁS fogja lefuttatni.
+  Írj `<a saját .mcp.json-odból>`, `<a vizsgált lakás labelje>` alakot, ne a
+  konkrét értékedet -- utólag ezt kell javítani, előre egy másodperc.
 
   A NÉGY hatókör tehát: **publikus repo** (a lenti szintek) > **wiki** (ugyanaz)
   > **memória** (a fenti két pont) > **munka-artefaktum** (semmi ebből).
