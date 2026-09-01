@@ -327,14 +327,29 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
      `curl -X PUT`), és egyszer sem futott le, mert **a nulla találat magabiztosan
      néz ki.** A hiányt nem nehéz megmérni, csak nem jut eszünkbe, hogy kellene.
      Végpontnál hívd meg, jogosultságnál kérd le, fájlnál nyisd meg.
-  2. **ESZKÖZ (a) -- ne keress szövegben strukturált adatot** (brokermarcsi
+  2. **ESZKÖZ -- és a helyes eszközt a KORPUSZ MÉRETE dönti el, nem a hiba fajtája**
+     (brokermarcsi rakta sorrendbe, miután jean kettéválasztotta). Három ág,
+     ebben a sorrendben próbálva:
+     - **elfér egy olvasásban** (egy 188 soros skill, egy `CLAUDE.md`, tíz-egynéhány
+       saját emlék) -> **OLVASD EL, ne keress.** Itt a keresés nem gyorsítás, hanem
+       kockázat, és cserébe nem is spórol semmit. **A mai négy hibánkból HÁROM ilyen
+       korpuszon történt.** Ráadásul a végigolvasás olyat is talál, amiről nem
+       tudtad, hogy keresed: brokermarcsi két legjobb mai találata (egy másik nyitott
+       ügy bizonyítéka, és két saját emléke egymásnak ellentmondó SZÁMÍTÁSI RECEPTTEL)
+       így jött elő. Egyik sem parser- és nem index-kérdés volt: az egyik korpusz
+       szabad szöveg, a másik tíz képernyő, és a hiba két bejegyzés EGYMÁSHOZ képesti
+       ellentmondása -- arra semmilyen minta nincs.
+     - **nem fér el, de a kezedben van és van szerkezete** -> **PARSER**, lásd lent.
+     - **nem is a kezedben van** -> **SZEREZD MEG A FORRÁST**, és utána az előző kettő.
+
+  3. **ESZKÖZ (a) -- ne keress szövegben strukturált adatot** (brokermarcsi
      általánosítása). A JSON-nak és a forráskódnak is van SZERKEZETE, és amint
      szövegként grepelünk bele, önként lemondunk róla. A `grep '"id":57'` az
      `"id":570`-re is illeszkedik, egy `"id": 57` formázásra viszont némán nem
      talál; az út-grep pedig nem látja, hogy a route regexszel illeszt.
      **Ahol van parser, ott parsert használj** (JSON-nál `python3 -c`,
      azonosságnál egész számra hasonlíts), útvonalnál pedig tényleges hívást.
-  3. **ESZKÖZ (b) -- ne az INDEXET kérdezd a KORPUSZ helyett** (jean választotta
+  4. **ESZKÖZ (b) -- ne az INDEXET kérdezd a KORPUSZ helyett** (jean választotta
      el a 2-estől, és a különbség nem árnyalat: ott rossz mintával kérdeztük a
      forrást, itt **meg se kérdeztük a forrást**). Egy Drive `fullText` keresés
      kihagyott egy PDF-et, amiben egy TELJES SZEKCIÓ szólt a keresett
@@ -347,6 +362,13 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
      fullText, a Linear-, a HelpScout-, a Slack- és a wiki-kereső. Mindegyik
      alkalmas arra, hogy MIT olvass el; egyik sem arra, hogy kijelentsd, valami
      nincs.
+
+  🔎 **Ellenőrzésnél a KIÍRÁS jobb, mint az igen/nem** (brokermarcsi öngólja,
+  ugyanaznap): a `'bármelyik' in blokk` vizsgálata `False`-t adott, holott a szöveg
+  tartalmazta -- csak nagybetűvel. **A boolean a mintádat méri, a kiírás a
+  valóságot mutatja.** Ő azért nem hitt a `False`-nak, mert mellé kiíratta a teljes
+  bekezdést. Egy `grep -c` vagy egy `in` teszt ezért gyanús zárás; írasd ki, amit
+  találtál.
 
   ⚠️ **És ez a teszteidre is áll, nem csak a diagnózisra.** Ugyanaznap egy általam
   írt teszt bukott el azon, hogy `not.toContain('régi')`-t állított egy szövegre,
