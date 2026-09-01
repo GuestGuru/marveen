@@ -224,6 +224,22 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   2. **minden számhoz KÖTELEZŐ a mérési ablak** -- a memóriában a valódi kockázat
      nem az érzékenység, hanem az ELAVULÁS: egy ablak nélküli szám fél év múlva
      magabiztosan hazudik.
+     ⚠️ **Az „LTM", a „tavalyi" és a „jelenleg" ablak-jelzésnek NÉZ ki, de egyik
+     sem köti le a mérés idejét** (jean, 2026-09-01): az LTM a hosszt mondja meg,
+     a HELYÉT nem. **Az ablakot a MÉRÉS dátuma rögzíti, nem az adat típusa.**
+  🔴 **És a mérési ablak a memória KÉT hibájából csak az EGYIKET fogja meg**
+  (brokermarcsi, 2026-09-01, a saját tíz emlékén végigmérve):
+  - *(a) nincs ablak* -> nem tudni, mikor volt igaz. Ezt a fenti pont megfogja.
+  - *(b) VAN ablak, de az állapot azóta megváltozott.* Ezt **semmi nem fogja meg**,
+    és a `hot` tierben ez a GYAKORIBB, mert a hot pont a változó dolgokról szól.
+    Konkrét eset: egy „NYITOTT, döntésre vár" bejegyzés négy napig ült a hot
+    tierben, miközben mind a három kérdése lezárult -- és a gépi ellenőrzés
+    OK-nak jelölte, mert **volt benne dátum**. A dátum megléte ELREJTETTE az
+    elavulást.
+  **A (b)-re nem szabály kell, hanem szokás:** a hot bejegyzést a LEZÁRÁSKOR kell
+  törölni, nem majd egyszer. És egy olcsó gyanú-jel: **ha egy hot emlék néhány
+  napnál régebbi, az önmagában gyanús** -- a hot definíció szerint arról szól,
+  ami MOST történik. Nem az érzékenységét nézd rajta, hanem a KORÁT.
   A NÉGY hatókör tehát: **publikus repo** (a lenti szintek) > **wiki** (ugyanaz)
   > **memória** (a fenti két pont) > **munka-artefaktum** (semmi ebből).
   *(Számold meg a felsorolást: négy elem. 2026-09-01-én itt „három" állt, mert a
