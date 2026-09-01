@@ -214,6 +214,19 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   ismeretet hordoz és sokan olvassák hosszú ideig; a bizonylat egyetlen konkrét
   ügyletet azonosít, és pont az azonosítás a dolga.
 
+  **És a MEMÓRIA-TIEREKRE sem áll** (salesninja kérdezte, 2026-09-01, döntés:
+  marveen). A `shared` emlék nem publikálódik, a flotta olvassa kontextussal, és
+  **pont a konkrétumtól hasznos**: egy bejegyzés, ami annyit mond, hogy „egy
+  tulajnak több rekordja lehet", de az azonosítót elhagyja, semmit nem ment meg a
+  következő ágensnek. A memóriára ezért egy SZŰKEBB, két pontos szabály áll:
+  1. **hitelesítő adat** (token, jelszó, auth nélkül működő link) csak akkor, ha
+     kifejezetten meg is van jelölve annak;
+  2. **minden számhoz KÖTELEZŐ a mérési ablak** -- a memóriában a valódi kockázat
+     nem az érzékenység, hanem az ELAVULÁS: egy ablak nélküli szám fél év múlva
+     magabiztosan hazudik.
+  A három hatókör tehát: **publikus repo** (a lenti szintek) > **wiki** (ugyanaz)
+  > **memória** (a fenti két pont) > **munka-artefaktum** (semmi ebből).
+
   🟢 **A LAKÁS RÖVID NEVE NEM BLOKKOLÓ -- Tamás döntése, 2026-09-01 (msg 695).**
   Szó szerint: *„Mint például Király33? Vagy NagyDiófa14? Ez nem túl egyedi
   azonosító, nem probléma."* Az `<Utcanév><házszám>` alak egy ÉPÜLETET nevez meg,
