@@ -270,6 +270,22 @@ grep -a '| >' ~/.claude/skills/.skill-index.md   # must return nothing
   Ez ugyanaz a hibaosztály, mint a némán üres API-szűrő: **a nulla találat nem
   adat, amíg nem igazoltad, hogy a mérőeszköz működik.**
 
+- 🔴 **EGY JAVÍTÁST KÉT MÉRÉS bizonyít, és a kontrollnak BIZONYÍTHATÓAN meg kell
+  szólalnia.** 2026-09-01, a kimenő-kapu tokenizáló javításánál: az első negatív
+  kontrollom néma maradt, és egy pillanatig „átment"-nek olvastam. Valójában
+  olyan szavakról ékezettelenítettem, amik nincsenek a kapu szótárában -- a
+  kontroll tehát semmit nem bizonyított, se jót, se rosszat.
+  **A helyes forma két tengelyen mér:**
+  ```
+                     RÉGI kód   ÚJ kód
+  a valódi hiba        bukik  →  bukik    (a detektálás nem sérült)
+  a hamis pozitív      bukik  →  tiszta   (a hibát tényleg megszüntettem)
+  ```
+  A bal oszlop nélkül nem tudod, hogy nem vakítottad-e meg a mérőt; a jobb
+  oszlop nélkül nem tudod, hogy javítottál-e egyáltalán. **És a kontrollhoz
+  olyan bemenetet válassz, amiről ELŐBB igazoltad, hogy a régi kódon megszólal**
+  -- különben a néma kontroll a saját tévedésedet igazolja vissza.
+
 - 🔴 **A HOOKOK KÉT settings-fájlban élhetnek, és az egyik ellenőrzése NEM
   ellenőrzés.** 2026-09-01: meg akartam írni a leletbe, hogy az
   `outgoing-copy-gate.py` „nincs bekötve", mert a `~/.claude/settings.json`-ban
