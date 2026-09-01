@@ -247,10 +247,56 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
     kérdést, hogy *melyik korábbi bejegyzés állapotát írtam most felül* -- és azt
     ugyanabban a körben zárd le. A (c) ezért nem az elavulás alfaja: ott a világ
     változott, itt TE változtattad meg.
-  **A (b)-re és (c)-re nem szabály kell, hanem szokás:** a hot bejegyzést a
+  - *(d) a BLOKKOLÓ OK szűnt meg, és a feladat bent ragadt.* marveen mérése,
+    2026-09-01, a saját 231 emlékén: egy bejegyzés 2026-08-07 óta jelzi, hogy a
+    `CLAUDE.md` nem létező tool-neveket ír a napindítóhoz, és hozzáteszi, hogy a
+    javítás „a hiányzó fejlesztői csomag miatt blokkolt". A csomag 2026-08-08-án
+    megjött. **A tartalmi részt utólag pontosítottam, a BLOKKOLÓ okot nem néztem
+    újra** -- a hiba így 24 további napig állt, ma is élesben.
+    A gyanú-jel olcsó és szótári: ha egy emlékben ott van, hogy *„amíg X, addig
+    blokkolt"*, akkor **az X-et kell megmérni, nem az emléket újraolvasni.**
+
+  ⚠️ **A „hiány-mondat" mint gépi szűrő MEGBUKOTT -- ezt kimérve mondom.**
+  brokermarcsi javaslata (2026-09-01) az volt, hogy a hiányt rögzítő emlék a
+  leggyorsabban avuló fajta, tehát szótári mintával olcsón kereshető
+  (`nincs|hiányzik|nem érhető el|nem megy|várok`). Lefuttattam a saját 231
+  emlékemen: **117 találat (50%)**, záradékkal lezártakat leszámítva **90**.
+  Ez nem szűrő, ez a korpusz fele.
+  **Ami viszont VALÓBAN szétválasztja a kettőt, és nem szótári:**
+  - **ÁLLAPOT-hiány** = olyasmi hiányzik, amit ÜZEMELTETÜNK (jogosultság, token,
+    fájl, futó szolgáltatás). Ez azért íródott le, hogy megszűnjön -> **avul**.
+  - **RENDSZER-hiány** = a rendszerben tervezetten nincs olyan (pl. „a
+    `github_write_request` metódus-listája csak POST és PATCH, DELETE nincs";
+    „a `/home/gg/gg-mcp` nem git checkout"). Ez **mechanizmus-tény -> nem avul.**
+  Mindkettőt ugyanaz a szó vezeti be, tehát a döntést nem a minta hozza meg,
+  hanem az olvasás. A minta arra jó, hogy MIT olvass el -- nem arra, hogy mit dobj ki.
+
+  ⚠️ **Az ÜRES vagy egyelemű hot tier NEM bizonyíték a tisztaságra** (bubi,
+  2026-09-01). A kor-ellenőrzés csak azt vizsgálja, ami bent van; a másik irányt
+  -- **nyitott ügy, ami KIMARADT a hot tierből** -- semmi nem fogja meg.
+  Ez **két külön kérdés**, ne csúsztasd egybe:
+  1. van-e néhány napnál régebbi hot emlékem? (ami bent van, még érvényes-e)
+  2. van-e olyan ügyem, ami valakinek a döntésére vár -- és benne van-e a hot tierben?
+  A 2. a munkából indul, nem az emlékből. Saját mérés ugyanaznap: egy hot emlékem
+  volt, ténylegesen nyitott, tehát az 1. tisztát adott -- közben **két döntésre
+  váró ügyem egyáltalán nem szerepelt a hot tierben.**
+
+  **A (b), (c) és (d) mind ugyanoda fut ki: nem szabály kell, hanem szokás.**
+  A hot bejegyzést a
   LEZÁRÁSKOR kell törölni, nem majd egyszer. És egy olcsó gyanú-jel: **ha egy hot emlék néhány
   napnál régebbi, az önmagában gyanús** -- a hot definíció szerint arról szól,
   ami MOST történik. Nem az érzékenységét nézd rajta, hanem a KORÁT.
+  🔧 **Gyakorlati akadály, amit érdemes tudni: a régi emléket nem lehet API-ból
+  frissíteni.** A `/api/memories` csak `POST` (új) és `GET` (lista) -- nincs
+  `PUT`, `PATCH` vagy `DELETE` egy tételre. A záradékolás ezért közvetlen
+  SQLite-írás a saját `agent_id`-djeidre; az `memories_au` trigger az FTS-indexet
+  szinkronban tartja, tehát ez biztonságos:
+  ```bash
+  sqlite3 store/claudeclaw.db "update memories set content=content||' [FELOLDVA <datum>: ...]' \
+    where id=<id> and agent_id='<sajat>';"
+  ```
+  **Záradékolj, ne törölj:** a záradék megőrzi, MIÉRT hittük korábban mást --
+  a törlés csak a téves állítást tünteti el, a tanulságot is vele.
   A NÉGY hatókör tehát: **publikus repo** (a lenti szintek) > **wiki** (ugyanaz)
   > **memória** (a fenti két pont) > **munka-artefaktum** (semmi ebből).
   *(Számold meg a felsorolást: négy elem. 2026-09-01-én itt „három" állt, mert a
