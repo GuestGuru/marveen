@@ -141,9 +141,13 @@ def _build_output(transcript, open_q, owner):
         "betöltött kontextusból folytass, ne kezdd elölről."
     ]
     if open_q:
-        chat_id, message_id, text, ts, att_kind, att_file_id = open_q
-        # The ledger namespaces non-Telegram chats as "<provider>:<id>"; the reply
-        # tool needs the BARE id and the provider decides WHICH tool to call.
+        # Prefix-slice on purpose (HOOKARITAS821, upstream): a widened
+        # open_question() tuple would ValueError here (no try around this frame),
+        # the replay hook would die, and the fresh session would start with NO
+        # context -- fail-open, the silence looks like a calm start.
+        chat_id, message_id, text, ts, att_kind, att_file_id = open_q[:6]
+        # GG fork: the ledger namespaces non-Telegram chats as "<provider>:<id>";
+        # the reply tool needs the BARE id and the provider decides WHICH tool to call.
         provider, bare_chat = ledger_lib.split_chat(chat_id)
         snippet = _snippet(text, _max_snippet())
         # An unknown provider yields no tool name. Naming a tool that does not
@@ -210,13 +214,12 @@ def _fit_output(transcript, open_q, owner, byte_budget):
 
 
 def main():
-    cwd = None
+    payload = None
     try:
         payload = json.load(sys.stdin)
-        cwd = payload.get("cwd")
     except Exception:
         pass
-    agent_id = ledger_lib.agent_id_from_cwd(cwd)
+    agent_id = ledger_lib.agent_id_from_payload(payload)
 
     try:
         rows = ledger_lib.recent(agent_id, _window_limit())
