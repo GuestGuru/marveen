@@ -255,6 +255,12 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   **Ez a kettő nem alternatíva, hanem sorrend:** előbb az alak-minta (ismeretlen
   azonosítók), utána a `leak-check.py` futásidejű terminusokkal (ismert nevek).
   A kézi `--term` felsorolás a leggyengébb, és önmagában NEM elég.
+  🔴 **De a MINTA SZŰR, NEM DÖNT** (bubi fogalmazta meg, 2026-09-01). A találat
+  annyit mond, hogy *nézz rá* -- nem azt, hogy ki kell venni. Ha a kettőt
+  összemosod, TÚLSZIGORÍTASZ, és a szűrés a skilleket szegényíti: aznap két
+  sanitizálás közül csak az egyik volt indokolt (az emelet/ajtó szintű), a másik
+  (épület szintű lakásnév) az én túl szigorú olvasatom miatt ment ki.
+  A találatra a fenti szint-lista dönt, nem a minta.
 - 🔴 **TÜKRÖZÖTT fájlnál az ÉLŐ példányt sanitizáld, ne a forkot -- különben a
   következő szinkron visszateszi.** 2026-08-31, peppa érve, és jobb volt az enyémnél:
   ha csak a `gg-skills/` alatti másolatból veszed ki az érzékeny részt, az élő skill
