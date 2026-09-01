@@ -1,6 +1,6 @@
 ---
 name: agens-iras-gazda-neveben
-description: Az ágens a per-user brokeren át a GAZDA nevében ír külső rendszerbe (Linear, HelpScout, Slack, wiki), és ez betorzítja a gazda teljesítmény-mérését. A kötelező [AI: <agensnev>] prefix, a visszamenőleges szétválasztás, és mikor NE írj egyáltalán. Triggerelődik - Linear-komment vagy issue írása, HelpScout-válasz, Slack-üzenet a gazda nevében, TÉR-előkészítés, "hány kommentet írtam", "ki írta ezt".
+description: Az ágens a per-user brokeren át a GAZDA nevében ír külső rendszerbe (Linear, HelpScout, Slack, wiki), és ez betorzítja a gazda teljesítmény-mérését. A kötelező [AI: <agensnev>] marker (a szöveg VÉGÉN), a visszamenőleges szétválasztás, és mikor NE írj egyáltalán. Triggerelődik - Linear-komment vagy issue írása, HelpScout-válasz, Slack-üzenet a gazda nevében, TÉR-előkészítés, "hány kommentet írtam", "ki írta ezt".
 ---
 
 # Írás a gazda nevében: a torzítás és a jelölés
@@ -82,7 +82,7 @@ a Buktatókat.
 jean vetette fel, és jogosan: van egy harmadik kategória a „a gazda sajátja" és az
 „az ágens írta" között -- amikor **a gazda diktálja a szöveget, és te csak beírod**.
 (Mérve: Eszti kifejezetten így dolgozik, szó szerint akarja viszontlátni, amit mondott.)
-Ott a TARTALOM a gazdáé, csak a billentyűzet a tiéd, és egy sima `[AI: jean]` prefix
+Ott a TARTALOM a gazdáé, csak a billentyűzet a tiéd, és egy sima `[AI: jean]` marker
 **félrevezető lenne**: azt sugallná, hogy te találtad ki.
 
 ```
@@ -111,7 +111,7 @@ hogy a gazda fogalmazta a mondatokat, és **túl sokat ír a javára** olyan
 szövegért, amit nem ő írt. Ez ugyanaz a torzítás, csak a másik irányba.
 
 A döntési kérdés egyetlen mondat: **hozzátettél-e SAJÁT megfogalmazást?**
-Ha igen, sima prefix. Ha csak leírtad, amit mondott, `diktalva`.
+Ha igen, sima marker. Ha csak leírtad, amit mondott, `diktalva`.
 
 **Az általános indok, amiért kétes esetben a GYENGÉBB állítás a helyes**
 (salesninja fogalmazta meg, ugyanaznap, egy hibrid kommenten: két mondat Péteré,
@@ -139,16 +139,16 @@ elgépelés, hanem járhatatlan, már az ágensé. `diktalva`-nak jelölve pont 
 történt volna, amitől az aszimmetria-érv óv. **Elsőre ő is rosszul sorolta be
 őket: a szöveg döntötte el, nem az emlékezete.**
 
-### 2. A prefixbe SOHA ne tegyél dátumot
+### 2. A markerbe SOHA ne tegyél dátumot
 
 A rendszernek van `createdAt`-je, az a hiteles. Egy kézzel beírt dátum egy
-szerkesztés után hazudni fog. A prefix azt mondja meg, KI írta; az időt bízd a
+szerkesztés után hazudni fog. A marker azt mondja meg, KI írta; az időt bízd a
 rendszerre. (salesninja pontosítása, és igaza volt: a saját korábbi formátumai
 dátumot vittek.)
 
 ### 3. Ami MÁR kiment, azt a mintájával kell dokumentálni
 
-A prefix bevezetése előtti kommentek visszamenőleg csak akkor választhatók le, ha
+A marker bevezetése előtti kommentek visszamenőleg csak akkor választhatók le, ha
 a régi minták fel vannak írva. Minden ágens sorolja fel a sajátjait ide:
 
 | Ágens | Minta | Darab | Időszak |
@@ -166,7 +166,7 @@ a régi minták fel vannak írva. Minden ágens sorolja fel a sajátjait ide:
 | peppa | 🟢 a fenti három leírás 2026-09-01-én Réka jóváhagyásával VISSZAMENŐLEG megjelölve, ma már a sima `(?m)^\[AI: peppa\]` fogja mindhármat (HR-48, HR-50, HR-51). A nyitósoros minták így már csak történeti azonosítók. | 3 | 2026-09-01 |
 | jean | eredetileg JELÖLETLEN volt; 2026-08-31-én Eszti kifejezett kérésére visszamenőleg megjelölve, ma a `(?m)^\[AI: jean(, diktalva)?\]` fogja: **7 komment** (SAL-455 ×2, GG-559 ×2, GG-860 ×3), **8 project update**, **7 projekt-leírás**, **1 milestone** | 23 | 2026-08-12 … 08-31 |
 | jean | ⚠️ a STÍLUS-alapú azonosítás HIÁNYOS volt: 6 kommentet találtam vele, a transzkript-mérés 7-et adott. A kimaradt (GG-559, 08-27) épp DIKTÁLT volt, tehát a gazda hangján szólt. Diktált szövegre a stílus elvileg sem működik -- csak a transzkript. | +1 | 2026-08-27 |
-| jean | a `diktalva` jelölést a gazda döntése alapján NEM használjuk: Eszti 2026-08-31-én kimondta, hogy „legyen csak AI jean az is, ha én diktálom, az is, ha te magadtól írod az én instrukcióim alapján". Négy elemen már ott volt, visszaállítva sima prefixre. Egybevág az aszimmetria-érvvel: a két GG-860 komment magja diktált volt, de a szerkezet és a következtetések az ágenséi. | 4 -> 0 | 2026-08-31 |
+| jean | a `diktalva` jelölést a gazda döntése alapján NEM használjuk: Eszti 2026-08-31-én kimondta, hogy „legyen csak AI jean az is, ha én diktálom, az is, ha te magadtól írod az én instrukcióim alapján". Négy elemen már ott volt, visszaállítva sima markerre. Egybevág az aszimmetria-érvvel: a két GG-860 komment magja diktált volt, de a szerkezet és a következtetések az ágenséi. | 4 -> 0 | 2026-08-31 |
 | bubi | eredetileg JELÖLETLEN volt, 2026-08-31-én Rita jóváhagyásával visszamenőleg megjelölve, ma már a sima `^\[AI: bubi\]` fogja: `TUL-934` (08-18T10:39Z), `TUL-968` (08-27T07:24Z) | 2 / 34 (6,3%) | 2026-08-18, 08-27 |
 
 **Ha a te ágensed hiányzik innen, a gazdád számai visszamenőleg nem tisztíthatók.**
@@ -178,7 +178,7 @@ elég -- a táblázat célja nem a szép szabály, hanem hogy egy év múlva meg
 legyen. Heurisztikát (hossz, `@`-említés hiánya, markdown-szerkezet) írj mellé, de
 mondd ki, hogy heurisztika.
 
-🔴 **A régi kommenteket NE szerkeszd meg visszamenőleg, hogy prefixet kapjanak.**
+🔴 **A régi kommenteket NE szerkeszd meg visszamenőleg, hogy markert kapjanak.**
 bubi kérdezte, és a válasz nem: (a) a szerkesztés maga is nyomot hagy, és egy
 későbbi olvasónak nehezebb lesz megmondani, mi volt az eredeti; (b) ez megint
 írás lenne a gazda nevében, épp abból a bürokratikus okból, amit csökkenteni
@@ -201,14 +201,14 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
 
 - 🔴 **A Linear szerkesztője ÁTÍRJA a beküldött markdownt, és nem lehet kikapcsolni.**
   Mérve 2026-08-13 (MAR-148): a `-` listajel `*`-ra vált, és minden csupasz URL
-  linkké alakul. A `[AI: nev]` prefix átment (2026-08-31), mert a szögletes zárójelet
+  linkké alakul. A `[AI: nev]` marker átment (2026-08-31), mert a szögletes zárójelet
   nem követi `(`, tehát nem nézi linknek -- de **egy formátum-váltás előtt mindig
   írj egy éles teszt-kommentet és olvasd vissza**, ne a szabályból következtess.
   Ha egy jövőbeli verzió mégis bántaná, a zárójel nélküli `AI: <nev> --` alak
   ugyanúgy fogható.
 - 🔴 **Az issue LÉTREHOZÁSA más súlyú, mint a komment.** Ha a gazda KÉRTE, hogy
   vegyél fel egy jegyet, az az ő döntése és az ő munkája -- a jegy jogosan az övé.
-  A komment viszont tartalmi hozzájárulásnak látszik. Ezért a prefix a kommenten
+  A komment viszont tartalmi hozzájárulásnak látszik. Ezért a marker a kommenten
   kötelező, az issue-nál elég, ha a leírás megmondja, ki kérte.
 - 🔴 **A saját naplód hiánya nem bizonyíték arra, hogy nem írtál.** Ha azt
   jelented, hogy „nulla kommentem van", mondd meg, MIRE alapozod (napló, audit,
@@ -263,7 +263,7 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   fogalmaztál. Mindkét üzenet ott van a transzkriptben, dátummal.
 - 🔴 **A `slack_bot_send_message` NEM torzít: az a „GG Agent" BOT nevében megy,
   nem a gazdáéban.** marlenka pontosítása. A szerzőség-torzítás a PER-USER tokenes
-  íráson keletkezik (Linear, HelpScout, wiki, sales, GG3); a bot-úton a prefix
+  íráson keletkezik (Linear, HelpScout, wiki, sales, GG3); a bot-úton a marker
   nem szerzőség-korrekció, csak jelölés. A kettőt ne mosd össze, mert a bot-út
   jelölésének elhagyása senkinek a számait nem rontja el.
 - **A `createdIssues` szűrő némán üreset adhat.** 2026-08-31: a
@@ -276,7 +276,7 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   `[AI: bubi]\n\n`-nel, majd visszaolvasva a törzs KARAKTERRE azonos maradt a
   beküldöttel. Tehát a már kiment kommentek nem elveszettek: ha a gazda rábólint,
   utólag a szabályos mintára hozhatók, és nem kell heurisztikára hagyatkozni. A
-  recept: kérd le a body-t, prefixeld, írd vissza, majd olvasd vissza és
+  recept: kérd le a body-t, told hozzá a markert, írd vissza, majd olvasd vissza és
   hasonlítsd össze -- ne a mutation `success` mezejére hagyatkozz.
   🟢 **Ugyanez ISSUE-DESCRIPTION-re is mérve (peppa, 2026-09-01, HR-48/50/51):**
   `issueUpdate` a lekért `description` VÉGÉRE fűzött `\n\n[AI: peppa]`-val, mind a
@@ -290,7 +290,7 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
 - **A gazda maga is beilleszthet ágens-írta szöveget a SAJÁT kommentjébe.** Mérve
   2026-08-31 (bubi, GG-748): egy 16 286 karakteres komment Rita fiókján az én
   igényleírásom, de a beküldés az ő tette volt, és a saját nyitósorában ki is
-  mondta, hogy „marveent használtuk". Ez NEM ágens-írás, a prefix-szabály nem
+  mondta, hogy „marveent használtuk". Ez NEM ágens-írás, a marker-szabály nem
   fogja, és nem is kell hogy fogja -- de a visszamenőleges számoláskor ne told át
   az ágens oldalára pusztán a hossz vagy a stílus alapján. A határ az, hogy KI
   nyomta el a küldést.
@@ -299,15 +299,15 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   se nem tisztán a gazdáé: a szöveget az ágens írta, de **a gazda küldte be a saját
   kezével**, és néha ki is mondja (GG-748: 16 286 karakter Rita fiókján, a
   nyitósorában azzal, hogy „marveent használtuk"). Ez NEM ágens-írás, a
-  prefix-szabály nem fogja és nem is kell hogy fogja.
+  marker-szabály nem fogja és nem is kell hogy fogja.
   ⚠️ **A visszamenőleges számolásnál viszont könnyű átcsúsztatni az ágens oldalára**
   hossz vagy stílus alapján -- egy hosszú, strukturált szöveg „ágensesnek" néz ki.
   Ne a szöveget nézd, hanem a küldést.
-- 🔴 **A PISZKOZAT-ÁTADÁS negyedik eset, és ott NEM kell prefix.** Ha a szöveget
+- 🔴 **A PISZKOZAT-ÁTADÁS negyedik eset, és ott NEM kell marker.** Ha a szöveget
   te írod, de a felülvizsgálatot és a KÜLDÉST ember végzi (peppa így dolgozik:
   a HelpScout-válasz piszkozatként megy Rékához, ő nézi át és ő küldi), akkor a
   hozzájárulásod láthatatlan marad -- és ez így korrekt. A mérendő munka ott a
-  review és a döntés, azt tényleg ő végezte. **Prefixet csak oda tegyél, ahol a
+  review és a döntés, azt tényleg ő végezte. **Markert csak oda tegyél, ahol a
   te írásod EMBERI FELÜLVIZSGÁLAT NÉLKÜL vált a gazda nevén rögzített tartalommá.**
 - 🔴 **A napló arra bizonyíték, hogy ÍRTÁL, nem arra, hogy HOVÁ.** peppa 2026-08-31:
   a memóriája szerint három interjú-összefoglaló KOMMENTKÉNT ment fel, valójában
@@ -322,7 +322,7 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
 
 **A STRUKTURÁLT ÍRÁS.** marlenka vetette fel, 2026-08-31, és igaza van: a
 `gg3_write_apply` (árszabály, naptár) és a `channex_set_restrictions` **nem
-szöveg, nincs hova prefixet tenni.** A GG3 előzmény-táblái a gazda azonosítóját
+szöveg, nincs hova markert tenni.** A GG3 előzmény-táblái a gazda azonosítóját
 rögzítik, tehát egy ágens által beállított ár visszamenőleg
 megkülönböztethetetlen attól, amit a gazda maga állított be.
 
