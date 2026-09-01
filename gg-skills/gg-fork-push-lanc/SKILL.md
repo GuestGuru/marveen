@@ -363,6 +363,21 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
      alkalmas arra, hogy MIT olvass el; egyik sem arra, hogy kijelentsd, valami
      nincs.
 
+  🔴 **ÉS EGY SÚLYOSBÍTÓ ESET: amikor a HIÁNY maga a KIMENET, nem melléktermék.**
+  A fentiek diagnózis közben születtek -- kerested, nem találtad, rosszul
+  következtettél, és a kár egy elmaradt javítás. Két helyzetben viszont a hiány-
+  állítás magától BEKERÜL valakihez döntésként:
+  - **rendszeres feladat, ami kötelezi rá** (marlenka): egy heti kör, aminek ki KELL
+    mondania, hogy „ezen a héten nem találtam új bejelentést" vagy „egyetlen nap sem
+    tért el". Itt a hamis nulla nem elmarad, hanem jelentésként megy a gazdához.
+  - **elemzés, ami indexből dolgozik** (salesninja): a Linear-, HelpScout-, Drive- és
+    wiki-keresés mind index, és a „nincs rá adat" mondat egy elemzésben
+    **egy SZÁMMAL egyenértékű állítás**, nem semleges kitöltő.
+  **Ilyenkor a POZITÍV KONTROLL nem óvatosság, hanem a mérés része:** minden
+  „nincs ilyen" / „nincs eltérés" állítás mögött fusson egy lekérdezés egy ISMERT
+  pozitív esetre. Ha azt sem hozza vissza, nem a valóság üres, hanem a lekérdezés
+  hibás. Tedd checklist-tételnek, ne emlékeztetőnek.
+
   🔎 **Ellenőrzésnél a KIÍRÁS jobb, mint az igen/nem** (brokermarcsi öngólja,
   ugyanaznap): a `'bármelyik' in blokk` vizsgálata `False`-t adott, holott a szöveg
   tartalmazta -- csak nagybetűvel. **A boolean a mintádat méri, a kiírás a
