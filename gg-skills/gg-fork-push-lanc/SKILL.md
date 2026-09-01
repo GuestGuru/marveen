@@ -207,6 +207,21 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   hanem a sanitizálás (a név a kérésből, az ID configból jöjjön), mert a
   verziózatlan fájl csak addig létezik, amíg a lemez.
 
+- 🔴 **A LAKÁS-AZONOSÍTÓ SLUG-ALAKBAN átcsúszik a cím-grepen, és a saját
+  `leak-check.py` sem fogja, ha KÉZZEL adod meg a terminusokat.** 2026-09-01:
+  egy árazási skill új szakasza ötször tartalmazott egy `<Utcanev><hazszam>-<emelet><ajto>`
+  alakú azonosítót. A cím-minta (`utca|körút|<irsz> Budapest`) NEM fogta, mert a
+  slugban nincs se szóköz, se az „utca" szó; a `leak-check.py` pedig nullát adott,
+  mert kézzel beírt terminusokat kapott -- **pont az a hiba, ami ellen készült.**
+  SZEMMEL találtam meg, nem méréssel.
+  **Következmény:** publikálandó ÁRAZÁSI vagy LAKÁS-témájú szövegnél a
+  `leak-check.py` terminusait a futásidejű forrásból kell szedni
+  (`--terms-from-json` a lakás-configra, `--terms-from-dir` az assets-re) --
+  a `--term` kézi felsorolás csak kiegészítés. Ha nincs ilyen forrás kéznél,
+  akkor a szakaszt EL KELL OLVASNI, és ezt mondd is ki a jelentésben:
+  „szemrevételezés, nem mérés".
+  Ugyanez áll az élő ügyfél-ügyszámra (HelpScout-jegy) és a konkrét összegekre:
+  egyik sem titok, mindhárom blokkoló egy publikus repóban.
 - 🔴 **TÜKRÖZÖTT fájlnál az ÉLŐ példányt sanitizáld, ne a forkot -- különben a
   következő szinkron visszateszi.** 2026-08-31, peppa érve, és jobb volt az enyémnél:
   ha csak a `gg-skills/` alatti másolatból veszed ki az érzékeny részt, az élő skill
