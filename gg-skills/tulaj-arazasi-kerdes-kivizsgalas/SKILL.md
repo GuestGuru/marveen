@@ -16,7 +16,7 @@ euróért ment el", „tavaly többet hozott", „ez már nem kiemelt időszak?"
 HelpScout: a felületen látott 5 jegyű szám a **conversation NUMBER, nem az id**.
 Az id-vel hívva 404 jön. Előbb keresd meg:
 ```
-GET /v2/conversations?query=(number:49355)&status=all
+GET /v2/conversations?query=(number:<NUMBER>)&status=all
 ```
 majd a kapott `id`-vel: `GET /v2/conversations/<id>/threads`.
 
@@ -100,6 +100,41 @@ FROM airdna_active_listings WHERE district='<rom.szam>' AND accommodates BETWEEN
 ```
 „Az elért ár a kerületi éves medián X-szerese" nagyon hatásos mondat.
 
+### 9. ÚJ LAKÁS: nincs ár-pálya, a TÁRS-LAKÁSOK adják a viszonyítást
+Ha a lakás pár hete ment élesbe, a 4. lépés (`pricesnapshots` ár-pálya) ÜRES:
+egyetlen `store_date` van, tehát nincs mit lelépcsőzve bemutatni. A helyettesítő
+bizonyíték: **mit kérnek UGYANAZON a napon a hasonló lakások** (azonos label,
+azonos méret-sáv), és hol áll közöttük ez a lakás.
+
+```sql
+WITH tars AS (
+  SELECT u.id, u.name, u.occ_adults FROM units u
+  JOIN unit_labels ul ON ul.unit_id=u.id
+  WHERE ul.label_id='<a vizsgalt lakas labelje>' AND u.occ_adults >= <meret>
+)
+SELECT t.name, t.occ_adults,
+  round(avg(ps.price/100.0) FILTER (WHERE ps.future_date BETWEEN '<tol>' AND '<ig>')::numeric) AS kert,
+  count(*) FILTER (WHERE ps.is_available) AS szabad
+FROM tars t JOIN pricesnapshots ps ON ps.unit_id=t.id AND ps.store_date='<ma>'
+GROUP BY 1,2 ORDER BY 2 DESC, 1;
+```
+
+Ehhez tedd hozzá az ALAPÁRAT is (`rates`: `price`, `min_price`, `occupancy`) a
+társakéval együtt. Ez mondja meg, hogy a lakás tudatosan a sáv alján indul-e.
+A wiki (`skillek/arazasi-sema-magyarazat`) kimondja: **új lakásnak kb. egy év,
+amíg megtalálja az árazását, az elején szándékosan olcsóbban hirdetjük a
+foglalásokért és a review-kért.** Ha az alapár tényleg a sáv alján van, ez nem
+hiba, hanem a leírt stratégia -- és pont ez a tulajnak szóló válasz magja.
+
+Mérve 2026-09-01, egy új, 8 fős prémium lakás árazási panaszán: az alapára a
+hasonló méretű prémium társak sávjának ALJÁN állt (nagyjából 5-15%-kal a
+társak alatt), a lakás mégis öt nap alatt tizenegy foglalást és több mint
+harminc éjszakát fogott, és az első teljes hónapjának elért átlagára a
+hasonló méretű lakások előző évi azonos havi átlaga FÖLÖTT volt.
+A tanulság szám nélkül is áll, és nem évül el: **az alacsony induló alapár
+nem alulárazás, hanem a felfutás eszköze, és mellette a lakás simán felül
+teljesíthet.** Ez a tulajnak szóló válasz magja.
+
 ## Buktatók
 
 - **A HelpScout-szám nem id.** 404-et kapsz, ha közvetlenül hívod. Lásd 1. lépés.
@@ -128,7 +163,7 @@ FROM airdna_active_listings WHERE district='<rom.szam>' AND accommodates BETWEEN
 - **A viszonyítási alap dönti el, meggyőző-e a válasz.** A tulajdonosi levélbe
   a lakás SAJÁT hónapja való, nem a portfólió- vagy piaci átlag: mennyi volt az
   esemény hetének átlagos éjszakai ára, és mennyi UGYANANNAK a hónapnak a többi
-  napján, ugyanabban a lakásban. Steindl7-nél ez adta a döntő számot
+  napján, ugyanabban a lakásban. Egy mért fesztivál-esetben ez adta a döntő számot
   (2023 +40%, 2024 +41%, 2025 +10%, 2026 -6%): négy év alatt a felár nullára
   fogyott, és az utolsó évben a fesztiválhét már OLCSÓBB volt egy átlagos
   augusztusi napnál. Ugyanez a szám mondja ki a másik felét is: ha a hónap
@@ -141,9 +176,33 @@ FROM airdna_active_listings WHERE district='<rom.szam>' AND accommodates BETWEEN
   Csak az éjszakai átlagár hasonlítható. Ugyanígy: ha a folyó hónap még nincs
   vége, adj meg egy AZONOS ablakot is (pl. minden évre aug. 1-22.).
 
+
+- 🔴 **A szezonalitást MÉRET SZERINT szűrd, különben súlyosan alulbecsülsz.**
+  Ugyanarra a hónapra mérve a nagy egységek (6+ fő) átlagos éjszakai ára
+  közel KÉTSZERESE a kicsikének (2-4 fő). Egy nagy lakást a kis egységek
+  átlagához mérve a tulaj joggal gondolná, hogy nagyon rosszul áll, holott
+  fölötte van. A `units.occ_adults` a szűrő. (Mérve 2026-09-01.)
+
+- ⚠️ **A HelpScout URL-jében MINDKÉT szám szerepel.**
+  `/conversation/<ID>/<NUMBER>` -- az első a conversation id, a második a
+  number. A kereséshez a NUMBER kell (`query=(number:<NUMBER>)`), a threadek
+  lekéréséhez az ID. Ha az URL megvan, a keresést át is ugorhatod.
+
+- ⚠️ **Új lakásnál olvasd el a szál ELŐZŐ levelét is.** Egy mért esetben a
+  tulaj levele fölött ott állt a saját onboarding-levelünk, amiből kiderült,
+  hogy a hirdetés két napja él. Enélkül az egész kérdés „miért olcsó a lakásom"-nak
+  látszik, holott „miért ilyen a felfutás"-ról szól, és teljesen más a válasz.
+
+- 🔴 **A tulaj nettó kifizetését SOHA ne számold újra.** A „nekem csak 50 euró
+  marad tisztán" típusú félmondat külön kérdés, és a hiteles forrás az
+  `app.guest.guru` tulaj oldala, mert azt összetett üzleti logika állítja elő.
+  Válaszd külön a két szálat, és a nettóra a tulaj oldal bontását hivatkozd.
+
 ## Ellenőrzés
 - Megvan mind a négy szám: elért ár, kért ár és annak időtartama, tavalyi ár,
   havi átlag?
 - Nevesítetted az eladatlan éjszakákat?
 - Kimondtad, hogy melyik évek adata teljes és melyiké csonka?
 - A válasz a munkafolyamat nyelvén szól, nem táblanevekkel?
+- Új lakásnál: megnézted a társ-lakások kért árát ÉS az alapárakat, és
+  méret szerint szűrted a szezonalitást?
