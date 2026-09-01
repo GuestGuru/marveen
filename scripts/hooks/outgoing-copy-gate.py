@@ -233,7 +233,20 @@ TAG = re.compile(r"<[^>]+>")
 #   - a MONDATKOZI nagybetus szo azonosito/tulajdonnev -> kimarad; mondat
 #     elejen (. ! ? : ujsor vagy lista-jel utan) a nagybetu normal proza,
 #     ott tovabbra is vizsgaljuk.
-HYPHEN_WORD = re.compile(r"[a-záéíóöőúüűA-ZÁÉÍÓÖŐÚÜŰ]+(?:-[a-záéíóöőúüűA-ZÁÉÍÓÖŐÚÜŰ]+)*")
+# GATENUMSUF901 (2026-09-01): ugyanez a hibaosztaly SZAM elotaggal is all, es a
+# fenti javitas nem fedte le, mert mindket oldalra BETUT kovetelt. A magyar
+# toldalek szamhoz is kotojellel kapcsolodik (`2027-es`, `08-24-i`, `7:27-es`),
+# es a tokenizalo a kotojelnel vagott: a maradek `es` darab onallo magyar szonak
+# latszott, tehat `es -> és` javaslatot kapott. Elesben: 2026-09-01 07:28, msg
+# 690 -- a KIKULDOTT szoveg helyes volt (`2027-es`, szokoz nelkul, merve), a
+# figyelmeztetes maga volt hamis. Ez a MASODIK alkalom, hogy ugyanez a
+# tokenizalas-osztaly hamis pozitivot ad, ezert a MERO javul, nem egy ujabb
+# bekezdes magyarazza, miert kell figyelmen kivul hagyni.
+_LET = r"a-záéíóöőúüűA-ZÁÉÍÓÖŐÚÜŰ"
+HYPHEN_WORD = re.compile(
+    r"[0-9]+(?:[:.][0-9]+)*(?:-[" + _LET + r"]+)+"   # 2027-es, 08-24-i, 7:27-es
+    r"|[" + _LET + r"]+(?:-[" + _LET + r"]+)*"        # drive-ot, sima szo
+)
 
 
 def _at_sentence_start(text: str, idx: int) -> bool:
