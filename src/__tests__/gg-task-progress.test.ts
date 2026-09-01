@@ -80,7 +80,10 @@ describe('trackPaneProgress', () => {
 })
 
 describe('decideTaskTimeout: the stall rule', () => {
-  const entry = { injectedAt: 0, alerted: false }
+  // sawTurn: az upstream 1.36-ban kerult a Pick-be (a befecskendezes tenylegesen
+  // inditott-e fordulot). A GG progress-szabaly fuggetlen tole, ezert a fixture
+  // false-szal indul -- a teszt targya a stalledSince, nem a sawTurn.
+  const entry = { injectedAt: 0, alerted: false, sawTurn: false }
 
   it('REGRESSION 2026-08-14: a long but visibly working task is not a hang', () => {
     // The 07:45 memoria-heartbeat: twelve minutes of real work on a 5-minute
@@ -104,7 +107,15 @@ describe('decideTaskTimeout: the stall rule', () => {
   it('progress does not defeat eviction or the idle clear', () => {
     const fresh = { ...entry, stalledSince: MAX_TRACK }
     expect(decideTaskTimeout(fresh, 'busy', MAX_TRACK, OPTS)).toBe('clear')
-    expect(decideTaskTimeout({ ...entry, stalledSince: 0 }, 'idle', 9 * MIN, OPTS)).toBe('clear')
+    // Upstream v1.36 split the idle branch on `sawTurn`: idle+sawTurn is a task
+    // that RAN and finished (clear), idle without it past the grace window is a
+    // prompt that was never picked up (lost). The GG stall rule is orthogonal --
+    // what this line pins is that PROGRESS does not defeat the idle clear, so it
+    // has to describe a task that actually ran.
+    expect(decideTaskTimeout({ ...entry, sawTurn: true, stalledSince: 0 }, 'idle', 9 * MIN, OPTS)).toBe('clear')
+    // And the new upstream case, pinned here so a later merge cannot silently
+    // undo it: idle, never saw a turn, past grace -> the delivery is gone.
+    expect(decideTaskTimeout({ ...entry, stalledSince: 0 }, 'idle', 9 * MIN, OPTS)).toBe('lost')
   })
 
   it('the grace window still runs off injection, not off progress', () => {
@@ -113,7 +124,7 @@ describe('decideTaskTimeout: the stall rule', () => {
   })
 
   it('alerts at most once', () => {
-    const stalled = { injectedAt: 0, alerted: true, stalledSince: 0 }
+    const stalled = { injectedAt: 0, alerted: true, sawTurn: false, stalledSince: 0 }
     expect(decideTaskTimeout(stalled, 'busy', 12 * MIN, OPTS)).toBe('hold')
   })
 })

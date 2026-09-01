@@ -8,6 +8,14 @@ blocks the prompt (always exit 0).
 Provider-generic: Telegram, Discord and any other channel plugin are captured.
 Non-Telegram chat ids are namespaced "<provider>:<id>" (ledger_lib.qualify_chat)
 so two providers can never collide on the same numeric id.
+
+GG fork: az upstream ugyanezt a provider-fuggetlenseget maskepp oldotta meg -- a
+mintaja csak a `plugin:<provider>:<server>` alakot fogja, es NEM adja vissza a
+providert. Nekunk a provider KELL (qualify_chat namespace-eli vele a chat-idt),
+ezert a mi regexunk marad. Az upstream indoklasa viszont igaz es ide tartozik:
+egyetlen provider beegetese nemán ejti az OSSZES tobbi csatorna beszelgeteset,
+es a hiba lathatatlan, mert a replay a befogott providerbol tovabbra is ad
+nem-ures blokkot.
 """
 import sys
 import os
@@ -38,7 +46,7 @@ def main():
         payload = json.load(sys.stdin)
     except Exception:
         sys.exit(0)
-    agent_id = ledger_lib.agent_id_from_cwd(payload.get("cwd"))
+    agent_id = ledger_lib.agent_id_from_payload(payload)
     prompt = payload.get("prompt") or ""
     for m in CHANNEL_RX.finditer(prompt):
         provider, attrs, text = m.group(1), m.group(2), m.group(3)
