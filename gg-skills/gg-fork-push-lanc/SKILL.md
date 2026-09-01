@@ -567,6 +567,12 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   **Tanulság mindkét irányba:** a (g) attól még áll (keress, mielőtt cselekszel),
   de a *„ott volt végig"* önvád rendszerint hindsight -- ne abból tanulj, hanem
   abból, hogy MI TETTE olvashatóvá.
+  🎯 **És ez nem csak igazságosság kérdése: a hindsight-önvád ROSSZ IRÁNYBA tanít**
+  (brokermarcsi élesítése). Aki azt vonja le, hogy *„többet kellett volna
+  olvasnom"*, legközelebb többet olvas -- és **ugyanoda jut, mert az olvasás nem
+  köti össze a két adatot.** Aki azt vonja le, hogy *„mi tette olvashatóvá"*,
+  legközelebb MÉRÉST TERVEZ. A kettő nem ugyanaz a tanulság, és csak a második
+  változtat a kimeneten.
 
   **Eljárás, mielőtt egy jelzett „nyitott" ügyet felveszel vagy továbbadsz:**
   keresd meg a témát a KÖZÖS memóriában, dátum szerint sorba rakva -- és számíts
