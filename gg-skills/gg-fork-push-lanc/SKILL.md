@@ -327,13 +327,26 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
      `curl -X PUT`), és egyszer sem futott le, mert **a nulla találat magabiztosan
      néz ki.** A hiányt nem nehéz megmérni, csak nem jut eszünkbe, hogy kellene.
      Végpontnál hívd meg, jogosultságnál kérd le, fájlnál nyisd meg.
-  2. **ESZKÖZ -- ne keress szövegben strukturált adatot** (brokermarcsi
+  2. **ESZKÖZ (a) -- ne keress szövegben strukturált adatot** (brokermarcsi
      általánosítása). A JSON-nak és a forráskódnak is van SZERKEZETE, és amint
      szövegként grepelünk bele, önként lemondunk róla. A `grep '"id":57'` az
      `"id":570`-re is illeszkedik, egy `"id": 57` formázásra viszont némán nem
      talál; az út-grep pedig nem látja, hogy a route regexszel illeszt.
      **Ahol van parser, ott parsert használj** (JSON-nál `python3 -c`,
      azonosságnál egész számra hasonlíts), útvonalnál pedig tényleges hívást.
+  3. **ESZKÖZ (b) -- ne az INDEXET kérdezd a KORPUSZ helyett** (jean választotta
+     el a 2-estől, és a különbség nem árnyalat: ott rossz mintával kérdeztük a
+     forrást, itt **meg se kérdeztük a forrást**). Egy Drive `fullText` keresés
+     kihagyott egy PDF-et, amiben egy TELJES SZEKCIÓ szólt a keresett
+     kifejezésről, miközben ugyanabból a mappából kettő mást megtalált. Itt nincs
+     mit parseolni: a `fullText` nem szerkezet, hanem egy KÜLÖN RENDSZER, ami
+     késhet, és sosem ígér teljességet.
+     **Javítás: szerezd meg a forrást** -- töltsd le a fájlt, listázd a mappát,
+     olvasd el a route-táblát -- és azon ellenőrizz.
+     ⚠️ **Ez a legtágabb ág, mert amivel dolgozunk, az MIND index:** a Drive
+     fullText, a Linear-, a HelpScout-, a Slack- és a wiki-kereső. Mindegyik
+     alkalmas arra, hogy MIT olvass el; egyik sem arra, hogy kijelentsd, valami
+     nincs.
 
   ⚠️ **És ez a teszteidre is áll, nem csak a diagnózisra.** Ugyanaznap egy általam
   írt teszt bukott el azon, hogy `not.toContain('régi')`-t állított egy szövegre,
