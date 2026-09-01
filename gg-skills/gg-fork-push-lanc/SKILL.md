@@ -495,6 +495,23 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   a `grep '"id":57'` illeszkedik az `"id":570`-re is, egy `"id": 57` alakú
   formázásra viszont némán nem talál. **Azonosságot egész számra hasonlíts,
   ne szövegrészletre** -- ez ugyanaz a hibaosztály, mint a fenti út-grep.
+  🔧 **A hatókört MÉRD, ne a könyvtárból következtesd** (peppa közel-hibája,
+  2026-09-01). Ő azt mérte, hogy a `.claude-config/skills` symlink a globális
+  `~/.claude/skills`-re, és ebből azt következtette, hogy a hatókört a KÖNYVTÁR
+  mondja meg -- ezért egy `.claude/skills/` alatti skillt ágens-lokálisnak
+  minősített, és élő ügyszámot meg díjtételeket írt bele. Tévesen: az `agents/`
+  fa gitignore-olt, ezért **épp az ilyen skilleknek van követett TÜKRE a publikus
+  forkban.** A symlink-teszt a GLOBÁLIS MEGOSZTOTTSÁGOT méri, nem a PUBLIKUS
+  TÜKRÖZÉST -- két külön hatókör, és az egyiket a másik bizonyítékának vette.
+  **Írás előtt ezt futtasd, `--fix` nélkül:**
+  ```bash
+  bash scripts/gg-skill-tukor-sync.sh    # listáz, nem ír
+  ```
+  Ez mind a négy hatókört megmutatja, és nem kell találgatni.
+  ⚠️ **És mivel a tükör-szinkron MAGÁTÓL fut** (a dream-engine viszi), a
+  sanitizálás nem a feltöltés előtti lépés, hanem **AZ ÍRÁS PILLANATÁBAN
+  esedékes.**
+
   A NÉGY hatókör tehát: **publikus repo** (a lenti szintek) > **wiki** (ugyanaz)
   > **memória** (a fenti két pont) > **munka-artefaktum** (semmi ebből).
   *(Számold meg a felsorolást: négy elem. 2026-09-01-én itt „három" állt, mert a
