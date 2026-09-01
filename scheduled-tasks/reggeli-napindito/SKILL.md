@@ -256,5 +256,13 @@ tail -30 {{INSTALL_DIR}}/store/morning.log | grep -n "$(date +'%a %b %e')"
   tehát nem volt `reply` tool. A menet: írd fájlba a szöveget, `python3
   scripts/hooks/outgoing-copy-gate.py --check-file <fajl>`, és csak `exit 0` után
   menjen a `curl .../sendMessage`. A kapu ilyenkor nem fut magától.
-  ⚠️ A kapu **hamis pozitívot** ad a `07:27-es`-szerű alakokra: a kötőjel után külön
-  szónak látja az `es`-t, és `és`-t javasol. Fogalmazd át (`7:27-kor`), ne kapcsold ki.
+  ⚠️ ~~A kapu **hamis pozitívot** ad a `07:27-es`-szerű alakokra~~ -- **JAVÍTVA
+  2026-09-01 (GATENUMSUF901), ne fogalmazd át miatta a szöveget.** A tokenizáló
+  mostantól a `szám-toldalék` alakot is EGY szónak veszi (`2027-es`, `08-24-i`,
+  `7:27-es`), ahogy 08-19 óta a `betű-toldalék`ot (`drive-ot`). Kiváltó eset:
+  09-01 07:28, msg 690 -- a kapu `es -> és`-t javasolt, holott a KIKÜLDÖTT
+  szövegben `2027-es` állt szóköz nélkül (mérve); a szóköz csak a kapu saját
+  hibaüzenetében volt. **Ez volt a második hamis pozitív ugyanabból a
+  tokenizálás-osztályból, ezért a MÉRŐ javult, nem egy újabb kerülőút-tanács.**
+  Mérés a javításhoz: a valódi hiba (`2027 es`, önálló `es` prózában) a régi ÉS
+  az új kódon is bukik; a `2027-es` csak a régin.
