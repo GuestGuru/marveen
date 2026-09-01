@@ -85,6 +85,28 @@ benne PID és mtime, ami félremehet. A processz-indulás vs `dist` mtime
 
 ## Ellenőrzés
 
-- A találatok között NINCS `/bin/bash -c` alakú sor (az a te shelled).
+- A találatok között nincs `/bin/bash -c` alakú sor (az a te shelled), **ÉS minden
+  megmaradt sor útvonala a VÁRT telepítésbe mutat.** A fájlnév nem elég:
+  `/home/gg/marveen/dist/index.js` igen, `/home/valaki-mas/.../dist/index.js` nem.
+  🔴 *A korábbi változat itt csak az első felét kérte számon -- vagyis a RÉSZLEGES
+  javítást írta elő ellenőrzésként, és pont azt a biztonságérzetet erősítette meg,
+  ami ellen ez a skill szól. brokermarcsi fogta meg, 2026-09-01.*
+- **Ha a szűrt lista több sort ad, NE vegyél `head -1`-et.** A `pgrep` PID szerint
+  rendez, ami indulási sorrend: **a legrégebben futó jön elöl.** Ezen a gépen az
+  önillesztés kiszűrése után a `head -1` az IDEGEN programot adja, mert kisebb a
+  PID-je -- és annak a friss indulási idejét hinnéd a saját szerveredének. Több
+  sornál: port vagy `environ`.
 - Minden találat parancssorát ELOLVASTAD, nem csak megszámoltad.
 - Ha a kérdés „fut-e a friss kód", akkor hatás-méréssel is igazoltad.
+- ⚠️ **Label és token-fájl összevetésénél KIS-NAGYBETŰ-FÜGGETLENÜL hasonlíts**
+  (marlenka, 2026-09-01): a főágens labelje `marveen/Marveen`, a fájlja
+  `marveen.token`. Szigorú összehasonlítással ÖRÖK hamis riasztást kapsz a
+  főágensre -- és az a fajta riasztás, amit egy idő után mindenki figyelmen kívül
+  hagy, épp mielőtt valódi lenne.
+
+## Mért alapérték (2026-09-01 13:20)
+
+A teljes flotta az `environ`-módszerrel mérve: **7/7 a SAJÁT tokenjével fut, nulla
+eltérés.** Ez az első alkalom, hogy a 8. flotta-szabály betartását MÉRTÜK, nem
+csak előírtuk. Ha később valaki eltérést lát, ehhez tudja hasonlítani.
+*(Csak a labelt és a token-fájl NEVÉT olvassuk ki, értéket soha.)*
