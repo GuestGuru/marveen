@@ -38,13 +38,31 @@ Az ELSŐ karakterektől, kötelezően, egy sorban a szöveg elején:
 
 **A marker HELYE az írás TÍPUSÁTÓL függ** (peppa pontosítása, 2026-08-31):
 
-| Mit írsz | Hol álljon a marker | Miért |
-|----------|---------------------|-------|
-| **komment** | az ELSŐ karakterektől | egy komment egy üzenet: rögtön látszódjon, ki szólal meg |
-| **issue description** | külön SORBAN, a szöveg VÉGÉN | a description a ticket kanonikus tartalma, amit mindenki olvas; a nyitósorban álló gépi tag zavaró |
-| **wiki-oldal** | külön sorban, a végén | ugyanaz az ok |
-| **project update** | az ELSŐ karakterektől | egy update is üzenet, és TÉR-ben legalább annyit nyom, mint a komment (jean, 2026-08-31) |
-| **Google-dokumentum** (Drive/Docs/Sheets) | az ELSŐ sorban, `Készítette: [AI: <nev>]` alakban | egy doksinál a provenancia hagyományosan FELÜL van: ott nem zavaró, hanem elvárt (jean gyakorlata, 2026-08-31) |
+🔴 **A MARKER MINDIG A SZÖVEG VÉGÉN ÁLL, külön sorban. Nincs kivétel.**
+
+| Mit írsz | Hol álljon a marker |
+|----------|---------------------|
+| komment | külön SORBAN, a szöveg VÉGÉN |
+| issue description | külön sorban, a végén |
+| project update | külön sorban, a végén |
+| wiki-oldal | külön sorban, a végén |
+| Google-dokumentum (Drive/Docs/Sheets) | külön sorban, a végén |
+
+**Miért egységes, és miért alul (Tamás döntése, 2026-09-01, Telegram msg 691):**
+„Ez az `[AI: ágensnév]` nekem kicsit zavaró -- ha marad is, inkább a
+komment/description ALJÁRA kerüljön és ne a tetejére."
+
+Ez felülírja a 08-31-i, típusfüggő elrendezést, és **egyszerűbb is annál**: egy
+szabály, amit nem lehet félig megjegyezni. A korábbi érv (a komment üzenet,
+tehát elöl látszódjon, ki szólal meg) valós volt, de **a gazda olvassa a saját
+neve alatt álló szálakat, és neki a nyitósorban álló gépi tag zavaró** -- ez a
+súlyosabb szempont. A nyomkövetés nem sérül: a marker ugyanúgy ott van, a
+`(?m)` minta sorkezdetre illeszt, tehát a végén álló marker is fogható.
+
+⚠️ **A MÁR MEGJELÖLT tételeket NE írd át emiatt.** Van belőlük 28
+(bubi 2 komment, jean 23 hely, peppa 3 description), és az áthelyezés újabb 28
+írás lenne a gazdák nevében -- pont abból, amit csökkenteni akarunk. Az új
+elrendezés ELŐREFELE hat; a régiek a visszamenőleges táblázatból azonosíthatók.
 
 Gépi szétválasztás egyetlen mintával, minden ágensre és mindhárom helyen --
 **soronként illesztve** (multiline), hogy a végére tett marker is beleessen:
@@ -326,7 +344,7 @@ project update, wiki). Az ár-, naptár- és korlátozás-írás nyitott.
 
 ## Ellenőrzés
 
-- Minden általad írt komment első karakterei: `[AI: <sajat nev>]`.
+- Minden általad írt szöveg VÉGÉN, külön sorban: `[AI: <sajat nev>]`.
 - A visszaolvasott `body` regexre illeszkedik (`(?m)^\[AI: ([a-z0-9-]+)(, diktalva)?\]`),
   nem csak az elküldött szöveg.
 - A régi mintáid szerepelnek a fenti táblázatban.
