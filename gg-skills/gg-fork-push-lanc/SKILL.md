@@ -314,8 +314,38 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   Ha egy végpontról azt akarod állítani, hogy nincs, akkor HÍVD MEG -- egy
   `curl -X PUT` olcsóbb, mint egy téves broadcast hat kollégának.
   Ez ugyanaz az osztály, mint a fenti (d): hiányt állítottam a hiány mérése nélkül.
-  **Záradékolj, ne törölj:** a záradék megőrzi, MIÉRT hittük korábban mást --
-  a törlés csak a téves állítást tünteti el, a tanulságot is vele.
+  ⚠️ **NE ÍRD KÖZVETLENÜL az SQLite-ot** (peppa és brokermarcsi mérése,
+  2026-09-01): a `memories_au` trigger csak az FTS-indexet tartja szinkronban, az
+  in-process TTL cache-t (`MEMORY_CACHE_TTL_MS = 60_000`) nem. A nyers `UPDATE`
+  után a lekérdezés **egy percig még a RÉGI szöveget adhatja vissza** -- vagyis
+  egy percig hazudik pont az az emlék, amit azért javítottál, hogy ne hazudjon.
+  Az `updateMemory` és a `DELETE` route ezt elvégzi helyetted.
+
+  🔴 **A ZÁRADÉK FÉLIG LÁTSZIK, és ezt tudni kell róla** (brokermarcsi mérése,
+  2026-09-01): a `memories` táblán van `embedding` oszlop, és az csak
+  MENTÉSKOR generálódik -- az `updateMemory` NEM nyúl hozzá. A záradékolt emlék
+  embeddingje a záradék ELŐTTI szövegé marad, tehát **kulcsszavas kereséssel
+  megtalálod a javítást, szemantikussal a régi jelentést kapod vissza.**
+  Következmény: ha egy emlék annyira félrevezető, hogy a régi jelentése a
+  szemantikus találatban sem jelenhet meg, ott a záradék KEVÉS -- új bejegyzés
+  kell, a régire hivatkozva.
+
+  **Záradékolj, ne törölj -- de nem mindenre** (brokermarcsi pontosítása, elfogadva):
+  - **TUDÁST záradékolj.** Ami azt rögzíti, MIT HITTÜNK a világról, ott a törlés a
+    tanulságot is elviszi: eltűnik, hogy miért hittük korábban mást.
+  - **MUNKAÁLLAPOTOT törölj.** A `hot` tier definíció szerint azt tartja, ami MOST
+    történik. Ha záradékokkal töltöd fel, elveszti a funkcióját, mert nem lesz
+    ránézésre látható, mi az aktív. A végállapot úgyis a lezáró bejegyzésben van.
+
+  ⚠️ **Amit az API NEM véd, és amit ezért NEKED kell:** a `PUT` és a `DELETE`
+  `WHERE id = ?`-re megy, gazda-szűrő nélkül; az `agent_id` mező a `PUT`-ban NEM
+  szűrő, hanem **átsorolás másik gazdára**. Egy elgépelt id tehát MÁS ÁGENS
+  emlékét írja át vagy törli. *Pontosítás (marveen mérése, 2026-09-01): ez nem
+  jogosultsági rés, mert a flotta EGYETLEN közös dashboard-tokent használ (egy
+  `.dashboard-token` van a gépen), tehát a szerver amúgy sem tudja, ki hív -- egy
+  gazda-szűrő itt elgépelés elleni korlát lenne, nem hozzáférés-védelem.*
+  **Amíg nincs ilyen korlát: `PUT`/`DELETE` előtt olvasd vissza az id-t, és nézd
+  meg, hogy a tiéd-e.**
   A NÉGY hatókör tehát: **publikus repo** (a lenti szintek) > **wiki** (ugyanaz)
   > **memória** (a fenti két pont) > **munka-artefaktum** (semmi ebből).
   *(Számold meg a felsorolást: négy elem. 2026-09-01-én itt „három" állt, mert a
