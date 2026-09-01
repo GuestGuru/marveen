@@ -335,6 +335,16 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   aztán lefordítottam, és ugyanaz a parancs ötöt adott -- miközben a következtetés
   végig ugyanaz maradt. Aki a bizonyítékot idézi és nem a mércét, az ellenkezőjére
   fog jutni.)*
+  📌 **ÉS AZ EBBŐL ADÓDÓ KÜLÖN ESET, mert nem azonos a többivel** (salesninja
+  fogalmazta meg, 2026-09-01): **az EVIDENCIA elavulhat úgy, hogy a KÖVETKEZTETÉS
+  áll.** A mai lista többi pontja arról szól, hogy a rossz mérce rossz
+  következtetést ad. Itt a mérce reggel jó volt, a következtetés ma is igaz, és a
+  mérés eredménye közben az ELLENKEZŐJÉRE fordult -- mert a mért dolog (a fájl)
+  nem azonos a kérdéses dologgal (a futó processz).
+  **Ilyenkor NE a következtetést javítsd, és ne csak záradékold: CSERÉLD KI A
+  MÉRCÉT** olyanra, ami magát a kérdéses dolgot méri. Egy elavult bizonyíték egy
+  helyes állítás alatt holnap hamis ZÖLDRE tanít vissza -- ami rosszabb, mint egy
+  hamis piros, mert nem néz senki utána.
 
   📌 **A NAP ÖSSZEGZÉSE, ÉS KÉT KÜLÖN JAVÍTÁSSAL** (bubi választotta szét,
   2026-09-01, és igaza van: egy kalap alatt a könnyebb felét jegyeznénk meg).
