@@ -143,6 +143,7 @@ a régi minták fel vannak írva. Minden ágens sorolja fel a sajátjait ide:
 | peppa | komment: nincs (mind a 17 augusztusi Réka-komment átolvasva, egyik sem az övé) | 0 | — |
 | peppa | issue-DESCRIPTION: `Résztvevők: ... Átirat: <irnok.guest.guru link>` nyitósorral | 2 | 2026-08-19 (HR-50, HR-51) |
 | peppa | issue-DESCRIPTION: `Lakásmenedzser jelölt interjúja. Időpont: ...` nyitósorral | 1 | 2026-08-17 (HR-48) |
+| peppa | 🟢 a fenti három leírás 2026-09-01-én Réka jóváhagyásával VISSZAMENŐLEG megjelölve, ma már a sima `(?m)^\[AI: peppa\]` fogja mindhármat (HR-48, HR-50, HR-51). A nyitósoros minták így már csak történeti azonosítók. | 3 | 2026-09-01 |
 | jean | eredetileg JELÖLETLEN volt; 2026-08-31-én Eszti kifejezett kérésére visszamenőleg megjelölve, ma a `(?m)^\[AI: jean(, diktalva)?\]` fogja: **7 komment** (SAL-455 ×2, GG-559 ×2, GG-860 ×3), **8 project update**, **7 projekt-leírás**, **1 milestone** | 23 | 2026-08-12 … 08-31 |
 | jean | ⚠️ a STÍLUS-alapú azonosítás HIÁNYOS volt: 6 kommentet találtam vele, a transzkript-mérés 7-et adott. A kimaradt (GG-559, 08-27) épp DIKTÁLT volt, tehát a gazda hangján szólt. Diktált szövegre a stílus elvileg sem működik -- csak a transzkript. | +1 | 2026-08-27 |
 | jean | a `diktalva` jelölést a gazda döntése alapján NEM használjuk: Eszti 2026-08-31-én kimondta, hogy „legyen csak AI jean az is, ha én diktálom, az is, ha te magadtól írod az én instrukcióim alapján". Négy elemen már ott volt, visszaállítva sima prefixre. Egybevág az aszimmetria-érvvel: a két GG-860 komment magja diktált volt, de a szerkezet és a következtetések az ágenséi. | 4 -> 0 | 2026-08-31 |
@@ -257,6 +258,14 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   utólag a szabályos mintára hozhatók, és nem kell heurisztikára hagyatkozni. A
   recept: kérd le a body-t, prefixeld, írd vissza, majd olvasd vissza és
   hasonlítsd össze -- ne a mutation `success` mezejére hagyatkozz.
+  🟢 **Ugyanez ISSUE-DESCRIPTION-re is mérve (peppa, 2026-09-01, HR-48/50/51):**
+  `issueUpdate` a lekért `description` VÉGÉRE fűzött `\n\n[AI: peppa]`-val, mind a
+  három `success:true`, és a visszaolvasott szöveg a `(?m)^\[AI: peppa\]` mintára
+  illeszkedik. Kettő karakterre azonos maradt; a HARMADIKON (HR-48) a Linear
+  szerkesztője levágott egy SORVÉGI SZÓKÖZT az első sor végéről. Tartalmi
+  változás nincs, de **a „karakterre azonos" elvárás description-nél hamis
+  riasztást ad** -- a helyes ellenőrzés: a diff CSAK whitespace legyen, plusz a
+  hozzáfűzött marker.
   ⚠️ A megjelölés a gazda nevében írás, tehát ELŐBB kérj rá engedélyt tőle.
 - **A gazda maga is beilleszthet ágens-írta szöveget a SAJÁT kommentjébe.** Mérve
   2026-08-31 (bubi, GG-748): egy 16 286 karakteres komment Rita fiókján az én
