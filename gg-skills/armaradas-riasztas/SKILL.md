@@ -15,16 +15,24 @@ bázisár utolsó állítása, becsült elmaradt bevétel.
 
 ### 1. Hozzáférés
 
-A gg-mcp kulcsokat a proxy adja a gyerek-processz env-jébe, a beszélgetésbe soha:
+A gg-mcp kulcsokat a proxy adja a gyerek-processz env-jébe, a beszélgetésbe soha.
+
+🔴 **Az identitást NE gépeld be és NE másold példából.** Olvasd ki a SAJÁT
+munkakönyvtárad `.mcp.json`-jából -- így szerkezetileg lehetetlen idegen tokent
+felvenni, és a recept ágenstől függetlenül helyes:
 
 ```bash
-# A SAJAT identitasodat add meg -- mindketto a sajat .mcp.json-odban all.
-# Idegen token-fajlt hasznalni JOGCSERE, nem nevcsere (lasd CLAUDE.md).
-GG_MCP_TOKEN_FILE=<a sajat .mcp.json-odbol> \
-GG_MCP_AGENT_LABEL=<a sajat .mcp.json-odbol> \
-GG_MCP_UPSTREAM_URL=<a sajat .mcp.json-odbol, ha proxy-modban futsz> \
+cd "$AGENT_DIR"   # a saját munkakönyvtárad, ahol a .mcp.json van
+eval "$(python3 -c "
+import json,shlex
+e=json.load(open('.mcp.json'))['mcpServers']['gg-access']['env']
+print('\n'.join(f'export {k}={shlex.quote(v)}' for k,v in e.items()))
+")"
 gg-mcp-proxy exec --alias bpdb --env-var CONN -- sh -c "psql \"\$CONN\" -A -F'|' -f QUERY.sql"
 ```
+
+Ellenőrzés írás előtt: `gg_allowed_tools`, és az `en` mező a saját gazdád
+e-mail címe legyen. Ha nem az, ÁLLJ MEG.
 
 Aliasok: `bpdb` (piaci adat), `gg3` (éles GG3 DB, read-only).
 Ha csak `gg_login` látszik a tool-listában, nincs token -> `gg_login`, a kódot
