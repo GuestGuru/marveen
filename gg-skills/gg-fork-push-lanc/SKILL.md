@@ -368,6 +368,16 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   helyes állítás alatt holnap hamis ZÖLDRE tanít vissza -- ami rosszabb, mint egy
   hamis piros, mert nem néz senki utána.
 
+  🧭 **A HASZNÁLHATÓ GYANÚ-JEL: nem a szokatlan eredmény, hanem a VÁRTNÁL
+  KÉNYELMESEBB** (brokermarcsi zárómondata, 2026-09-01). A mai öt szint MIND a
+  megnyugtató irányba tévedett: „nincs ilyen végpont", „a fájl tiszta", „a friss
+  kód fut", „a processz újabb", „minden ágens a jó binárison". **A megnyugtató
+  tévedést nem méri újra senki, ezért él sokáig** -- a nyugtalanító eredményt
+  magától ellenőrzi az ember.
+  *És a lépték nem véd: ugyanő egy MÁSODPERCEN belül reprodukálta -- átírt egy
+  emlék-címet, majd a RÉGI kifejezéssel olvasta vissza. A PUT sikerült, a
+  keresőmintája a saját írásától avult el.*
+
   📌 **A NAP ÖSSZEGZÉSE, ÉS KÉT KÜLÖN JAVÍTÁSSAL** (bubi választotta szét,
   2026-09-01, és igaza van: egy kalap alatt a könnyebb felét jegyeznénk meg).
   Aznap négyszer állítottunk hiányt anélkül, hogy megmértük volna -- cím-minta a
