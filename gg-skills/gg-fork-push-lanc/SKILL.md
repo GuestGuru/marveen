@@ -201,7 +201,24 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   adatnál a helyes út a GitHub support, nem a force-push.
 
   A céges munka-email (`nev@guest.guru`) NEM blokkoló: már bent van precedensként.
-  A magánszemély teljes neve + pénzösszeg, a lakás-cím és a mappa-ID viszont igen.
+  A magánszemély teljes neve + pénzösszeg és a mappa-ID viszont igen.
+
+  🟢 **A LAKÁS RÖVID NEVE NEM BLOKKOLÓ -- Tamás döntése, 2026-09-01 (msg 695).**
+  Szó szerint: *„Mint például Király33? Vagy NagyDiófa14? Ez nem túl egyedi
+  azonosító, nem probléma."* Az `<Utcanév><házszám>` alak egy ÉPÜLETET nevez meg,
+  nem egy embert, és a hirdetéseinkben amúgy is nyilvános. **Én ezt túlbecsültem**
+  és eszkaláltam is vele; a helyes szint a következő:
+  - **rendben:** a lakás rövid neve épület szinten (`Király33`, `NagyDiófa14`)
+  - **kerüld:** emelet/ajtó szintű azonosítás (`Példa12-2em3`), mert az már
+    lakást azonosít, nem házat
+  - **változatlanul blokkoló:** magánszemély teljes neve + pénzösszeg, beégetett
+    Drive/Doc-ID, élő ügyfél-ügyszám, és a konkrét díjtételek (utóbbi nem
+    érzékenységi, hanem elavulási okból -- lásd a „szám helyett hivatkozás" pontot)
+
+  ⚠️ **A tanulság a MÉRÉSRŐL viszont áll, és nem évül el ezzel:** a slug-alakot
+  sem a cím-grep, sem a kézi terminus-lista nem fogja. Attól, hogy ez a konkrét
+  találat nem volt baj, a VAKFOLT megmarad -- a következő ugyanilyen alakú
+  találat lehet emelet/ajtó szintű vagy egy ügyszám.
   **Ha ilyet találsz, ne dönts helyette:** a többit vidd fel, az érintettet tartsd
   vissza, és kérdezd a gazdát ajánlással. A hosszútávú megoldás nem a kihagyás,
   hanem a sanitizálás (a név a kérésből, az ID configból jöjjön), mert a
