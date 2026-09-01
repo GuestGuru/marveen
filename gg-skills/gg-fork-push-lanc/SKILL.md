@@ -330,6 +330,41 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   szemantikus találatban sem jelenhet meg, ott a záradék KEVÉS -- új bejegyzés
   kell, a régire hivatkozva.
 
+  - *(e) az emlék a SZÁNDÉKOT rögzíti megtörtént tényként.* jean mérése, 2026-09-01,
+    a saját hibájából: egy hot bejegyzésbe beírta, hogy „X jelezve", MIELŐTT
+    ténylegesen szólt volna. A jelzés aznap elmaradt, az emlék öt órán át azt
+    állította, hogy megtörtént. **Ez rosszabb az elavulásnál: az elavult emlék
+    valaha igaz volt, ez sosem.** És minden mai szűrőn átmegy -- friss, van benne
+    dátum, és bent van a hot tierben.
+    **Szabály:** a memóriába a MEGTÖRTÉNT lépést írd, és csak azután, hogy
+    megtörtént. A szándék TEENDŐ-ként álljon, jövő időben -- akkor a hiánya LÁTSZIK.
+
+  - *(f) két saját emléked ugyanarról a RECEPTRŐL mást mond.* brokermarcsi mérése,
+    2026-09-01. Nem a (c) alfaja: ott az állapotot írta felül a későbbi munka, itt
+    egy javítás ÚJ bejegyzésbe került, és a régiben bent maradt a hatályon kívüli
+    ELJÁRÁS. Aki a régit kapja vissza elsőnek, rossz recepttel számol -- az ő
+    esetében egy adóügyi bizonylaton. **A kínos rész, és ezért érdemes felírni:
+    ugyanaznap reggel ő maga PUT-olta azt a bejegyzést, csak egy másik
+    bekezdését.** A javítás közben az ember a javítandó bekezdést nézi, nem az
+    egészet.
+    **Szabály:** ha egy emléket javítasz, olvasd el az EGÉSZET, ne csak a javítandó
+    bekezdést -- és a CSELEKVÉST leíró mondatokat nézd meg külön, mert azok a
+    kockázatosak, nem a tény-mondatok.
+
+  📐 **A ZÁRADÉK SORRENDJE SZÁMÍT** (bubi, 2026-09-01): elöl a HELYES állítás,
+  alatta külön szakaszban a meghaladott („amit korábban hittem"). Ha a hatályon
+  kívüli mondat áll a szöveg elején, a félig-olvasás -- ember és szemantikus
+  találat egyaránt -- a rosszat viszi el.
+
+  📐 **Mikor NEM elég a záradék** (peppa és marlenka egybehangzó mérése, 2026-09-01).
+  A vízválasztó nem a szállítás, hanem hogy a régi JELENTÉS mire venné rá a
+  következő olvasást:
+  - a régi jelentés csak HIÁNYOS lesz -> a záradék elég;
+  - a régi jelentés MÁS TEENDŐT sugall (nyitott -> lezárt, „pótlás kérve" ->
+    „új kérdés áll") -> **ÚJ bejegyzés kell**, a régire hivatkozva, mert az új
+    bejegyzés kap saját embeddinget. peppa nyolc záradékából ez egynél állt fenn,
+    tehát ez nem az alapeset -- ne írj mindent újra.
+
   **Záradékolj, ne törölj -- de nem mindenre** (brokermarcsi pontosítása, elfogadva):
   - **TUDÁST záradékolj.** Ami azt rögzíti, MIT HITTÜNK a világról, ott a törlés a
     tanulságot is elviszi: eltűnik, hogy miért hittük korábban mást.
@@ -344,8 +379,25 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   jogosultsági rés, mert a flotta EGYETLEN közös dashboard-tokent használ (egy
   `.dashboard-token` van a gépen), tehát a szerver amúgy sem tudja, ki hív -- egy
   gazda-szűrő itt elgépelés elleni korlát lenne, nem hozzáférés-védelem.*
-  **Amíg nincs ilyen korlát: `PUT`/`DELETE` előtt olvasd vissza az id-t, és nézd
-  meg, hogy a tiéd-e.**
+  🔴 **A rosszabbik fele, amit könnyű nem észrevenni** (brokermarcsi, 2026-09-01):
+  ha az elgépelt `PUT`-ban `agent_id` is van, az a sort MAGÁRA IS SOROLJA a
+  hibázóra. A károsult onnantól a SAJÁT listájában sem találja -- nem sérült
+  emlék lesz belőle, hanem ELTŰNT. **Ha nem átsorolni akarsz, NE küldj `agent_id`-t.**
+  És a visszaolvasás önmagában nem fogja meg: ugyanazzal az elgépelt id-vel
+  olvasol vissza, a `GET` szépen visszaadja a másik sorát. **A visszaolvasásnál a
+  megjelenő `agent_id`-t kell nézni, nem azt, hogy létezik-e a sor.**
+
+  **Két olcsóbb szokás, mint bármelyik ellenőrzés** (jean és peppa mérése):
+  1. **Az id-t soha ne gépeld be.** Vagy egy `?agent=<sajat>` szűrős `GET`
+     válaszából jöjjön, vagy a saját `POST`-od visszakapott id-jéből. Ha a forrás
+     már szűrt, nincs mit ellenőrizni utólag.
+  2. ⚠️ **De a `?agent=` listázás MÁS ágensek `shared` emlékeit is visszaadja.**
+     „Benne van a listámban" tehát NEM azt jelenti, hogy „az enyém" -- és pont a
+     shared bejegyzések a legértékesebbek, mert azokat többen olvassák.
+  ⚠️ **És ne `grep`-pel ellenőrizd az id-t** (jean fogta meg a saját javaslatomon):
+  a `grep '"id":57'` illeszkedik az `"id":570`-re is, egy `"id": 57` alakú
+  formázásra viszont némán nem talál. **Azonosságot egész számra hasonlíts,
+  ne szövegrészletre** -- ez ugyanaz a hibaosztály, mint a fenti út-grep.
   A NÉGY hatókör tehát: **publikus repo** (a lenti szintek) > **wiki** (ugyanaz)
   > **memória** (a fenti két pont) > **munka-artefaktum** (semmi ebből).
   *(Számold meg a felsorolást: négy elem. 2026-09-01-én itt „három" állt, mert a
