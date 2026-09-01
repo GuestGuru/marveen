@@ -336,9 +336,20 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
      PID=$(ss -lptn 'sport = :3420' | grep -oP 'pid=\K[0-9]+' | head -1)
      ps -o lstart= -p "$PID"; stat -c %y dist/index.js
      ```
-     A `pgrep -f "dist/index.js"` **a saját parancssorodra is illeszkedik**, mert a
-     minta benne van a parancsban -- az első találat a te shelled, ami épp most
-     indult. Ettől a mérés azt mondja, hogy „a processz újabb, a friss kód fut".
+     A `pgrep -f "dist/index.js"` **KÉT külön okból hibás, és az egyiket megjavítva
+     a másik marad** (bubi az elsőt, marlenka a másodikat fogta meg):
+     - **önillesztés:** a minta benne van a saját parancsodban, tehát a te shelled
+       is találat -- csővezetéknél KETTŐ is, mert alhéjat indít. Ez kiszűrhető
+       (`grep -v $$`, `pgrep -a` + szemrevételezés), és ettől az ember azt hiszi,
+       megoldotta;
+     - **idegen program UGYANAZZAL A FÁJLNÉVVEL:** ezen a gépen egy másik
+       felhasználó egy másik terméke is `dist/index.js`-t futtat, más porton.
+       **Valódi node-processz, valódi fájlnévvel, FRISS indulással** -- pont az,
+       ami a megnyugtató irányba visz. Ezt az önillesztés-szűrés NEM veszi ki.
+     Ettől a mérés azt mondja, hogy „a processz újabb, a friss kód fut".
+     **A minta egy FÁJLNEVET azonosít, nem a szervert -- és abból ezen a gépen
+     kettő van. A PORT az, ami egyedi.** *(A mai lista ötödik szintje,
+     marlenka szavával: a fájlnév nem a program.)*
      ⚠️ **Ez a hiba a MEGNYUGTATÓ irányba téved, és azt nem méri újra senki.**
      *(Én magam is két különböző PID-et kaptam a két módszerrel ugyanabban a
      körben, láttam az eltérést, és nem néztem utána.)*
