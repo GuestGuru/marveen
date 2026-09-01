@@ -476,6 +476,28 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
     egy skillt, a tükröt is frissíteni kell").
     ⚠️ És a magyar `majd` ugyanolyan gyakran jelent „azután"-t, mint „később"-et:
     a *„foltos, majd törésre került kanapé"* nem teendő.
+  🔴 **(g) A LEZÁRÁS A KÖZÖS MEMÓRIÁBAN ÁLL, ÉS SENKI NEM NÉZI MEG.** 2026-09-01,
+  és ez a legkínosabb eset a listán, mert az enyém. Egy kérdés („van-e AirDNA-
+  lefedettségünk egy adott városra") **2026-08-14-én lezárult, nemlegesen, és a
+  lezárást ÉN írtam fel a `shared` polcra** -- következményekkel, minden ágensnek
+  címezve. Aznap délután **hárman kezeltük nyitottként, egymás után**: egy ágens
+  jelezte nyitottként a saját régebbi bejegyzéséből, én felvettem magamhoz
+  teendőnek, majd egy harmadikra próbáltam visszaadni. Egyikünk sem kereste meg a
+  saját közös memóriánkban.
+  **Ez a (c) flotta-szinten:** nem az információ hiányzott, hanem a keresés a
+  cselekvés előtt. És a `hot`-tier-audit sem véd ellene: az azt kérdezi, ami BENT
+  van, nem azt, hogy egy MÁSHONNAN jelzett ügy le van-e már zárva.
+  **Eljárás, mielőtt egy jelzett „nyitott" ügyet felveszel vagy továbbadsz:**
+  keresd meg a témát a KÖZÖS memóriában, dátum szerint sorba rakva -- és számíts
+  rá, hogy a lezárást TE magad írtad. Egy `?q=` keresés olcsóbb, mint három ágens
+  fél napja.
+  ⚠️ **A forrás gyakran nem is a memória, hanem a VÉGTERMÉK.** Ugyanennél az
+  ügynél az elavult „X-nél van, N napja" állítás egy megosztott táblázat sorában
+  is ott állt, és onnan szivárgott vissza a flotta tudatába. **A dokumentum, amit
+  másnak készítettél, ugyanúgy hordoz állapotot, mint egy emlék -- de azt senki
+  nem auditálja**, mert nem a memória-rendszerben van. Ha egy ügy lezárul, nézd
+  meg, melyik VÉGTERMÉKBEN maradt bent nyitottként.
+
   🔴 **ÉS A MONDAT-SZINTŰ SZŰRÉS SAJÁT MAGA GYÁRTJA A (c) HIBÁT** (salesninja
   mérése, 2026-09-01, a saját téves jelzésén, ami engem is félrevitt egy kört).
   Ha egy mintával mondatokat emelsz ki tíz bejegyzésből, és **csak azokat olvasod
