@@ -77,8 +77,37 @@ Kész szkript: `scratchpad/analyze2.py` mintája (2026-08-12).
 - **Kapacitás-eltérés**: az AirDNA `accommodates` és a GG3 `occ_adults` eltérhet
   (Ráday18: 7 vs 6). Ilyenkor rossz comp setbe eshet, mindig ellenőrizd a top
   tételeknél, és jelezd Áronnak.
-- **LTM-ablakok nem azonosak**: `gg3_adr` 2025-03-18..2026-03-18, az AirDNA
-  frissebb. Említsd meg a jelentésben.
+- **A NULLA TALÁLAT A LEKÉRDEZÉST MÉRI, NEM A VALÓSÁGOT.** Ha egy szűrő üreset
+  ad, az elsődleges gyanúsított a szűrő, nem a világ. Háromszor bukott meg 2026
+  augusztus-szeptemberben, három külön rendszeren: grep a kódban (paraméteres
+  route-ot nem fogott, ezért "nincs ilyen végpont"), Drive fullText (generált
+  PDF-ben nem találta meg a benne álló szót), és a BPDB (0 szentendrei rekord).
+  **KÉT KÜLÖN HIBA, ÉS A JAVÍTÁSUK NEM CSERÉLHETŐ FEL** (jean szétválasztása,
+  2026-09-01):
+  - **Rossz mintával kérdeztem a forrást.** A forrásnak van szerkezete, én meg
+    szövegként kerestem benne. Javítás: PARSER, illetve azonosságra egész érték.
+  - **A forrást meg se kérdeztem, csak az INDEXÉT.** Nincs mit parseolni.
+    Javítás: SZEREZD MEG A FORRÁST.
+  Ez a második a veszélyesebb nálam, mert **amivel dolgozom, az jórészt index**:
+  a WebSearch, a Drive fullText, a Linear- és wiki-kereső. Mind alkalmas arra,
+  hogy MIT olvass el; **egyik sem arra, hogy kijelentsd, valami NINCS.**
+  **POZITÍV KONTROLL KÖTELEZŐ**, mielőtt hiányt jelentesz: futtasd ugyanazt a
+  lekérdezést egy esetre, amiről TUDOD, hogy benne van. Ha azt sem hozza vissza,
+  a lekérdezés a hibás.
+  A 2-es feladatnál (keresleti jel) a "egyetlen nap sem tér el 0-tól" ÁLLÍTÁS,
+  nem az adat hiánya -- azt DB-ből mérem, ott a parser-ág áll.
+  A 3-as feladatnál (új események) a "ezen a héten nem találtam új bejelentést"
+  KIZÁROLAG indexből jön, tehát a gyengébb állítás: írd oda, hogy a keresés nem
+  hozott találatot, NE azt, hogy nem volt bejelentés.
+- **Az "LTM" NEM ablak-jelzés.** A hosszat mondja meg (12 hónap), a HELYÉT nem.
+  Ugyanez a "tavalyi" és a "jelenlegi" -- ablak-jelzésnek NÉZNEK ki, de egyik sem
+  köti le a mérés idejét. Az ablakot a MÉRÉS DÁTUMA rögzíti, nem az adat típusa.
+  (jean pontja, 2026-09-01.)
+- **LTM-ablakok nem azonosak, és a különbség FUTÁSONKÉNT változik.** 2026-08-12-én
+  mérve: `gg3_adr` 2025-03-18..2026-03-18, az AirDNA ennél frissebb -- de ezt NE
+  vedd át kész tényként, mert azóta mindkettő elmozdult. Minden futásnál kérdezd
+  le a tényleges min/max dátumot mindkét oldalon, és a jelentésbe a LEKÉRDEZETT
+  ablakot írd, ne ezt a sort.
 
 ## Ellenőrzés
 
@@ -86,6 +115,10 @@ Mielőtt küldöd:
 - [ ] a top 10-nél a kapacitás egyezik-e (AirDNA vs GG3)
 - [ ] minden comp set n >= 10, a mintaméret benne van a jelentésben
 - [ ] minden számhoz forrás + lehúzási időpont + a vonatkozó periódus
+- [ ] a két LTM-ablak tényleges min/max dátuma LEKÉRDEZVE ebben a futásban
+      (nem a skillből átvéve), és a jelentésben szerepel
 - [ ] a becslés becslésként van jelölve, a módszerrel együtt
+- [ ] MINDEN "nincs ilyen" / "nincs eltérés" állítás mögött futott pozitív
+      kontroll (ismert pozitív esetet visszaad-e a lekérdezés)
 - [ ] az occupancy kereszt-jel megnézve (a res + alacsony occ NEM ármaradás)
 - [ ] soha nem állítasz árat, csak jelzel
