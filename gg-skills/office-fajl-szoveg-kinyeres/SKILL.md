@@ -32,8 +32,19 @@ alatt megvan, amivel a PDF-ből fél óra.
 Objektumok kigyűjtése, FlateDecode, majd a CID-fontok `/ToUnicode` CMap-je
 alapján a hex stringek visszafejtése. A `Td`/`Tm` és a `cm` transzformáció
 együtt adja a pozíciót, abból lehet sorokat rekonstruálni.
-Működő implementáció: `agents/brokermarcsi/tools/kikuldetes/` fejlesztésekor
-készült változat (ext4.py minta a scratchpadben).
+**Működő, futtatható implementáció:**
+`agents/jean/tools/pdftext/pdftext.py` -- `python3 pdftext.py <fájl.pdf>`.
+Mérve 2026-09-01 mind a 19 mPDF-generált one-pager PDF-en (Type0/Identity-H,
+`MPDFAA+` subset fontok): ékezethelyes magyar szöveget ad vissza.
+(A korábbi hivatkozás egy scratchpad-beli `ext4.py`-ra mutatott, ami már nem
+létezik -- ezért lett kicserélve.)
+
+⚠️ **A CID-kódok LITERÁL `(...)` stringben is jöhetnek, nem csak `<hex>`-ben.**
+Az mPDF Identity-H kimenetében a bájtpárok literál stringben állnak, PDF-escape-ekkel
+(`\r`, `\(`, `\)`, `\\`, oktális `\ddd`). Aki csak a `<hex> Tj` alakra készül,
+ÜRES eredményt kap egy olyan fájlon, ami tele van szöveggel -- és azt hiszi, a PDF
+képalapú. A literál stringet escape-helyesen kell beolvasni, majd 2 bájtonként
+CID-re bontani.
 
 ## Buktatók -- ezek vittek el 20 percet
 
