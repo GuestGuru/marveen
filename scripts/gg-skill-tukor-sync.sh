@@ -24,8 +24,19 @@ cd "$(dirname "$0")/.." || exit 1
 FIX=0
 [ "${1:-}" = "--fix" ] && FIX=1
 
-# Mirror roots, in the order skill-management documents them.
-MIRRORS="gg-skills seed-skills skills"
+# Where the GG-specific mirror lives. 2026-09-01, the owner's decision: GG skills
+# go to the PRIVATE GuestGuru/gg-agent-skills repo, not to this PUBLIC fork.
+#
+# Why this matters more than it sounds: the mirroring is AUTOMATIC (the dream-engine
+# runs `--fix` nightly, and scripts/hooks/skill-mirror-guard.py nags when a mirror
+# is stale). Declaring "we now use the private repo" without retargeting THIS script
+# would have kept publishing every night -- and the near-miss that started the whole
+# thread was an EDIT to an already-mirrored skill, not a new one.
+PRIVATE_MIRROR_ROOT="${GG_PRIVATE_SKILLS:-$HOME/gg-agent-skills}"
+
+# Mirror roots. `seed-skills` (machine-independent) stays in this repo; the
+# GG-specific ones moved out. Kept as a list so a future third target is one word.
+MIRRORS="seed-skills skills"
 
 stale=0; synced=0; same=0; unversioned=0
 unversioned_list=""
@@ -41,7 +52,7 @@ unversioned_list=""
 DIFF_EXCLUDES="-x __pycache__ -x *.pyc"
 while read -r pat; do
   [ -n "$pat" ] && DIFF_EXCLUDES="$DIFF_EXCLUDES -x $pat"
-done < <(sed -nE 's#^gg-skills/\*\*/(.+)$#\1#p' .gitignore 2>/dev/null || true)
+done < <(sed -nE 's#^skills/\*\*/(.+)$#\1#p' "$PRIVATE_MIRROR_ROOT/.gitignore" 2>/dev/null || true)
 
 # $1 is the skill DIRECTORY, not its SKILL.md. A skill may ship helper files next
 # to the manifest (helpscout-pdf-melleklet/pdf-szoveg.py is 141 lines,
@@ -50,11 +61,19 @@ done < <(sed -nE 's#^gg-skills/\*\*/(.+)$#\1#p' .gitignore 2>/dev/null || true)
 # blind spot as the agents/ one below, one level down -- found 2026-08-28 while
 # fixing the first.
 check_one() {
-  local live="$1" name="$2" scope="$3" m mirror lf mf f
-  for m in $MIRRORS; do
+  local live="$1" name="$2" scope="$3" m mirror lf mf f repo
+  # The PRIVATE repo is checked first: since 2026-09-01 that is where a GG-specific
+  # skill belongs, so a skill present in both must be compared against the one that
+  # is actually maintained.
+  for m in "$PRIVATE_MIRROR_ROOT/skills" $MIRRORS; do
     mirror="$m/$name"
-    # Only a TRACKED mirror counts; an untracked copy is not versioned.
-    git ls-files --error-unmatch "$mirror/SKILL.md" >/dev/null 2>&1 || continue
+    # Only a TRACKED mirror counts; an untracked copy is not versioned. The private
+    # mirror is a SEPARATE repo, so `git ls-files` has to run inside it, not here.
+    case "$m" in
+      "$PRIVATE_MIRROR_ROOT"/*) repo="$PRIVATE_MIRROR_ROOT" ;;
+      *) repo="." ;;
+    esac
+    git -C "$repo" ls-files --error-unmatch "${mirror#$repo/}/SKILL.md" >/dev/null 2>&1 || continue
     if diff -rq $DIFF_EXCLUDES "$live" "$mirror" >/dev/null 2>&1; then
       same=$((same + 1))
     elif [ "$FIX" = "1" ]; then
@@ -106,7 +125,7 @@ done
 echo
 echo "azonos=$same  elter=$stale  szinkronizalva=$synced  verziozatlan=$unversioned"
 if [ "$unversioned" -gt 0 ]; then
-  echo "verziozatlan (nincs kovetett tukre, DONTES kell -- seed-skills/ ha gep-fuggetlen, gg-skills/ ha GG-specifikus):"
+  echo "verziozatlan (nincs kovetett tukre, DONTES kell -- seed-skills/ ha gep-fuggetlen, a PRIVAT gg-agent-skills/skills/ ha GG-specifikus):"
   for n in $unversioned_list; do echo "  - $n"; done
 fi
 [ "$stale" -gt 0 ] && exit 1

@@ -124,6 +124,11 @@ transcripts/
 # stay out of it. The *.example.* companions are tracked and show the shape.
 # (The whole agents/ tree is already excluded above; these lines make the intent
 # explicit for the gg-skills/ mirror, which IS tracked.)
+#
+# 2026-09-01: the GG skills moved to the PRIVATE GuestGuru/gg-agent-skills repo,
+# so these three patterns now live in THAT repo's .gitignore. Kept here as a
+# tombstone: an old checkout may still carry the files, and re-adding a pattern
+# is cheaper than re-discovering why it was needed.
 gg-skills/**/content.py
 gg-skills/**/drive.folders.json
 gg-skills/**/photos.local.json

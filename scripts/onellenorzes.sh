@@ -105,21 +105,26 @@ fi
 # kerdes verziozatlan tudast hagy hatra. Itt nincs helyorzo-normalizalas: a ket
 # peldanynak BAJTRA azonosnak kell lennie, tehat az elteres valodi.
 echo
-echo "[3/3] agensspecifikus skill-parity (.claude/skills <-> gg-skills)"
+# 2026-09-01: a GG-skillek atkoltoztek a PRIVAT GuestGuru/gg-agent-skills repoba
+# (Tamas dontese; a publikus forkba mar nem tukrozunk). A parity-ellenorzes celja
+# ezert a privat checkout, aminek a helyet a GG_PRIVATE_SKILLS irja felul.
+GG_PRIV="${GG_PRIVATE_SKILLS:-$HOME/gg-agent-skills}/skills"
+echo "[3/3] agensspecifikus skill-parity (.claude/skills <-> privat gg-agent-skills/skills)"
 if [ ! -d "$INSTALL_DIR/.claude/skills" ]; then
   echo "  nincs .claude/skills -- kihagyva"
-elif [ ! -d "$INSTALL_DIR/gg-skills" ]; then
-  echo "  nincs gg-skills/ ebben a checkoutban -- kihagyva"
+elif [ ! -d "$GG_PRIV" ]; then
+  echo "  nincs privat skill-checkout ($GG_PRIV) -- kihagyva"
+  echo "  (klonozas: GuestGuru/gg-agent-skills, lasd gg-skills/README.md)"
 else
   parity_gond=0
   parity_ok=0
   for d in "$INSTALL_DIR"/.claude/skills/*/; do
     [ -f "$d/SKILL.md" ] || continue
     n="$(basename "$d")"
-    if [ ! -f "$INSTALL_DIR/gg-skills/$n/SKILL.md" ]; then
-      echo "  FIGYELEM: $n -- NINCS kovetett par a gg-skills/ alatt (verziozatlan)"
+    if [ ! -f "$GG_PRIV/$n/SKILL.md" ]; then
+      echo "  FIGYELEM: $n -- NINCS kovetett par a privat repoban (verziozatlan)"
       parity_gond=$((parity_gond+1))
-    elif ! diff -q "$d/SKILL.md" "$INSTALL_DIR/gg-skills/$n/SKILL.md" >/dev/null 2>&1; then
+    elif ! diff -q "$d/SKILL.md" "$GG_PRIV/$n/SKILL.md" >/dev/null 2>&1; then
       echo "  FIGYELEM: $n -- az elo es a kovetett peldany ELTER"
       parity_gond=$((parity_gond+1))
     else

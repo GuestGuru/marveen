@@ -101,7 +101,7 @@ telepítésre anélkül, hogy hazudna?*
 | `seed-scheduled-tasks/` | minden telepítésnek | template (`{{INSTALL_DIR}}`, `{{MAIN_AGENT_ID}}`, …) |
 | `templates/scheduled-tasks/` | telepítéskori scaffold, csak ha a cél még nem létezik | template |
 | `scheduled-tasks/` | **ennek** a telepítésnek a saját feladatai | template, de nem seedeli semmi |
-| `gg-skills/` | **ennek** a telepítésnek a GG-specifikus skilljei | verzió, nem seed |
+| `a privát `gg-agent-skills` repo `skills/` mappája (2026-09-01 óta; korábban gg-skills/)` | **ennek** a telepítésnek a GG-specifikus skilljei | verzió, nem seed |
 
 Két buktató, mindkettő mérve:
 
@@ -111,7 +111,7 @@ Két buktató, mindkettő mérve:
    SKILL.md sem említi a `gg-mcp`-t vagy a `guest.guru`-t, és ez szándékos
    (IT-451: a GG-tudás a `gg_knowledge_*` toolokba került, nem skillbe).
    A `gg-mcp-iras-proxy` tizenegy helyen hivatkozik a `/home/gg/gg-mcp`-re,
-   amire nincs is placeholder — ezért `gg-skills/`, nem `seed-skills/`.
+   amire nincs is placeholder — ezért `a privát `gg-agent-skills` repo `skills/` mappája (2026-09-01 óta; korábban gg-skills/)`, nem `seed-skills/`.
 2. **A helyben patchelt seed nem vész el, de elszakad.** Az `update.sh`
    `seed_copy_is_untouched()`-e megnézi, hogy a telepített fájl egyezik-e a repo
    utolsó 25 revíziójának valamelyikével; ha nem, MEGTARTJA a helyi változatot.

@@ -207,6 +207,11 @@ canonical generator — do NOT hand-roll a `sed`/`grep` loop (see Pitfalls):
 INSTALL="${MARVEEN_ROOT:-$HOME/marveen}"
 bash "$INSTALL/scripts/skill-index.sh"            # global index
 bash "$INSTALL/scripts/skill-index.sh" "$(pwd)"   # agent-specific merged index
+
+# 🔴 A GLOBAL skill (~/.claude/skills/) belongs to EVERY agent, but the line
+# above refreshes only YOUR merged index. Regenerate all of them, discovered
+# from disk -- never a hardcoded roster, agents come and go:
+for d in "$INSTALL"/agents/*/; do bash "$INSTALL/scripts/skill-index.sh" "$d"; done
 ```
 
 Verify afterwards — both checks must pass:
