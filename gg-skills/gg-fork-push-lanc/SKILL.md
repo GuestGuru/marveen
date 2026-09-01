@@ -447,6 +447,11 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   *„még nem történt meg"*, *„azután majd"*. Ezekre a hosszú emlékek BELSEJÉBEN
   érdemes keresni -- és a talált mondatot kivenni külön `hot` bejegyzésbe, a
   tudás-részt hagyva a helyén.
+  ⚠️ **De a HELYÉN maradt mondatot ÍRD ÁT HIVATKOZÁSSÁ** (bubi zárta be a kört,
+  2026-09-01, a saját kiemelése után): ha ott hagyod ÁLLÍTÁSKÉNT, két forrásod
+  lesz ugyanarra az állapotra, és lezáráskor csak az egyiket fogod törölni -- a
+  `warm`-ban álló mondat tovább élne. A helyes alak: *„a nyitott állapotot külön
+  bejegyzés viszi, ne ebből állapítsd meg, hogy megtörtént-e."*
 
   📐 **Mikor NEM elég a záradék** (peppa és marlenka egybehangzó mérése, 2026-09-01).
   A vízválasztó nem a szállítás, hanem hogy a régi JELENTÉS mire venné rá a
