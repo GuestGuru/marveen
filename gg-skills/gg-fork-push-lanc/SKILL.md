@@ -391,9 +391,14 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   1. **Az id-t soha ne gépeld be.** Vagy egy `?agent=<sajat>` szűrős `GET`
      válaszából jöjjön, vagy a saját `POST`-od visszakapott id-jéből. Ha a forrás
      már szűrt, nincs mit ellenőrizni utólag.
-  2. ⚠️ **De a `?agent=` listázás MÁS ágensek `shared` emlékeit is visszaadja.**
-     „Benne van a listámban" tehát NEM azt jelenti, hogy „az enyém" -- és pont a
+  2. ⚠️ **De a `?agent=` listázás MÁS ágensek `shared` emlékeit is visszaadja**, és
+     nem kevesebbségben: 2026-09-01-én mérve a `?agent=bubi` listában **135 sorból
+     112 volt idegen (83%)**, a `?agent=marveen`-ben 200-ból 98 -- utóbbi alsó
+     korlát, mert a végpont 200-nál levág. Egy kevés emléket tartó ágensnél tehát
+     a saját listája TÖBBSÉGÉBEN nem az övé.
+     „Benne van a listámban" ezért NEM azt jelenti, hogy „az enyém" -- és pont a
      shared bejegyzések a legértékesebbek, mert azokat többen olvassák.
+     **A tulajdont az `agent_id` MEZŐBŐL olvasd ki, ne abból, hogy a sor előjött.**
   ⚠️ **És ne `grep`-pel ellenőrizd az id-t** (jean fogta meg a saját javaslatomon):
   a `grep '"id":57'` illeszkedik az `"id":570`-re is, egy `"id": 57` alakú
   formázásra viszont némán nem talál. **Azonosságot egész számra hasonlíts,
