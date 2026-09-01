@@ -93,8 +93,15 @@ mkdir -p ~/.claude/skills/$SKILL_NAME/references
 ### Step 5: Update Skill Index
 
 ```bash
-bash scripts/skill-index.sh
+INSTALL="${MARVEEN_ROOT:-$HOME/marveen}"
+bash "$INSTALL/scripts/skill-index.sh"            # global index
+bash "$INSTALL/scripts/skill-index.sh" "$(pwd)"   # your own merged index
+# A GLOBAL skill is everyone's: refresh every agent's merged index too.
+for d in "$INSTALL"/agents/*/; do bash "$INSTALL/scripts/skill-index.sh" "$d"; done
 ```
+
+⚠️ Stopping after the first two commands leaves the skill invisible in the other
+agents' index files. See Pitfalls.
 
 ### Step 6: Validate
 
@@ -111,6 +118,14 @@ Test the skill mentally:
 - **Missing error handling**: If you hit errors during the original workflow, document them in Pitfalls.
 - **Too long**: Keep SKILL.md under 500 lines. Move large content to `references/` subdirectory.
 - **Duplicate skills**: Before creating, check `~/.claude/skills/.skill-index.md` for existing similar skills. Patch instead of creating a new one.
+- 🔴 **Global skill, one index**: `skill-index.sh "$(pwd)"` rewrites ONLY the caller's
+  merged index. A skill written under `~/.claude/skills/` applies to every agent, so
+  every agent's merged index needs regenerating -- see Step 5. **Why this stays hidden:**
+  the runtime skill list picks the new skill up immediately, so it *looks* done; only the
+  index file is stale. Two entry points, and the working one masks the broken one.
+  (Mérve 2026-09-01, kétszer egy délután: marveen a `processz-azonositas`-nál, brokermarcsi
+  az `it-koltsegszamla-mentes`-nél -- öt agent indexe 13:14-en állt, miközben a skill 17:26-kor
+  már létezett.)
 
 ## Skill Quality Checklist
 
