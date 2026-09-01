@@ -1382,7 +1382,14 @@ export function getMemoryStats(): { total: number; byAgent: Record<string, numbe
   return { total, byAgent, byTier, withEmbedding }
 }
 
-export function updateMemory(id: number, content: string, category?: string, agentId?: string, keywords?: string): boolean {
+// GG fork: `ownerGuard` added 2026-09-01. The fleet shares ONE dashboard token,
+// so the server cannot tell which agent is calling and this is not an access
+// check -- it is a typo guard. Six agents edit their memories in one database;
+// a mistyped id silently rewrote or deleted someone else's row. When the caller
+// passes its own agent id, the write only lands on a row it actually owns.
+// Optional and absent-by-default, so the dashboard UI and the `agentId`
+// reassign path below are untouched.
+export function updateMemory(id: number, content: string, category?: string, agentId?: string, keywords?: string, ownerGuard?: string): boolean {
   const now = Math.floor(Date.now() / 1000)
   // Read the row's CURRENT owner and category before writing. The agentId
   // parameter is optional and means "reassign to this agent", so it is absent
@@ -1396,7 +1403,10 @@ export function updateMemory(id: number, content: string, category?: string, age
   if (agentId) { sets.push('agent_id = ?'); params.push(agentId) }
   if (keywords !== undefined) { sets.push('keywords = ?'); params.push(keywords) }
   params.push(id)
-  const changed = db.prepare(`UPDATE memories SET ${sets.join(', ')} WHERE id = ?`).run(...params).changes > 0
+  // GG fork: owner guard, see the comment on this function.
+  const where = ownerGuard ? 'WHERE id = ? AND agent_id = ?' : 'WHERE id = ?'
+  if (ownerGuard) params.push(ownerGuard)
+  const changed = db.prepare(`UPDATE memories SET ${sets.join(', ')} ${where}`).run(...params).changes > 0
   if (changed) {
     if (before?.category === 'shared' || category === 'shared') {
       // A shared row is listed for every agent, so evicting one owner is not
