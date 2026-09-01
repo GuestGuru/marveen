@@ -89,4 +89,35 @@ describe('ensureMemoryRulesSection', () => {
     expect(body).toContain('nem bizonyíték a tisztaságra')
     expect(body).toContain('owner')
   })
+
+  // The first shipped wording scoped "annotate knowledge, delete work state" to
+  // the hot tier. That excluded the very case the rule exists for: a work-state
+  // memory that looks like configuration lands in warm or cold, where nobody
+  // checks its age -- one such row stood false for 18 days. Guard the scope.
+  it('does not scope the knowledge/work-state split to the hot tier', () => {
+    const body = buildMemoryRulesBody()
+    expect(body).toContain('BÁRMELYIK tierben')
+    expect(body).toContain('VESZÉLYESEBB')
+    expect(body).not.toContain('`hot` tier kivétel')
+  })
+
+  // Asserting on the whole file only proves the text is somewhere in it. Cut the
+  // block out of its own markers and check the structure -- that is what catches
+  // a duplicated, nested or unpaired block.
+  it('writes exactly one well-formed block, and its content is the body', () => {
+    const p = join(dir, 'CLAUDE.md')
+    writeFileSync(p, '# Persona\n\nKézi tartalom.\n')
+    ensureMemoryRulesSection(dir, spyWrite)
+    ensureMemoryRulesSection(dir, spyWrite)
+
+    const out = readFileSync(p, 'utf-8')
+    const begins = out.split(MEMORY_RULES_BEGIN).length - 1
+    const ends = out.split(MEMORY_RULES_END).length - 1
+    expect([begins, ends]).toEqual([1, 1])
+
+    const start = out.indexOf(MEMORY_RULES_BEGIN) + MEMORY_RULES_BEGIN.length
+    const inner = out.slice(start, out.indexOf(MEMORY_RULES_END)).trim()
+    expect(inner).toBe(buildMemoryRulesBody())
+    expect(out.slice(0, out.indexOf(MEMORY_RULES_BEGIN))).toContain('Kézi tartalom.')
+  })
 })
