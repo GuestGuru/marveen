@@ -224,8 +224,10 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   2. **minden számhoz KÖTELEZŐ a mérési ablak** -- a memóriában a valódi kockázat
      nem az érzékenység, hanem az ELAVULÁS: egy ablak nélküli szám fél év múlva
      magabiztosan hazudik.
-  A három hatókör tehát: **publikus repo** (a lenti szintek) > **wiki** (ugyanaz)
+  A NÉGY hatókör tehát: **publikus repo** (a lenti szintek) > **wiki** (ugyanaz)
   > **memória** (a fenti két pont) > **munka-artefaktum** (semmi ebből).
+  *(Számold meg a felsorolást: négy elem. 2026-09-01-én itt „három" állt, mert a
+  számnév nem frissült, amikor a negyedik hatókör bekerült -- salesninja fogta meg.)*
 
   🟢 **A LAKÁS RÖVID NEVE NEM BLOKKOLÓ -- Tamás döntése, 2026-09-01 (msg 695).**
   Szó szerint: *„Mint például Király33? Vagy NagyDiófa14? Ez nem túl egyedi
@@ -423,6 +425,23 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   commitot latja -- a szkript lokalisan mar commitolt, mielott a lanc elszallt.
   A tukor-paritas tehat a lanc befejezese elott NEM bizonyitek; a bizonyitek
   `git rev-parse HEAD origin/main` egyezese.
+- 🔴 **AZ ELHASALT PATCH IS FELMEGY, ha a shell nem áll meg -- és a commit-üzenet
+  ilyenkor HAZUDIK.** 2026-09-01, kétszer egy nap: a `python3 - <<'EOF'` blokkom
+  `SyntaxError`-ral elszállt (idézőjel-keverés), a fájl változatlan maradt, a
+  következő sorban induló `gg-push-lanc.sh` viszont lefutott, és felvitt egy
+  NO-OP commitot „fix: a számnév javítása" üzenettel. A hiba a képernyőn ott
+  volt, csak nem állította meg a láncot.
+  **Eljárás:** a patch és a push között legyen kapu, ne újsor:
+  ```bash
+  python3 - <<'PY' && echo "PATCH OK" || { echo "PATCH FAILED"; exit 1; }
+  ... assert-ekkel ...
+  PY
+  grep -c "<az UJ szoveg>" <fajl>    # 1 legyen
+  grep -c "<a REGI szoveg>" <fajl>   # 0 legyen
+  git diff --stat <fajl>             # van-e egyaltalan valtozas
+  ```
+  A `git diff --stat` a legolcsóbb: ha üres, nincs mit pusholni, és a commit
+  üzenete máris hamis lenne.
 - **`gh auth status` = not logged in, ez normális.** Ne kezdj el `gh auth login`-t szervezni, a push-út a `github_commit` MCP tool (IT-461 óta él).
 - **A `github_*` toolok a `fejlesztoi` csomaghoz kötöttek, és a csomag ELTŰNHET a token alól.** 2026-08-05: kész, tesztelt javítást nem lehetett felküldeni, mert `gg_allowed_tools` szerint mind a 12 `github_*` tool a `nincs_jogod` ágon volt (`kell: fejlesztoi`), és a `gg_secret_get` sem adta ki a `github` kulcsot. Mindkét token ugyanaz (`/home/gg/gg-mcp/tokens/*.token` -> ugyanaz a userId), tehát token-cserével sem kerülhető meg:
   ⚠️ **A régi mérő-parancs 2026-08-10-re KÉTSZERESEN félrevezet — ne ezt használd:**
