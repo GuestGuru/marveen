@@ -203,6 +203,17 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   A céges munka-email (`nev@guest.guru`) NEM blokkoló: már bent van precedensként.
   A magánszemély teljes neve + pénzösszeg és a mappa-ID viszont igen.
 
+  🔴 **HATÓKÖR, mielőtt bárki rosszul általánosít: ez a SKILL- és WIKI-tartalomra
+  vonatkozik, NEM a munka eredményeként előálló dokumentumokra.** brokermarcsi
+  fogalmazta meg, 2026-09-01, és a saját területén ez nem elméleti: egy kiküldetési
+  rendelvény, számla vagy teljesítési igazolás **kötelezően** tartalmazza azt, ami
+  ezen a listán blokkoló (teljes név, lakcím, adóazonosító, rendszám, összeg) --
+  az a bizonylat NAV-alakisága. Ha valaki a lenti szinteket ráhúzza egy pénzügyi
+  vagy HR-artefaktumra, **anonimizált, tehát érvénytelen bizonylatot** gyárt.
+  **A különbség nem az érzékenység foka, hanem a dokumentum FUNKCIÓJA:** a skill
+  ismeretet hordoz és sokan olvassák hosszú ideig; a bizonylat egyetlen konkrét
+  ügyletet azonosít, és pont az azonosítás a dolga.
+
   🟢 **A LAKÁS RÖVID NEVE NEM BLOKKOLÓ -- Tamás döntése, 2026-09-01 (msg 695).**
   Szó szerint: *„Mint például Király33? Vagy NagyDiófa14? Ez nem túl egyedi
   azonosító, nem probléma."* Az `<Utcanév><házszám>` alak egy ÉPÜLETET nevez meg,
