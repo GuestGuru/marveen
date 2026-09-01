@@ -476,6 +476,18 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
     egy skillt, a tükröt is frissíteni kell").
     ⚠️ És a magyar `majd` ugyanolyan gyakran jelent „azután"-t, mint „később"-et:
     a *„foltos, majd törésre került kanapé"* nem teendő.
+  🔴 **ÉS A MONDAT-SZINTŰ SZŰRÉS SAJÁT MAGA GYÁRTJA A (c) HIBÁT** (salesninja
+  mérése, 2026-09-01, a saját téves jelzésén, ami engem is félrevitt egy kört).
+  Ha egy mintával mondatokat emelsz ki tíz bejegyzésből, és **csak azokat olvasod
+  el**, épp azt a kontextust dobod el, amiben a LEZÁRÁS áll -- a lezáró mondat
+  ugyanis jellemzően NEM tartalmazza a „nyitott" mintát, hanem az ellenkezőjét.
+  **A szűrő tehát rendszeresen a nyitott állítást mutatja meg és a lezárót rejti
+  el.** Nála három bejegyzés ült ugyanabban a `cold` tierben: a 08-11-i „NYITOTT
+  továbbra is", és két 08-12-i, ami lezárta -- mindhárom ott volt a jelölt
+  találatok között, de csak a jelölt MONDATOT olvasta el mindegyikből.
+  **Eljárás:** a jel után olvasd el a TELJES bejegyzést, és a találatokat rakd
+  DÁTUM SZERINT sorba, mert ugyanaz az ügy több bejegyzésben áll.
+
   ⚠️ **A kiemelés sem kötelező, ha az ügy NEM AKTÍV** (brokermarcsi, ugyanaznap):
   egy hónapja nem mozdult, választ nem vársz, nem te viszed -> ne told `hot`-ba,
   mert pont azt a funkciót rontod el, amiért a `hot`-ot védjük. Írd be
