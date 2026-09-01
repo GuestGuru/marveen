@@ -319,6 +319,18 @@ grep -a '| >' ~/.claude/skills/.skill-index.md   # must return nothing
   (3) az ELJÁRÁS-mondatok iránya. A történeti mérés maradhat, de kapjon fél
   sort, hogy az AKKORI elrendezés szerint készült -- így nem kell választani a
   rekord és az érvényes szabály között.
+  🔴 **És a három nem véletlenül ez a három: MINDHÁROM BELÉPÉSI PONT, és a régi
+  állítás MINDIG ELŐBB állt, mint az új.** salesninja figyelte meg, 2026-09-01:
+  ez a felülíró patch természete. Az ember az új szabályt a HELYÉRE teszi, a
+  felvezetés, a `description` és a levont recept pedig érintetlen marad -- vagyis
+  pont az a három hely romlik el, ahol az olvasó BELÉP. **Ezért a következő
+  felülíró patchnél ezt a hármat nézd meg ELŐSZÖR, a törzs elolvasása előtt.**
+- 🔴 **A szóhasználat egységesítése NEM ugyanaz, mint a tartalom javítása -- és
+  el tudja FEDNI, hogy az utóbbi elmaradt.** Ugyanaznap, ugyanabból a körből:
+  a recept-mondatban kicseréltem a régi szót az újra, a `grep` ezután tiszta
+  volt, és a mondat közben **továbbra is a régi irányt tanította**, mert irányt
+  egyáltalán nem mondott. Egy szó-tiszta fájl tehát még taníthatja a hatályon
+  kívüli eljárást. A `grep`-es nulla a SZÓRA vonatkozik, nem a JELENTÉSRE.
 - 🔴 **Ha visszajelzést kérsz, NE mondd meg előre, mit gondolsz.** salesninja
   fogalmazta meg 2026-09-01-én: a három egybehangzó észrevétel azért ért annyit,
   mert egyikük sem látta a másik kettő válaszát, és nem is kaptak tőlem előzetes
