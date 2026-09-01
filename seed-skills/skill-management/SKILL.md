@@ -270,6 +270,23 @@ grep -a '| >' ~/.claude/skills/.skill-index.md   # must return nothing
   Ez ugyanaz a hibaosztály, mint a némán üres API-szűrő: **a nulla találat nem
   adat, amíg nem igazoltad, hogy a mérőeszköz működik.**
 
+- 🔴 **A HOOKOK KÉT settings-fájlban élhetnek, és az egyik ellenőrzése NEM
+  ellenőrzés.** 2026-09-01: meg akartam írni a leletbe, hogy az
+  `outgoing-copy-gate.py` „nincs bekötve", mert a `~/.claude/settings.json`-ban
+  nem találtam. Valójában a PROJEKT `.claude/settings.json`-jában van, három
+  matcherrel (`Bash`, `.*send_email.*`, telegram `reply`). A hiányt tehát mind a
+  NÉGY helyen kell keresni, mielőtt kimondod:
+  ```bash
+  for f in ~/.claude/settings.json ~/.claude/settings.local.json \
+           .claude/settings.json .claude/settings.local.json; do
+    [ -f "$f" ] && printf '%-36s %s\n' "$f" "$(grep -c '<a hook neve>' "$f")"
+  done
+  git grep -ln '<a hook neve>'     # es hol hivjak meg egyaltalan
+  ```
+  Ez ugyanaz a család, mint a fenti kettő: **a keresés HELYE is a mérőeszköz
+  része.** Egy jó minta a rossz fájlban ugyanúgy hamis nullát ad, mint egy rossz
+  minta a jó fájlban.
+
   🔴 **És a szabály tágabb a nulla találatnál: a MEGLEPŐ EGYÖNTETŰSÉGRE általában
   áll.** jean általánosítása, ugyanaznap, két esetből: (a) három hibás `grep`
   adott nullát, (b) a Linear-kommentek stílus-alapú szétválogatása szisztematikusan
