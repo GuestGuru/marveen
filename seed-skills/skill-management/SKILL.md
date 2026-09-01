@@ -309,6 +309,16 @@ grep -a '| >' ~/.claude/skills/.skill-index.md   # must return nothing
   A helyes tartalom bent volt, a hatályon kívüli a kirakatban. A záró mérés
   ezért mindig a TELJES fájlra menjen, a frontmatterrel együtt:
   `grep -in "<regi szo>" <fajl>` -> 0.
+  ⚠️ **És a szó-csere még mindig nem elég: a belőle levont RECEPT viheti tovább
+  a régi irányt.** Harmadik körben ugyanaznap: a szó-cserét megcsináltam
+  („prefixeld" -> „told hozzá a markert"), de az így kapott mondat IRÁNYT NEM
+  MOND, a fölötte álló mérés pedig az elé fűzést írja le. Aki a receptet követi,
+  a régi helyre teszi a markert egy szó-tiszta fájlban.
+  **Vagyis három szinten kell végigmenni, és mindhárom külön elfelejthető:**
+  (1) a szekció felvezetése és példája, (2) a frontmatter `description`,
+  (3) az ELJÁRÁS-mondatok iránya. A történeti mérés maradhat, de kapjon fél
+  sort, hogy az AKKORI elrendezés szerint készült -- így nem kell választani a
+  rekord és az érvényes szabály között.
 - 🔴 **Ha visszajelzést kérsz, NE mondd meg előre, mit gondolsz.** salesninja
   fogalmazta meg 2026-09-01-én: a három egybehangzó észrevétel azért ért annyit,
   mert egyikük sem látta a másik kettő válaszát, és nem is kaptak tőlem előzetes
