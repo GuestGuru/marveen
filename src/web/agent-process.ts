@@ -43,13 +43,15 @@ import {
 } from './ssh-tmux.js'
 import { parseTelegramToken } from './telegram.js'
 import { getProvider, getProviderType, channelStateDir, readChannelToken, type ChannelProviderType } from '../channel-provider.js'
-import { CHANNEL_PROVIDER, MAIN_AGENT_ID, STORE_DIR, PROJECT_ROOT, SUBAGENT_INBOX_TEE } from '../config.js'
+import { CHANNEL_PROVIDER, MAIN_AGENT_ID, STORE_DIR, PROJECT_ROOT, SUBAGENT_INBOX_TEE, BOT_NAME, OWNER_NAME } from '../config.js'
 import { getEffectiveSettingValue } from '../settings-store.js'
 import { loadProfileTemplate } from './profiles.js'
 import { resolveAgentSecurityProfile } from './agent-team.js'
 import { writeAgentSettingsFromProfile, ensureFleetRosterSection, ensureAutonomySection } from './agent-scaffold.js'
 // GG fork: fleet-wide memory rules as a generated CLAUDE.md block.
 import { ensureMemoryRulesSection } from '../gg/memory-rules-section.js'
+// GG fork: fleet rules 7-8 as a MAINTAINED block, not a scaffold-time snapshot.
+import { ensureFleetRulesSection } from '../gg/fleet-rules-section.js'
 import { schedulePluginUnlockAfterRespawn } from './channel-plugin-unlock.js'
 import { getSecret } from './vault.js'
 import { resolveOpenRouterModel } from './openrouter-models.js'
@@ -1128,6 +1130,14 @@ export function startAgentProcess(name: string, opts: { fresh?: boolean } = {}):
     // memories are written, not only in the main agent's CLAUDE.md. See
     // src/gg/memory-rules-section.ts for why.
     ensureMemoryRulesSection(agentDir(name), atomicWriteFileSync)
+    // GG fork 2026-09-01: fleet rules 7 and 8 used to be written once at scaffold
+    // time with no markers, so a correction reached only agents created later.
+    // See src/gg/fleet-rules-section.ts.
+    ensureFleetRulesSection(
+      agentDir(name),
+      { botName: BOT_NAME, mainAgentId: MAIN_AGENT_ID, ownerName: OWNER_NAME, agentId: name, projectRoot: PROJECT_ROOT },
+      atomicWriteFileSync,
+    )
     // A sub-agent must load ONLY its own channel plugin. The user-scope
     // enabledPlugins would otherwise make EVERY sub-agent spawn a telegram
     // (and slack/discord) poller that falls back to the main agent's bot
