@@ -302,6 +302,21 @@ grep -a '| >' ~/.claude/skills/.skill-index.md   # must return nothing
   A címben és a példában lévő régi alak a legveszélyesebb, mert azt olvassák
   először. (És ha a szabály megfordult, a NEVE is hazudhat: a „prefix" szó
   félrevezető, ha a marker a szöveg végén áll.)
+  ⚠️ **És a legláthatóbb hely a frontmatter `description`-je, amit a legkönnyebb
+  kihagyni.** Ugyanaznap, egy körrel később: a törzset kijavítottam, de a
+  `description` továbbra is „prefix"-et mondott -- **és az az EGYETLEN szöveg,
+  amit minden ágens lát a skill-listájában anélkül, hogy megnyitná a fájlt.**
+  A helyes tartalom bent volt, a hatályon kívüli a kirakatban. A záró mérés
+  ezért mindig a TELJES fájlra menjen, a frontmatterrel együtt:
+  `grep -in "<regi szo>" <fajl>` -> 0.
+- 🔴 **Ha visszajelzést kérsz, NE mondd meg előre, mit gondolsz.** salesninja
+  fogalmazta meg 2026-09-01-én: a három egybehangzó észrevétel azért ért annyit,
+  mert egyikük sem látta a másik kettő válaszát, és nem is kaptak tőlem előzetes
+  gyanút. Ha szétküldtem volna, hogy „szerintem itt hiba van, nézzétek meg",
+  ugyanaz a három igen sokkal kevesebbet érne. **Ez a mérő-függetlenség emberi
+  változata:** a priming ugyanúgy elrontja a függetlenséget, mint amikor egy
+  eszköz méri mind a három adatpontot. A helyes sorrend: előbb kérdés kontextus
+  nélkül, utána az összevetés.
 - 🔴 **A HOOKOK KÉT settings-fájlban élhetnek, és az egyik ellenőrzése NEM
   ellenőrzés.** 2026-09-01: meg akartam írni a leletbe, hogy az
   `outgoing-copy-gate.py` „nincs bekötve", mert a `~/.claude/settings.json`-ban
