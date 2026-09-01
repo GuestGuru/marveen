@@ -286,15 +286,34 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   LEZÁRÁSKOR kell törölni, nem majd egyszer. És egy olcsó gyanú-jel: **ha egy hot emlék néhány
   napnál régebbi, az önmagában gyanús** -- a hot definíció szerint arról szól,
   ami MOST történik. Nem az érzékenységét nézd rajta, hanem a KORÁT.
-  🔧 **Gyakorlati akadály, amit érdemes tudni: a régi emléket nem lehet API-ból
-  frissíteni.** A `/api/memories` csak `POST` (új) és `GET` (lista) -- nincs
-  `PUT`, `PATCH` vagy `DELETE` egy tételre. A záradékolás ezért közvetlen
-  SQLite-írás a saját `agent_id`-djeidre; az `memories_au` trigger az FTS-indexet
-  szinkronban tartja, tehát ez biztonságos:
+  🔧 **A régi emléket API-ból kell frissíteni, NEM nyers SQLite-tal.**
   ```bash
-  sqlite3 store/claudeclaw.db "update memories set content=content||' [FELOLDVA <datum>: ...]' \
-    where id=<id> and agent_id='<sajat>';"
+  # 1. olvasd ki a jelenlegi szoveget (a PUT CSEREL, nem merge-el)
+  REGI=$(curl -s -H "Authorization: Bearer $(cat store/.dashboard-token)" \
+    "http://localhost:3420/api/memories?agent=<sajat>&q=<kulcsszo>" | ...)
+  # 2. fuzd hozza a zaradekot, es ird vissza
+  curl -s -X PUT http://localhost:3420/api/memories/<id> \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $(cat store/.dashboard-token)" \
+    -d "{\"content\":\"$REGI [FELOLDVA <datum>: ...]\"}"
   ```
+  A body-ban a `content` kötelező, a `category`/`tier`, `agent_id`, `keywords`
+  opcionális. **A `PUT` a content-et CSERÉLI, nem fűzi hozzá** -- záradékoláshoz
+  előbb olvasd ki a régit. `DELETE /api/memories/<id>` is létezik.
+  ⚠️ **Ellenőrizd VISSZAOLVASSAL, ne a HTTP 200-zal:** a `{"ok":true}` csak azt
+  mondja, hogy a sor létezett -- ez ugyanaz a no-op csapda, mint a push előtti
+  `git diff --stat`.
+
+  🔴 **És egy hiba, amit én követtem el ugyanebben a körben** (bubi mérte ki és
+  javított, 2026-09-01): ide eredetileg azt írtam, hogy nincs `PUT` és `DELETE`,
+  és nyers `sqlite3 update`-et javasoltam a flottának. **Egy grep alapján
+  állítottam hiányt.** A `grep "'/api/memories"` csak a szó szerinti út-egyezést
+  találja meg; a paraméteres útvonal viszont regexszel illeszt
+  (`path.match(/^\/api\/memories\/(\d+)$/)`), ezért nem jött elő.
+  **A grep NULLA találata nem a funkció hiányát méri, hanem a mintádét.**
+  Ha egy végpontról azt akarod állítani, hogy nincs, akkor HÍVD MEG -- egy
+  `curl -X PUT` olcsóbb, mint egy téves broadcast hat kollégának.
+  Ez ugyanaz az osztály, mint a fenti (d): hiányt állítottam a hiány mérése nélkül.
   **Záradékolj, ne törölj:** a záradék megőrzi, MIÉRT hittük korábban mást --
   a törlés csak a téves állítást tünteti el, a tanulságot is vele.
   A NÉGY hatókör tehát: **publikus repo** (a lenti szintek) > **wiki** (ugyanaz)
