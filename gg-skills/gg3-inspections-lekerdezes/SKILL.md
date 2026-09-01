@@ -100,10 +100,13 @@ Olvasható kimenet hosszú listánál:
 
 ## Buktatók
 
-- **Névegyezés.** 2026-08-13-án két "Flóra" volt az `auth.users`-ben. A régebbi,
-  magyaros nevű fiók (hannflora@gmail.com) nulla szemlével, a dolgozó ellenőr a
-  `Flora` / Info@floralapartment.com fiók. A szemle-darabszám dönti el, melyik az élő
-  fiók, nem a név helyesírása. Ha kétes, írd meg a gazdának, melyik fiókkal számoltál.
+- **Névegyezés.** 2026-08-13-án ugyanaz a keresztnév KÉT fiókon szerepelt az
+  `auth.users`-ben: egy régebbi, magyaros írásmódú, nulla szemlével, és egy
+  ékezet nélküli, céges címre szóló, ami a ténylegesen dolgozó ellenőré volt.
+  **A szemle-darabszám dönti el, melyik az élő fiók, nem a név helyesírása.**
+  Ha kétes, írd meg a gazdának, melyik fiókkal számoltál.
+  (A két konkrét e-mail cím szándékosan nincs itt: magánszemély azonosítója, a
+  tanulság pedig nélküle is teljes -- a lekérdezés úgyis kiadja mindkét sort.)
 - **A csupasz hiánylista félrevezet.** A "soha nem járt ott" lista tele lesz frissen
   belépett lakásokkal. Bontsd szét: (a) ahol egyáltalán senki nem szemlézett,
   (b) friss lakás, ahol más már járt, (c) régi lakás, rendszeres szemlével, de az
