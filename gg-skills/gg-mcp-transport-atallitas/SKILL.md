@@ -55,7 +55,24 @@ Mindhárom módban ugyanaz az identitás: `GG_MCP_TOKEN_FILE` (`/home/gg/gg-mcp/
 ## Ellenőrzés
 
 - Minden ágens gyerekprocessze a várt binárison van:
-  `for p in $(pgrep -f 'gg-mcp/dist'); do echo "$(basename $(readlink /proc/$p/cwd)) $(ps -o args= -p $p | awk '{print $NF}')"; done | sort`
+  `for p in $(pgrep -f '^node /home/gg/gg-mcp/dist'); do echo "$(basename $(readlink /proc/$p/cwd)) $(ps -o args= -p $p | awk '{print $NF}')"; done | sort`
+  🔴 **A minta HORGONYZOTT (`^node ...`), és ez nem stílus.** A régi,
+  horgony nélküli `pgrep -f 'gg-mcp/dist'` a SAJÁT parancssorodra is illeszkedik:
+  mérve 2026-09-01-én 10 sort adott, ebből HÁROM hamis volt, és a hamis sorok
+  `cwd`-bázisneve **ágens-névnek látszott** -- pont egy átállási ellenőrzésben,
+  ahol az a kérdés, melyik ágens min fut. A horgonyzott alak 7 valódi sort ad.
+  ✅ **De az ERŐSEBB ellenőrzés nem a fájlnevet nézi, hanem a processz
+  KÖRNYEZETÉT** -- az mutatja meg, melyik ágens MELYIK token-fájllal fut, tehát a
+  8. szabály sérülését is (idegen token). A `cwd`-bázisnév ezt sosem mutatná meg:
+  ```bash
+  for p in $(pgrep -f '^node /home/gg/gg-mcp/dist'); do
+    lbl=$(tr '\0' '\n' < /proc/$p/environ | grep -m1 '^GG_MCP_AGENT_LABEL=' | cut -d= -f2-)
+    tok=$(tr '\0' '\n' < /proc/$p/environ | grep -m1 '^GG_MCP_TOKEN_FILE=' | cut -d= -f2- | xargs -r basename)
+    echo "$p label=${lbl:-<nincs>} token=${tok:-<nincs>}"
+  done | sort -k2
+  ```
+  A label hiánya egyben negatív szűrő: a nem-ágens processzek label nélkül jönnek.
+  Részletek és a `pkill`-változat: `processz-azonositas` skill.
 - `python3 scripts/gg-mcp-health.py` -> `problems: 0`.
 - A probe minden ágensre ugyanannyi toolt ad, mint átállás előtt.
 - A kanári a saját sessionjéből visszaigazolta az e-mail címét és a tool-számát.
