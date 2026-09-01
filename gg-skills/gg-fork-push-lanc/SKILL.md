@@ -681,6 +681,24 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   3. másolat: soha.
   *„A legrosszabb fajta másolat az, aminek a forrása ott van a szemem előtt minden
   indulásnál, és mégis a régi példányt olvasnám vissza."*
+  🔍 **És a „ne másold, mutass rá" NEM rövidítés, hanem SZŰRÉS** (brokermarcsi
+  mérése, három emléken: 6623 -> 2707, de 1805 -> **1946** és 557 -> **924** --
+  kettő MEGNŐTT). A másolat kimegy, és a helyén megjelenik az, ami eddig nem fért
+  oda vagy elveszett a zajban: az egyik bejegyzésénél négy olyan tény, ami sehol
+  nem volt leírva.
+  📌 **A másolat KÉT külön módon romlik el, és a másodikat sosem vesszük észre:**
+  - **AVUL** -- a forrás változik alatta. Ezt észrevesszük, mert ellentmond valaminek.
+  - **LEMARAD** -- a forrás BŐVÜL, a másolat nem. **Ezt soha**, mert a másolat
+    önmagában konzisztens marad, csak kevesebbet tud, mint ami elérhető lenne.
+    *(Egy 557 karakteres másolat helyére 924 karakteres mutató került, mert a skill
+    közben túlnőtte az emléket -- volt benne egy ellenőrzési tipp, ami az emlékben
+    SOSEM volt benne. A másolat nem csak avult: mindvégig SZEGÉNYEBB volt.)*
+  **Ez a csendesebb fele, és valószínűleg a gyakoribb.**
+  ✅ **A tiszta duplikátumot se TÖRÖLD, hanem mutatósítsd:** a memória-keresés így
+  is megtalálja a témát és a skillhez vezet; egy törölt bejegyzés helyén viszont
+  nincs, ami mutasson. **A mutató nem maradék, hanem ÚTJELZŐ** -- pont annak, aki
+  nem tudja, hogy létezik skill róla.
+
   ⚠️ **KIVÉTEL, és ez nem lazítás: a SZEMÉLYES PÉLDÁNY maradjon.** Ha a bejegyzés
   arról szól, hogy KONKRÉTAN NEKED mi van a kezedben és mit nem használsz belőle
   (`gg3_write_apply` megvan, a szereped mégis tiltja), azt hagyd bent -- **az
