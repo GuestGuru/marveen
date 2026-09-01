@@ -127,6 +127,23 @@ only does the judgment + notification. Zero scheduler/runner changes. See
   A `PUT` törzse `{content, category|tier, agent_id, keywords}`, válasza `{"ok":true}`;
   hiányzó ID-re 404 + `{"error":"Memory not found"}` -- tehát itt is a HTTP-kódot nézd,
   ne a curl exit kódját.
+- 🔴 **A `PUT` és a `DELETE` 2026-09-01 óta KÖTELEZŐEN kéri, hogy mondd ki a saját
+  ágens-azonosítódat, különben 400.** `PUT`: `"owner": "<sajat agens id>"` a törzsben.
+  `DELETE`: `?owner=<sajat agens id>` a query stringben. Ha tudatosan MÁS ágens sorát
+  írod vagy törlöd, az `any_owner` (`true`, illetve `?any_owner=1`) mondja ki hangosan.
+  Ez **elgépelés-védelem, NEM jogosultság**: a flotta egyetlen dashboard-tokent oszt,
+  a szerver nem tudja megkülönböztetni a hívókat -- az `owner` csak azt akadályozza
+  meg, hogy egy elvétett ID más memóriáját írja át. Nem opcionális, szándékosan: aki
+  elgépeli az ID-t, ugyanaz felejtené el az opcionális mezőt.
+  Az `owner` KÜLÖNBÖZIK az `agent_id`-tól: az `agent_id` ÁTSOROLJA a sort egy másik
+  ágenshez, az `owner` csak ellenőriz. Nem egyező `owner`-nél 404 jön, nem 403.
+  ```bash
+  curl -s -w "\nHTTP:%{http_code}\n" -X DELETE -H "Authorization: Bearer $T" \
+    "http://localhost:3420/api/memories/516?owner=marveen"
+  ```
+  Mérve 2026-09-01 23:10, a bevezetés napján: az `owner` nélküli `DELETE` a saját
+  szerzője első éles törlésén fogott meg -- a 400 törzse megmondja, mi hiányzik,
+  tehát a hibaüzenetet OLVASD el, ne a token vagy az ID körül keresd a bajt.
 - 🔴 **Írás-végpontot SOHA ne „próbálj ki" dummy törzzsel élő rekordon. HÁROMSZOR
   fordult elő, és mindháromszor le volt írva előre.** 2026-08-27: üres `PUT` egy
   MÁSIK ágens éles ütemezett feladatán, hogy „létezik-e a végpont" -- a
