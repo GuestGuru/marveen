@@ -48,6 +48,8 @@ import { getEffectiveSettingValue } from '../settings-store.js'
 import { loadProfileTemplate } from './profiles.js'
 import { resolveAgentSecurityProfile } from './agent-team.js'
 import { writeAgentSettingsFromProfile, ensureFleetRosterSection, ensureAutonomySection } from './agent-scaffold.js'
+// GG fork: fleet-wide memory rules as a generated CLAUDE.md block.
+import { ensureMemoryRulesSection } from '../gg/memory-rules-section.js'
 import { schedulePluginUnlockAfterRespawn } from './channel-plugin-unlock.js'
 import { getSecret } from './vault.js'
 import { resolveOpenRouterModel } from './openrouter-models.js'
@@ -1122,6 +1124,10 @@ export function startAgentProcess(name: string, opts: { fresh?: boolean } = {}):
     writeAgentSettingsFromProfile(name, profile)
     ensureFleetRosterSection(name)
     ensureAutonomySection(name)
+    // GG fork 2026-09-01: the fleet's memory-hygiene rules belong where the
+    // memories are written, not only in the main agent's CLAUDE.md. See
+    // src/gg/memory-rules-section.ts for why.
+    ensureMemoryRulesSection(agentDir(name), atomicWriteFileSync)
     // A sub-agent must load ONLY its own channel plugin. The user-scope
     // enabledPlugins would otherwise make EVERY sub-agent spawn a telegram
     // (and slack/discord) poller that falls back to the main agent's bot
