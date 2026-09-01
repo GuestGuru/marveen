@@ -671,6 +671,20 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   részleteket, és a hivatkozást hagyta ott. **Két helyen ugyanaz: a másolat avul
   el először**, és a mai (c)/(f) hibaformák pont ebből élnek. Az emlékben csak az
   maradjon, ami SAJÁT: az állapot és a saját eljárásod.
+  🎯 **A mutató CÉLJA viszont ritkán a skill** (marlenka élesítése, ugyanaznap,
+  három emléken mérve: 9097 -> 3547 karakter). **A sorrend:**
+  1. **a generált `CLAUDE.md`-blokk**, ha a szabály ott áll -- azt MINDEN
+     indulásnál betöltöd, a skillt csak akkor, ha eszedbe jut, hogy van; és a
+     blokk a markerek között MAGÁTÓL frissül, tehát a mutató célja is
+     karbantartott, nem csak a mutató;
+  2. a **skill**, ha a tudás nincs a blokkban;
+  3. másolat: soha.
+  *„A legrosszabb fajta másolat az, aminek a forrása ott van a szemem előtt minden
+  indulásnál, és mégis a régi példányt olvasnám vissza."*
+  ⚠️ **KIVÉTEL, és ez nem lazítás: a SZEMÉLYES PÉLDÁNY maradjon.** Ha a bejegyzés
+  arról szól, hogy KONKRÉTAN NEKED mi van a kezedben és mit nem használsz belőle
+  (`gg3_write_apply` megvan, a szereped mégis tiltja), azt hagyd bent -- **az
+  ÜTKÖZÉS a lényeg, és az az általános szabályból nem derül ki.**
 
   ✅ **A megelőzés olcsóbb, mint a felderítés: ha a példában PLACEHOLDER áll, a
   hatókör-kérdés fel sem merül** (bubi, 2026-09-01). **A beégetés akkor csábító,
