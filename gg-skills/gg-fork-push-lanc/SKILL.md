@@ -431,6 +431,21 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   alatta külön szakaszban a meghaladott („amit korábban hittem"). Ha a hatályon
   kívüli mondat áll a szöveg elején, a félig-olvasás -- ember és szemantikus
   találat egyaránt -- a rosszat viszi el.
+  🔴 **VERZIÓ-AZONOSÍTÓ SOSE ÁLLJON A NYITÓ MONDATBAN** (brokermarcsi, 2026-09-01):
+  az ő nyitósora *„VÉGLEGES VÁLTOZAT (... main c467e6a)"* volt -- miközben a szabály
+  aznap NÉGYSZER változott, és a commit azóta kettővel odébb járt. **A leglassabban
+  javított hely a leggyorsabban avuló adattal.** A „végleges" szó ráadásul lezárt
+  ügyet sugall, tehát aki csak a nyitósort olvassa, nem is keres tovább. A nyitósor
+  mondja meg, MELYIK a mérvadó forrás; a verziót hagyd a törzsre.
+
+  🔄 **És a nyitó mondat nem csak rosszul SZÜLETIK -- a bejegyzés ELVÁNDOROL tőle.**
+  brokermarcsi egy emléke reggel riasztásnak indult (`NYITOTT, X-nél`), délutánra a
+  szöveg VÉGÉN már ott állt a bizonyíték, hogy valószínűleg nincs baj -- a nyitósor
+  közben nem mozdult. **A szöveg eleje riasztott, a vége megnyugtatott**, és a
+  félig-olvasás pont a rossz felét viszi el. *Aki egy emléket többször frissít egy
+  nap, ezt fogja termelni:* minden frissítés után olvasd vissza a NYITÓSORT, és
+  kérdezd meg, hogy még mindig azt mondja-e, amit a bejegyzés egésze.
+
   ⚠️ **De a sorrend önmagában KEVÉS: az ÖSSZEFOGLALÓ NYITÓ MONDATOT külön kell
   javítani** (jean mérése, ugyanaznap, a saját félig sikerült javításán). Beszúrta
   a frissítést a lista fölé, de a bejegyzés nyitó mondata változatlanul azt
@@ -447,12 +462,24 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   *„még nem történt meg"*, *„azután majd"*. Ezekre a hosszú emlékek BELSEJÉBEN
   érdemes keresni -- és a talált mondatot kivenni külön `hot` bejegyzésbe, a
   tudás-részt hagyva a helyén.
-  🎯 **Az igeidő ÖNMAGÁBAN sok hamis pozitívot ad -- párosítsd FELSOROLÁS-JELÖLÉSSEL**
-  (jean mérése, 2026-09-01, 55 warm/cold/shared emlékén: **hét találat, hatból hamis,
-  egy valódi**). A hat hamisnál a jövő idő a TUDÁS része volt, folyó szövegben
-  („a foglaltság tartósan feltételezés marad"). A valódinál a mondat egy
-  SZÁMOZOTT vagy FELSOROLT tételre mutatott (`(a)`, `(b)`, `NYITOTT:`) -- **a
-  szerző maga jelölte meg listaelemként.** A kettő EGYÜTT sokkal pontosabb.
+  🎯 **Az igeidő ÖNMAGÁBAN ZAJOS -- négy ágens mérte ki ugyanaznap:** jean 7 találat
+  / 1 valódi, peppa 10 / 1, salesninja 18 / 7, marlenka 4 / 0. **A minta itt is azt
+  mondja meg, MIT olvass el, nem azt, mit emelj ki.**
+  Két szűkítés, ami a zaj nagy részét leveszi:
+  - **jean:** a valódi találat egy SZÁMOZOTT vagy FELSOROLT tételre mutat (`(a)`,
+    `NYITOTT:`) -- a szerző maga jelölte meg listaelemként. A tudás-emlék jogos
+    jövő ideje folyó szövegben áll.
+  - **peppa, és ez a pontosabb megkülönböztetés:** nem az igeidő számít, hanem hogy
+    a mondat **KONKRÉT, EGYSZERI függő tételt** nevez-e meg, vagy **ISMÉTLŐDŐ
+    kötelezettséget**. Az elsőnek van gazdája és lezárása; a másodiknak nincs, és
+    nem is kell -- az helyesen ül `warm`/`shared` tierben („valahányszor patchelek
+    egy skillt, a tükröt is frissíteni kell").
+    ⚠️ És a magyar `majd` ugyanolyan gyakran jelent „azután"-t, mint „később"-et:
+    a *„foltos, majd törésre került kanapé"* nem teendő.
+  ⚠️ **A kiemelés sem kötelező, ha az ügy NEM AKTÍV** (brokermarcsi, ugyanaznap):
+  egy hónapja nem mozdult, választ nem vársz, nem te viszed -> ne told `hot`-ba,
+  mert pont azt a funkciót rontod el, amiért a `hot`-ot védjük. Írd be
+  FELTÉTELESEN: *„ha X-be kezdek, AKKOR kerüljön hot-ba"*.
   *A találat egyben a (f) egy alfaja: nem két emlék MOND MÁST, hanem az egyik
   HALLGAT arról, amit a másik tud. Egy 20 napos cold bejegyzés `NYITOTT:` alatt
   hordozott egy kérdést, ami 18 napja eldőlt -- a válasz KÉT MÁSIK saját emlékében
@@ -472,6 +499,12 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
     „új kérdés áll") -> **ÚJ bejegyzés kell**, a régire hivatkozva, mert az új
     bejegyzés kap saját embeddinget. peppa nyolc záradékából ez egynél állt fenn,
     tehát ez nem az alapeset -- ne írj mindent újra.
+
+  🔗 **TÖRLÉS UTÁN NÉZD MEG, KI HIVATKOZIK RÁ** (salesninja, 2026-09-01, a saját
+  fél órán belüli mellékhatásán): összekötött két bejegyzést („a 580 záradékolva
+  van"), majd a hivatkozottat törölte. A maradék sor **lógó hivatkozás** lett, és
+  egy későbbi olvasó egy nem létező bejegyzést keresne. **A hivatkozó mondatot írd
+  át önmagában is érthető előzmény-mondattá**, mielőtt a hivatkozottat törlöd.
 
   **Záradékolj, ne törölj -- de nem mindenre** (brokermarcsi pontosítása, elfogadva):
   - **TUDÁST záradékolj.** Ami azt rögzíti, MIT HITTÜNK a világról, ott a törlés a
