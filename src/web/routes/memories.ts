@@ -238,21 +238,42 @@ Respond ONLY with JSON, nothing else:
   if (memUpdateMatch && method === 'PUT') {
     const id = parseInt(memUpdateMatch[1], 10)
     const body = await readBody(req)
-    const { content, category, tier, agent_id, keywords } = JSON.parse(body.toString()) as { content: string; category?: string; tier?: string; agent_id?: string; keywords?: string }
-    if (updateMemory(id, content, tier || category, agent_id, keywords)) { json(res, { ok: true }); return true }
-    json(res, { error: 'Memory not found' }, 404)
+    // GG fork 2026-09-01: `owner` is a typo guard, NOT authorization -- the fleet
+    // shares one dashboard token, so the server cannot tell callers apart. It is
+    // distinct from `agent_id`, which REASSIGNS the row to another agent.
+    // Stating an owner is REQUIRED, deliberately: the agent that mistypes an id is
+    // the same one that would forget an optional field, so an opt-in guard would
+    // miss the case it exists for. Writing another agent's row stays possible, but
+    // has to be said out loud with `any_owner: true`.
+    const { content, category, tier, agent_id, keywords, owner, any_owner } = JSON.parse(body.toString()) as { content: string; category?: string; tier?: string; agent_id?: string; keywords?: string; owner?: string; any_owner?: boolean }
+    if (!owner && !any_owner) {
+      json(res, { error: 'Pass "owner": "<your agent id>" so a mistyped id cannot rewrite another agent\'s memory, or "any_owner": true if you mean to write a row you do not own.' }, 400)
+      return true
+    }
+    if (updateMemory(id, content, tier || category, agent_id, keywords, owner)) { json(res, { ok: true }); return true }
+    json(res, { error: owner ? `Memory ${id} not found, or not owned by "${owner}"` : 'Memory not found' }, 404)
     return true
   }
 
   if (memUpdateMatch && method === 'DELETE') {
     const id = parseInt(memUpdateMatch[1], 10)
     const db2 = getDb()
-    const changes = db2.prepare('DELETE FROM memories WHERE id = ?').run(id).changes
+    // GG fork 2026-09-01: same typo guard as the PUT above, and required for the
+    // same reason -- `?owner=<agent>` refuses to delete a row someone else owns,
+    // `?any_owner=1` says you meant it.
+    const owner = ctx.url.searchParams.get('owner')
+    if (!owner && ctx.url.searchParams.get('any_owner') !== '1') {
+      json(res, { error: 'Pass ?owner=<your agent id> so a mistyped id cannot delete another agent\'s memory, or ?any_owner=1 if you mean to delete a row you do not own.' }, 400)
+      return true
+    }
+    const changes = owner
+      ? db2.prepare('DELETE FROM memories WHERE id = ? AND agent_id = ?').run(id, owner).changes
+      : db2.prepare('DELETE FROM memories WHERE id = ?').run(id).changes
     // Invalidate the in-process TTL cache so a deleted memory does not
     // resurface in the agent-filtered list for the cache lifetime.
     if (changes > 0) clearMemoryCache()
     if (changes > 0) { json(res, { ok: true }); return true }
-    json(res, { error: 'Memory not found' }, 404)
+    json(res, { error: owner ? `Memory ${id} not found, or not owned by "${owner}"` : 'Memory not found' }, 404)
     return true
   }
 

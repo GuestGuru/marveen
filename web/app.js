@@ -6708,7 +6708,10 @@ document.getElementById('saveMemBtn').addEventListener('click', async () => {
       await fetch(`/api/memories/${editId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, tier, agent_id: agentId, keywords }),
+        // GG fork 2026-09-01: the API requires the caller to state whose row it
+        // is. Here a human clicked a rendered row and may be reassigning it, so
+        // the honest answer is "yes, any owner", not a guessed owner id.
+        body: JSON.stringify({ content, tier, agent_id: agentId, keywords, any_owner: true }),
       })
       showToast(t('memories.toast.updated'))
     } else {
@@ -6843,7 +6846,8 @@ function renderMemories(memories) {
       e.stopPropagation()
       if (!confirm('Biztosan torlod ezt az emleket?')) return
       try {
-        await fetch(`/api/memories/${mem.id}`, { method: 'DELETE' })
+        // GG fork 2026-09-01: see the PUT above -- explicit, human-confirmed delete.
+        await fetch(`/api/memories/${mem.id}?any_owner=1`, { method: 'DELETE' })
         showToast(t('memories.toast.deleted'))
         loadMemories()
         loadMemStats()
