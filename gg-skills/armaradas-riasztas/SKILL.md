@@ -18,9 +18,11 @@ bázisár utolsó állítása, becsült elmaradt bevétel.
 A gg-mcp kulcsokat a proxy adja a gyerek-processz env-jébe, a beszélgetésbe soha:
 
 ```bash
-GG_MCP_TOKEN_FILE=/home/gg/gg-mcp/tokens/marlenka.token \
-GG_MCP_AGENT_LABEL=marveen/marlenka \
-GG_MCP_UPSTREAM_URL=http://127.0.0.1:3450 \
+# A SAJAT identitasodat add meg -- mindketto a sajat .mcp.json-odban all.
+# Idegen token-fajlt hasznalni JOGCSERE, nem nevcsere (lasd CLAUDE.md).
+GG_MCP_TOKEN_FILE=<a sajat .mcp.json-odbol> \
+GG_MCP_AGENT_LABEL=<a sajat .mcp.json-odbol> \
+GG_MCP_UPSTREAM_URL=<a sajat .mcp.json-odbol, ha proxy-modban futsz> \
 gg-mcp-proxy exec --alias bpdb --env-var CONN -- sh -c "psql \"\$CONN\" -A -F'|' -f QUERY.sql"
 ```
 
