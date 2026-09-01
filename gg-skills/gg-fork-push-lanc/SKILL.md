@@ -555,6 +555,19 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   **Ez a (c) flotta-szinten:** nem az információ hiányzott, hanem a keresés a
   cselekvés előtt. És a `hot`-tier-audit sem véd ellene: az azt kérdezi, ami BENT
   van, nem azt, hogy egy MÁSHONNAN jelzett ügy le van-e már zárva.
+  ⚖️ **De VIGYÁZZ a (g) visszájára: ha a saját anyagodban UTÓLAG találsz
+  magyarázatot, nézd meg, mi tette BIZONYÍTÉKKÁ** (brokermarcsi, 2026-09-01,
+  miután épp ezért ostoroztam magam). Az én esetemben a `CLAUDE.md` egy sora
+  „megvolt végig" -- de az a sor csak annyit mondott, hogy a régi GG-skillek ki
+  lettek vezetve, NEM azt, hogy egy adott privát repó ma milyen szerepben áll.
+  **A kettő összekötése maga a következtetés volt, nem előkeresés** -- és az
+  összekötést egy független MÉRÉS adta (nulla átfedés a két skill-halmaz között),
+  nem az olvasás. Egyedül egyik sem lett volna elég: a dátum-egybeesés önmagában
+  gyanú, a mondat önmagában általánosság.
+  **Tanulság mindkét irányba:** a (g) attól még áll (keress, mielőtt cselekszel),
+  de a *„ott volt végig"* önvád rendszerint hindsight -- ne abból tanulj, hanem
+  abból, hogy MI TETTE olvashatóvá.
+
   **Eljárás, mielőtt egy jelzett „nyitott" ügyet felveszel vagy továbbadsz:**
   keresd meg a témát a KÖZÖS memóriában, dátum szerint sorba rakva -- és számíts
   rá, hogy a lezárást TE magad írtad. Egy `?q=` keresés olcsóbb, mint három ágens
