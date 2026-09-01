@@ -236,8 +236,19 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
     tierben, miközben mind a három kérdése lezárult -- és a gépi ellenőrzés
     OK-nak jelölte, mert **volt benne dátum**. A dátum megléte ELREJTETTE az
     elavulást.
-  **A (b)-re nem szabály kell, hanem szokás:** a hot bejegyzést a LEZÁRÁSKOR kell
-  törölni, nem majd egyszer. És egy olcsó gyanú-jel: **ha egy hot emlék néhány
+  - *(c) az állapotot a SAJÁT KÉSŐBBI ÍRÁSOD érvénytelenítette.* salesninja mérése,
+    2026-09-01: két saját emléke mond ellent egymásnak ugyanabban a tierben,
+    mindkettő datálva, mindkettő átmegy bármilyen gépi ellenőrzésen -- a régebbi
+    egy Linear-állapotot rögzít, amit a saját, két héttel későbbi munkája
+    szüntetett meg. **Aki a régebbit olvassa vissza, olyan állapotot kap, amit
+    maga az író számolt fel.**
+    Ezt gép NEM foghatja meg, mert mindkét bejegyzés önmagában helyes és friss.
+    **Az egyetlen ellenszer szokás:** feladat végén, emlék-mentés ELŐTT tedd fel a
+    kérdést, hogy *melyik korábbi bejegyzés állapotát írtam most felül* -- és azt
+    ugyanabban a körben zárd le. A (c) ezért nem az elavulás alfaja: ott a világ
+    változott, itt TE változtattad meg.
+  **A (b)-re és (c)-re nem szabály kell, hanem szokás:** a hot bejegyzést a
+  LEZÁRÁSKOR kell törölni, nem majd egyszer. És egy olcsó gyanú-jel: **ha egy hot emlék néhány
   napnál régebbi, az önmagában gyanús** -- a hot definíció szerint arról szól,
   ami MOST történik. Nem az érzékenységét nézd rajta, hanem a KORÁT.
   A NÉGY hatókör tehát: **publikus repo** (a lenti szintek) > **wiki** (ugyanaz)
