@@ -104,7 +104,7 @@ GUIDE = {
                 "Alapértelmezésben nincs ikon: a tömör accent négyzet (2,2 x 2,2 mm) a bullet.",
                 "Ha a designer ikont akar, vonalas stílus, 1,5 pt vastagság, brand szín, 5 mm-es doboz.",
                 "Javasolt párosítás: számla - dokumentum, folyamat - nyíl-lánc, cím - térkép-pin, "
-                "takarítás - permetező, reggeli - csésze, szerződés - pecsét, lakcímkártya - kártya, "
+                "takarítás - permetező, reggeli - csésze, szerződés - pecsét, "
                 "bútorozott - kanapé, hosszabbítás - naptár, kapcsolattartó - fejhallgató, "
                 "nagy apartman - épület, hálószoba - ágy, menetrend - csapó, elszámolás - számológép.",
                 "Ikon és szöveg között 3 mm. Ikon soha nem színes, csak brand vagy accent.",
@@ -173,7 +173,7 @@ GUIDE = {
                 "By default there are no icons: the solid accent square (2.2 x 2.2 mm) is the bullet.",
                 "If the designer wants icons: line style, 1.5 pt stroke, brand colour, 5 mm box.",
                 "Suggested pairings: invoice - document, process - arrow chain, location - map pin, "
-                "cleaning - spray bottle, breakfast - cup, contract - stamp, address card - ID card, "
+                "cleaning - spray bottle, breakfast - cup, contract - stamp, "
                 "furnished - sofa, extension - calendar, account manager - headset, "
                 "large apartment - building, bedroom - bed, schedule - clapperboard, billing - calculator.",
                 "3 mm between icon and text. Icons are never multicolour, only brand or accent.",
