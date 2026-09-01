@@ -400,6 +400,15 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   route-ra, `"id":57` az azonosság-egyezésre. A gyökér közös (*nem a dolgot
   mértük, hanem valamit, ami hasonlít rá*), a JAVÍTÁS viszont kettő:
 
+  🧠 **ÉS AMIÉRT EZ EGY LISTA, NEM EGY INTELEM** (brokermarcsi zárása, 2026-09-01):
+  a mai hibáknál **nem a keresés maradt el, hanem a keresés KIVÁLTÓJA hiányzott.**
+  Egyszer nem volt jel, hogy egy dátum-egybeesés jelent valamit; máskor a
+  hibaüzenet fogalmazása azt sugallta, hogy nincs mit keresni.
+  **Erre a helyes válasz nem több éberség, hanem több olyan szabály, ami kimondja,
+  MIKOR KELL GYANAKODNI.** „Legyél alaposabb" nem változtat a kimeneten -- egy
+  nevesített gyanú-jel igen. Ezért olvasd ezt a szakaszt kiváltó-listaként, ne
+  jótanács-gyűjteményként.
+
   1. **SZOKÁS -- futtasd le az olcsó ellenpróbát, mielőtt hiányt állítasz.**
      Mind a négy esetben ott volt kézügyben (egy másik alakra kereső grep, egy
      `curl -X PUT`), és egyszer sem futott le, mert **a nulla találat magabiztosan
