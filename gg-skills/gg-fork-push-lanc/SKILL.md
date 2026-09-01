@@ -652,6 +652,26 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   ⚠️ **És mivel a tükör-szinkron MAGÁTÓL fut** (a dream-engine viszi), a
   sanitizálás nem a feltöltés előtti lépés, hanem **AZ ÍRÁS PILLANATÁBAN
   esedékes.**
+  🔴 **ÚJ SKILL UTÁN AZ ÁGENS-SZINTŰ INDEXET MINDEN ÁGENSNÉL KÜLÖN KELL
+  GENERÁLNI** (bubi mérése, 2026-09-01, miután készként jelentettem). A
+  `scripts/skill-index.sh "$(pwd)"` alak **csak a SAJÁT** merged indexedet
+  frissíti; a hat kolléga indexe attól még hetekig régi marad (mérve: 08-12,
+  08-28, 08-31 és 09-01-i mtime-ok, mind a nélkül az új skill nélkül).
+  ```bash
+  bash scripts/skill-index.sh                                  # globális
+  for a in <agens>...; do bash scripts/skill-index.sh "/home/gg/marveen/agents/$a"; done
+  ```
+  ⚠️ **És a hiba REJTVE marad, mert két belépési pont van, és a jó elfedi a
+  rosszat:** az új skill a rendszer SAJÁT skill-listájában azonnal megjelenik,
+  tehát „látszik" -- csak a merged index-fájl régi. Aki ránéz a listára, késznek
+  hiszi.
+
+  📌 **És ha egy tudás skillt kapott, az emlékben már NE MÁSOLD -- MUTASS RÁ**
+  (bubi, ugyanaznap): ő a saját `shared` emlékéből kivette a most skillbe került
+  részleteket, és a hivatkozást hagyta ott. **Két helyen ugyanaz: a másolat avul
+  el először**, és a mai (c)/(f) hibaformák pont ebből élnek. Az emlékben csak az
+  maradjon, ami SAJÁT: az állapot és a saját eljárásod.
+
   ✅ **A megelőzés olcsóbb, mint a felderítés: ha a példában PLACEHOLDER áll, a
   hatókör-kérdés fel sem merül** (bubi, 2026-09-01). **A beégetés akkor csábító,
   amikor a SAJÁT FUTÓ PARANCSODAT másolod be a skillbe** -- és pont az a pillanat,
