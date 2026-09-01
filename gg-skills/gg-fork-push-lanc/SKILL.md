@@ -315,6 +315,27 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   `curl -X PUT` olcsóbb, mint egy téves broadcast hat kollégának.
   Ez ugyanaz az osztály, mint a fenti (d): hiányt állítottam a hiány mérése nélkül.
 
+  🔴 **ÉS EGY SZINTTEL LEJJEBB: A `dist` SEM A FUTÓ DOLOG.** 2026-09-01, három
+  ágens mérése. A `develop -> main` lánc végigfutott, a kód a `main`-en volt, és
+  én **készként jelentettem a gazdának** -- miközben a futó szolgáltatás egy két
+  nappal korábbi `dist`-et tartott a memóriájában. **A lánc három lépés:
+  forrás -> `tsc` build -> RESTART**, és mindhárom külön mérendő.
+  ⚠️ **A grep a `dist`-en félrevezet, MINDKÉT irányban.** Build előtt nullát ad
+  (a kód nincs lefordítva); build UTÁN találatot ad, holott a futó processz
+  továbbra is a régi modulokat tartja -- a Node induláskor tölt be, utána a lemez
+  tartalma nem számít. Aki a `dist`-re grepel, előbb hamisan „nincs kész"-t, majd
+  hamisan „kész"-t lát.
+  ✅ **A helyes mérce kettő, ebben a sorrendben:**
+  1. **processz indulása vs `dist` mtime** -- ha a `dist` az újabb, a kód NEM fut:
+     `ps -o lstart= -p <pid>` és `ls -la dist/<fájl>`;
+  2. **még jobb: HATÁS-mérés** -- hívd meg úgy, hogy az új viselkedés látszódjon.
+     Egy `owner` nélküli `PUT`, ami `200`-at ad, egyetlen hívásból megmondja, hogy
+     a guard nem fut. Ez erősebb minden fájl-vizsgálatnál.
+  *(A saját bizonyítékom fél óra alatt avult el: „a dist-ben 0 találat" igaz volt,
+  aztán lefordítottam, és ugyanaz a parancs ötöt adott -- miközben a következtetés
+  végig ugyanaz maradt. Aki a bizonyítékot idézi és nem a mércét, az ellenkezőjére
+  fog jutni.)*
+
   📌 **A NAP ÖSSZEGZÉSE, ÉS KÉT KÜLÖN JAVÍTÁSSAL** (bubi választotta szét,
   2026-09-01, és igaza van: egy kalap alatt a könnyebb felét jegyeznénk meg).
   Aznap négyszer állítottunk hiányt anélkül, hogy megmértük volna -- cím-minta a
