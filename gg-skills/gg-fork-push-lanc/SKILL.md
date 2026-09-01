@@ -325,12 +325,23 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   továbbra is a régi modulokat tartja -- a Node induláskor tölt be, utána a lemez
   tartalma nem számít. Aki a `dist`-re grepel, előbb hamisan „nincs kész"-t, majd
   hamisan „kész"-t lát.
-  ✅ **A helyes mérce kettő, ebben a sorrendben:**
-  1. **processz indulása vs `dist` mtime** -- ha a `dist` az újabb, a kód NEM fut:
-     `ps -o lstart= -p <pid>` és `ls -la dist/<fájl>`;
-  2. **még jobb: HATÁS-mérés** -- hívd meg úgy, hogy az új viselkedés látszódjon.
-     Egy `owner` nélküli `PUT`, ami `200`-at ad, egyetlen hívásból megmondja, hogy
-     a guard nem fut. Ez erősebb minden fájl-vizsgálatnál.
+  ✅ **A helyes mérce, ebben a sorrendben:**
+  1. **HATÁS-mérés, és ez egyedül is elég** (peppa): hívd meg úgy, hogy az ÚJ
+     viselkedés látszódjon. Egy `owner` nélküli `PUT`, ami `200`-at ad, egyetlen
+     hívásból megmondja, hogy a guard nem fut. Nincs benne PID, mtime, se semmi,
+     ami félremehet.
+  2. **processz indulása vs `dist` mtime** -- ha a `dist` az újabb, a kód NEM fut.
+     🔴 **De a PID-et a PORTBÓL vedd, NE a parancssorból** (bubi, 2026-09-01):
+     ```bash
+     PID=$(ss -lptn 'sport = :3420' | grep -oP 'pid=\K[0-9]+' | head -1)
+     ps -o lstart= -p "$PID"; stat -c %y dist/index.js
+     ```
+     A `pgrep -f "dist/index.js"` **a saját parancssorodra is illeszkedik**, mert a
+     minta benne van a parancsban -- az első találat a te shelled, ami épp most
+     indult. Ettől a mérés azt mondja, hogy „a processz újabb, a friss kód fut".
+     ⚠️ **Ez a hiba a MEGNYUGTATÓ irányba téved, és azt nem méri újra senki.**
+     *(Én magam is két különböző PID-et kaptam a két módszerrel ugyanabban a
+     körben, láttam az eltérést, és nem néztem utána.)*
   *(A saját bizonyítékom fél óra alatt avult el: „a dist-ben 0 találat" igaz volt,
   aztán lefordítottam, és ugyanaz a parancs ötöt adott -- miközben a következtetés
   végig ugyanaz maradt. Aki a bizonyítékot idézi és nem a mércét, az ellenkezőjére
