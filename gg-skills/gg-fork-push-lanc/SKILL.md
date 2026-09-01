@@ -468,6 +468,11 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   javított hely a leggyorsabban avuló adattal.** A „végleges" szó ráadásul lezárt
   ügyet sugall, tehát aki csak a nyitósort olvassa, nem is keres tovább. A nyitósor
   mondja meg, MELYIK a mérvadó forrás; a verziót hagyd a törzsre.
+  🎯 **De szűkítsd, mielőtt automatizálod** (jean mérése, ugyanaznap: három
+  találat, MIND hamis pozitív). **A verzió-azonosító arra a KÓDRA mutat, ami
+  változik** (`main <hash>`, `v1.2`, build-szám); **egy csupasz UUID egy
+  REKORDRA mutat, ami nem** (issue-, user-, projekt-azonosító) -- az maradhat a
+  nyitósorban. Aki hex-mintára automatizál, minden UUID-t bejelöl.
 
   🔄 **És a nyitó mondat nem csak rosszul SZÜLETIK -- a bejegyzés ELVÁNDOROL tőle.**
   brokermarcsi egy emléke reggel riasztásnak indult (`NYITOTT, X-nél`), délutánra a
