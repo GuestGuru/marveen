@@ -431,6 +431,22 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   alatta külön szakaszban a meghaladott („amit korábban hittem"). Ha a hatályon
   kívüli mondat áll a szöveg elején, a félig-olvasás -- ember és szemantikus
   találat egyaránt -- a rosszat viszi el.
+  ⚠️ **De a sorrend önmagában KEVÉS: az ÖSSZEFOGLALÓ NYITÓ MONDATOT külön kell
+  javítani** (jean mérése, ugyanaznap, a saját félig sikerült javításán). Beszúrta
+  a frissítést a lista fölé, de a bejegyzés nyitó mondata változatlanul azt
+  állította, hogy „három tétel vár X-re". **A nyitó mondat a szöveg legerősebb
+  állítása, és egy alatta álló záradék nem írja felül.** A félig-olvasás nem a
+  végét hagyja ki, hanem az ELEJÉT viszi el.
+
+  🔍 **A `warm`-ba bújt munkaállapot ritkán önálló bejegyzés -- EGY MONDAT egy
+  hosszú tudás-emlék belsejében** (bubi mérése, 2026-09-01, 14 warm+cold emlékén,
+  két találattal: egy 19 napja hordozott nyitott teendő egy igényleírás közepén,
+  és egy hatályon kívüli cselekvési előírás). A kor-alapú szűrés ezt SOSEM fogja
+  meg, mert a bejegyzés többi része valóban tartós.
+  **A jel nem a bejegyzés kora, hanem a MONDAT IGEIDEJE:** *„X frissíti"*,
+  *„még nem történt meg"*, *„azután majd"*. Ezekre a hosszú emlékek BELSEJÉBEN
+  érdemes keresni -- és a talált mondatot kivenni külön `hot` bejegyzésbe, a
+  tudás-részt hagyva a helyén.
 
   📐 **Mikor NEM elég a záradék** (peppa és marlenka egybehangzó mérése, 2026-09-01).
   A vízválasztó nem a szállítás, hanem hogy a régi JELENTÉS mire venné rá a
