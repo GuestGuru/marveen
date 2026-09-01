@@ -447,6 +447,17 @@ Ezt **írd bele a PR leírásába és jelentsd**, ne csendben menjen.
   *„még nem történt meg"*, *„azután majd"*. Ezekre a hosszú emlékek BELSEJÉBEN
   érdemes keresni -- és a talált mondatot kivenni külön `hot` bejegyzésbe, a
   tudás-részt hagyva a helyén.
+  🎯 **Az igeidő ÖNMAGÁBAN sok hamis pozitívot ad -- párosítsd FELSOROLÁS-JELÖLÉSSEL**
+  (jean mérése, 2026-09-01, 55 warm/cold/shared emlékén: **hét találat, hatból hamis,
+  egy valódi**). A hat hamisnál a jövő idő a TUDÁS része volt, folyó szövegben
+  („a foglaltság tartósan feltételezés marad"). A valódinál a mondat egy
+  SZÁMOZOTT vagy FELSOROLT tételre mutatott (`(a)`, `(b)`, `NYITOTT:`) -- **a
+  szerző maga jelölte meg listaelemként.** A kettő EGYÜTT sokkal pontosabb.
+  *A találat egyben a (f) egy alfaja: nem két emlék MOND MÁST, hanem az egyik
+  HALLGAT arról, amit a másik tud. Egy 20 napos cold bejegyzés `NYITOTT:` alatt
+  hordozott egy kérdést, ami 18 napja eldőlt -- a válasz KÉT MÁSIK saját emlékében
+  ott állt. Sem a kor (cold), sem a mérési ablak (volt dátum) nem fogta meg.*
+
   ⚠️ **De a HELYÉN maradt mondatot ÍRD ÁT HIVATKOZÁSSÁ** (bubi zárta be a kört,
   2026-09-01, a saját kiemelése után): ha ott hagyod ÁLLÍTÁSKÉNT, két forrásod
   lesz ugyanarra az állapotra, és lezáráskor csak az egyiket fogod törölni -- a
