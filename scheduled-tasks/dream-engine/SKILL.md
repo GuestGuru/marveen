@@ -327,6 +327,22 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
   hamis, mint egy kitalalt idobelyeg -- csak nehezebb eszrevenni, mert munkat
   general, nem hallgatast. Ha a bucket barmelyike hianyt allit, a szekcio mondja
   meg, HOL kerestel.
+- 🔴 **A drift-szamok UPSTREAM-ATVETEL UTAN MEGUGRANAK, es az NEM romlas.**
+  2026-09-02: 20/75 -> **41/450** egyetlen ejszaka alatt. Az ok nem a mi mulasztasunk,
+  hanem a v1.36 atvetellel bejott `827491c chore(seed-tasks): back-port the live fleet's
+  learned rules into the shipped task prompts`: az upstream a SAJAT SZAVAIVAL visszaportolta
+  a flotta tanult szabalyait a szallitott sablonokba, plusz hordozhatosagi kemenyitest tett
+  hozza (`jq` helyett `python3`, `sqlite3` CLI helyett dashboard API, `.env`-bol olvasott
+  port). Egy task sablon-FORRASA is valtozhat kozben: a `kanban-audit` atkerult a
+  `scheduled-tasks/`-bol a `seed-scheduled-tasks/` ala, es egyedul 344 csak-sablon sort adott.
+  **Eljaras atvetel utani elso ejszakan:** eloszor `git log --oneline -3 -- seed-scheduled-tasks/`
+  es a sablon-forras oszlop osszevetese a tegnapival -- ha atvetel tortent, a szam
+  ONMAGABAN semmit nem allit. A mintavetel olcso es dont: ha az elso ~20 csak-sablon sor
+  mind eljaras-alternativa, akkor a tobbi is valoszinuleg az. **De a mintavetel MINTA:**
+  ird le a DREAM.md-ben, hogy a teljes tartalmi atolvasas NEM tortent meg, kulonben
+  holnaputan sajat magad fogod lezartnak hinni.
+  A fontosabbik fele mindig a `csak-elo`: az lenne a MI verziozatlan tudasunk.
+
 - ✅ **A drift-szamok 2026-08-29-en LECSOKKENTEK (24/79 -> 20/75), es ez JAVITAS, nem
   tudasvesztes.** Ket hamis pozitivot szuntettem meg a `scheduled-task-drift.sh`-ban,
   miutan ket ejszakan at „placeholder-artefaktkent" MAGYARAZTAM oket ahelyett, hogy
