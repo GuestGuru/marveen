@@ -55,6 +55,20 @@ tail -30 {{INSTALL_DIR}}/store/morning.log | grep -n "$(date +'%a %b %e')"
   a kétség mindig a küldés felé billen.
 
 ## Buktatók (2026-07-29-i futásból)
+- 🔴 **A `Sources:` blokk NEM része a napindítónak -- a WebSearch nyers kimenete,
+  és a KÁPU-figyelmeztetést is az gyártja.** 2026-09-02: a napindító végére három
+  forrás-link került, és az egyik cikk CÍMÉBEN állt egy em dash -- a kapu ezt
+  helyesen fogta meg (`GONDOLATJEL 1 helyen`), de a gondolatjel nem az én
+  fogalmazásomból jött, hanem egy idézett külső címből. **A javítás nem a kapun
+  van, hanem itt:** az AI-hírek szekció a keresés TARTALMÁT adja vissza, nem a
+  forráslistát. A gazdának a hír kell, nem a link.
+  **Mérve, hogy ne tűnjön általánosnak:** a `Sources:` blokk 27 nap alatt KÉTSZER
+  jelent meg (08-07 és 09-02), tehát nem állandó rész, hanem alkalmi szivárgás a
+  keresés kimenetéből.
+  ⚠️ **És ne a kapun kérj kivételt idézett szövegre:** a kapu nem tudja
+  megkülönböztetni a saját fogalmazást az idézettől, és egy ilyen kivétel pont a
+  valódi eseteket engedné át ("csak idézet volt").
+
 
 - 🔴 **A `chat_id: 0` NEM megy Telegramon.** 2026-08-12-en a `chat_id: "0"`-ra kuldott
   napindito `chat 0 is not allowlisted -- add via /telegram:access` hibaval elszallt.
