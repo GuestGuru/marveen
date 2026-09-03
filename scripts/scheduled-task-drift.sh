@@ -56,8 +56,16 @@ done
 # "{{OWNER_NAME}}nak" -- a zaro szohatar miatt a csere NEM ILLESZKEDETT, es a
 # dream-engine meg a memoria-heartbeat is orokre 1/1 hamis driftet mutatott.
 # A nyito \b marad, hogy ne illeszkedjunk egy hosszabb szo BELSEJEBE.
+#
+# A HATODIK ALAK egy ALIAS, nem kulon ertek (2026-09-03): a node seeder
+# (substituteTemplatePlaceholders) es az update.sh render_seed_template a
+# {{PROJECT_ROOT}}-ot UGYANARRA az utra oldja fel, mint az {{INSTALL_DIR}}-t,
+# es a szallitott sablonok kozul nehany ezt az alakot hasznalja
+# (ledger-live-drain). Normalizalas nelkul az ilyen task OROKRE 1/1 hamis
+# driftet mutat: a ket oldal ugyanazt mondja, csak mas helyorzo-nevvel.
 normalize() {
   sed -E \
+    -e "s#\\{\\{PROJECT_ROOT\\}\\}#{{INSTALL_DIR}}#g" \
     -e "s#$INSTALL_DIR#{{INSTALL_DIR}}#g" \
     -e "s#localhost:$WEB_PORT#localhost:{{WEB_PORT}}#g" \
     -e "s#\\b$OWNER_NAME#{{OWNER_NAME}}#g" \
