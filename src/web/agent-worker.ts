@@ -12,8 +12,11 @@ import {
   sendPromptToSession,
   sessionExistsOnHost,
   hasFleetOauthToken,
+  clearStaleParkedInput,
   FLEET_OAUTH_TOKEN_PATH,
 } from './agent-process.js'
+// GG fork (WORKERPARK903): the parked-input branch of the readiness poll.
+import { decideWorkerParkedHeal } from '../gg/worker-parked-heal.js'
 import { withSessionSendLock } from './session-send-lock.js'
 import { readClaudeCodeOauthJson } from './claude-credentials.js'
 import { detectPaneState } from '../pane-state.js'
@@ -598,9 +601,36 @@ async function ensureWorkerReady(ctx: WorkerCtx): Promise<boolean> {
   const start = Date.now()
   const deadline = start + WORKER_BOOT_TIMEOUT_MS
   let healed = false
+  let parkedCleared = false
   while (Date.now() < deadline) {
     if (await isSessionReadyForPrompt(ctx.session)) return true
-    if (!healed && Date.now() - start > WORKER_SELF_HEAL_GRACE_MS) {
+    const elapsed = Date.now() - start
+    // GG fork (WORKERPARK903): a pane holding UNSENT text reads 'typing' ->
+    // classifyWorkerPane folds that into 'idle' -> shouldSelfHeal() declines,
+    // so the Escape self-heal below never fired for the one failure mode that
+    // actually occurred (measured: zero self-heal log lines against repeated
+    // 'never became ready'). Escape would not help anyway -- it does not empty
+    // the box. Reuse the channel-side cleaner, which is dim-guarded and
+    // stability-confirmed, before falling through to Escape/restart.
+    // Rationale + evidence: src/gg/worker-parked-heal.ts
+    const parkedDecision = decideWorkerParkedHeal({
+      ready: false,
+      paneClass: classifyWorkerPane(capturePane(ctx.session)),
+      elapsedMs: elapsed,
+      graceMs: WORKER_SELF_HEAL_GRACE_MS,
+      alreadyTried: parkedCleared,
+    })
+    if (parkedDecision === 'clear-parked') {
+      parkedCleared = true
+      try {
+        const cleared = await clearStaleParkedInput(ctx.session)
+        logger.warn({ session: ctx.session, cleared }, 'agent-worker: idle-looking pane failed the readiness check -- parked-input clear attempted')
+      } catch (err) {
+        logger.warn({ err, session: ctx.session }, 'agent-worker: parked-input clear failed')
+      }
+      continue
+    }
+    if (!healed && elapsed > WORKER_SELF_HEAL_GRACE_MS) {
       healed = true
       try { selfHealWorkerOnce(ctx) } catch (err) { logger.warn({ err }, 'agent-worker: self-heal pass failed') }
     }
