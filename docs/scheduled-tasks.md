@@ -184,6 +184,39 @@ curl -s -X POST http://localhost:3420/api/schedules \
   }'
 ```
 
+#### Sub-ágensnek szóló feladat: a FŐ-ÁGENS hozza létre, nem ő maga
+
+Egy sub-ágens a saját nevére szóló ütemezést **nem tud** létrehozni: a governance
+hard-gate elutasítja (`Self-pace TILTOTT -- sub-agentkent NEM utemezhetsz sajat
+jovobeli turn-t`). Ez **védelem, nem hiba** -- egy ágens, ami magának ütemez jövőbeli
+turnt, felügyelet nélkül tud munkát generálni magának. A helyes út: a sub-ágens
+inter-agent üzenetben megküldi a kért `name` / `agent` / `type` / `schedule` / `prompt`
+négyest, és a FŐ-ÁGENS POST-olja. (2026-09-03, brokermarcsi -- nála másodszor jött elő,
+tehát ez visszatérő minta, nem egyszeri akadás.)
+
+**Amit a fő-ágensnek ilyenkor ellenőriznie kell, és ami nélkül némán rossz eredmény
+születik:**
+
+1. **A promptot SZÓ SZERINT vidd be, teljes ékezettel.** Ne "tömörítsd" -- a kérő ágens
+   ismeri a saját folyamatát, te nem. Az ékezet-szabály itt is él: az ékezet nélküli
+   prompt ékezet nélküli kimenő üzenetet szül a címzettnél.
+2. **Kérd el tőle, MELYIK az a néhány mondat, ahol némán rossz SZÁM keletkezne**, és
+   azokat a beírás után külön `grep`-eld vissza a lementett `SKILL.md`-ből. A fenti
+   esetben három ilyen volt (egy részletfizetés felső korlátja, egy két forrásból
+   összeadódó összeg, és egy kivétel egy táblázat-sorban) -- mindhárom olyan, amit egy
+   ártalmatlannak tűnő rövidítés kivágott volna, és az eredmény attól még lefutott volna.
+3. **Küszöb-dátumnál a HATÁR is mondja meg, melyik futás esik bele** (lásd a Frissítés
+   szekció figyelmeztetését).
+4. **Nézd meg, mi történik, ha az ablak NEM elég.** Egy `heartbeat`, ami csendben zár,
+   a hiányt is elhallgatja: ha az esemény az ablak után következik be, az a hónap némán
+   kimarad. A javítás nem feltétlenül a szélesebb ablak -- az ugyanazt a hibaformát
+   tartja meg, csak ritkábban --, hanem hogy az **utolsó futás mondja ki, mi hiányzik**.
+   Így a csend nem azt jelenti, hogy minden rendben, hanem azt, hogy tudunk róla.
+
+**Visszaigazolás:** a `{"ok":true}` nem bizonyíték. Olvasd vissza a promptot a lementett
+`~/.claude/scheduled-tasks/<nev>/SKILL.md`-ből (hossz + a kritikus mondatok), és nézd meg,
+hogy a runner listázza-e a feladatot -- csak ezt jelentsd késznek.
+
 ### Frissítés
 
 ```bash
