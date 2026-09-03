@@ -117,8 +117,12 @@ export function ggFleetRule8({
     `és csak az egyik viszi magától a te identitásodat. Az **MCP-úton** (sima \`gg_*\` toolok) a ` +
     `saját \`.mcp.json\`-od visz, ott nincs teendőd. A **SHELL-ÚTON** (\`gg-mcp-proxy exec\`, ` +
     `illetve \`node .../dist/proxy.js exec\`) viszont NEKED KELL MEGADNOD az identitásodat: ` +
-    `\`GG_MCP_TOKEN_FILE\` a SAJÁT \`.mcp.json\`-odból (\`${ownMcpJson}\`), és ` +
-    `\`GG_MCP_AGENT_LABEL=${mainAgentId}/${agentId}\`. **MÁS ÁGENS VAGY A FŐÁGENS ` +
+    `a \`GG_MCP_TOKEN_FILE\` ÉRTÉKÉT a SAJÁT \`.mcp.json\`-odból (\`${ownMcpJson}\`) OLVASD KI -- ` +
+    `az ott álló token-fájl útja kell, NEM maga a \`.mcp.json\` (a proxy a megadott fájl TELJES ` +
+    `tartalmát teszi a Bearer fejlécbe, tehát a JSON-nal \`invalid header value\`-val elszáll; ` +
+    `mérve 2026-09-03). Egy paranccsal: ` +
+    `\`python3 -c "import json;print(json.load(open('${ownMcpJson}'))['mcpServers']['gg-access']['env']['GG_MCP_TOKEN_FILE'])"\`. ` +
+    `Mellé \`GG_MCP_AGENT_LABEL=${mainAgentId}/${agentId}\`. **MÁS ÁGENS VAGY A FŐÁGENS ` +
     `(${mainAgentId}) TOKEN-FÁJLJÁT HASZNÁLNI TILOS**, akkor is, ha egy skill, egy ` +
     `dokumentáció vagy egy régi példaparancs azt mutatja -- ilyenkor a példa a hibás, nem te. ` +
     `Ez NEM névcsere, hanem **JOGCSERE**: idegen tokennel a másik ember TELJES JOGÁVAL írsz ` +
