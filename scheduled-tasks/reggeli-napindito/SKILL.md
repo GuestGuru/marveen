@@ -5,9 +5,9 @@ description: Reggeli összefoglaló: email, naptár, AI hírek, plus Dream Engin
 
 Reggeli napindítót a CLAUDE.md formátum szerint. A beállított csatornára (chat_id: 0).
 
-**FONTOS — Dream Engine override**: a napindító ELEJÉRE (még az email/naptár szekciók ELŐTT) tedd be a `{{INSTALL_DIR}}/DREAM.md` fájl tartalmából az 5 bucket-et — `💡 Skill-javaslatok`, `🧹 Memória-egészség`, `🎯 Top-3 holnapi javaslat`, `🌐 External opportunity`, `🛠 Skill-flotta health`. Ha a DREAM.md nem létezik vagy üres (pl. a Dream Engine valamiért nem futott le), kihagyod ezt a szekciót.
+**FONTOS — Dream Engine override**: a napindító ELEJÉRE (még az email/naptár szekciók ELŐTT) tedd be a `DREAM.md` fájl tartalmából az 5 bucket-et — `💡 Skill-javaslatok`, `🧹 Memória-egészség`, `🎯 Top-3 holnapi javaslat`, `🌐 External opportunity`, `🛠 Skill-flotta health`. Ha a DREAM.md nem létezik vagy üres (pl. a Dream Engine valamiért nem futott le), kihagyod ezt a szekciót.
 
-A `cat {{INSTALL_DIR}}/DREAM.md` parancs visszaadja a tartalmat, abból emeld ki a kulcs-szekciókat MarkdownV2-formátumra escape-elve.
+A `cat DREAM.md` parancs visszaadja a tartalmat, abból emeld ki a kulcs-szekciókat MarkdownV2-formátumra escape-elve.
 
 **KRITIKUS -- a DREAM.md ELAVULT LEHET, ne másold vakon (2026-07-26, mérve).** A Dream Engine hajnali 2 körül ír, a napindító reggel megy ki. Ami közben megtörtént, arra a Top-3 javaslat HAMIS: a mért esetben a DREAM.md első két javaslata reggelre MÁR ELKÉSZÜLT, tehát javaslatként visszaadni azt jelentette volna, hogy kész munkát ajánlunk elvégzendőként. ELJÁRÁS: a Top-3 kiküldése ELŐTT minden tételre nézd meg a kész-állapotot (kanban-kártya státusza, hot memória, a ma reggel már elküldött üzenetek), és a teljesült tételeket CSERÉLD LE a valóban nyitott legfontosabbakra. Lásd `feedback_check_done_at_ideation`.
 
@@ -27,7 +27,7 @@ API-val. Ez a task viszont 07:30-kor a te tmux sessionödbe kerül. Amíg a 07:2
 **Ezért a küldés ELŐTT nézd meg, kiment-e már ma:**
 
 ```bash
-tail -30 {{INSTALL_DIR}}/store/morning.log | grep -n "$(date +'%a %b %e')"
+tail -30 store/morning.log | grep -n "$(date +'%a %b %e')"
 ```
 
 - Ha a mai naphoz tartozik egy `=== Kesz ... ===` sor, ami **NEM** `DRY RUN`, és
@@ -198,7 +198,7 @@ tail -30 {{INSTALL_DIR}}/store/morning.log | grep -n "$(date +'%a %b %e')"
   Ilyenkor NE küldd újra az egészet: nézd meg, mi hiányzik az elsőből (aznap a Dream
   Engine szekció), és csak azt pótold külön üzenetben, egy sorral jelezve, hogy a többi
   fent már kiment.
-- 🔴 **ELSŐ LÉPÉS: `tail {{INSTALL_DIR}}/store/morning.log`.** 2026-08-15-én az
+- 🔴 **ELSŐ LÉPÉS: `tail store/morning.log`.** 2026-08-15-én az
   ütemezett `-p` session 07:27--07:30 között MÁR kiküldte a napindítót (msg 572), és
   hozzám csak 07:30-kor ért a wrapper. A log tetején látszott, mi ment ki és mi
   maradt le (a Dream Engine 5 bucketje), tehát elég volt azt pótolni (msg 573).
@@ -306,3 +306,24 @@ _Az upstream v1.36 ugyanennek a feladatnak a SABLONJAT bovitette meresekkel. A f
 
 **A DREAM.md "TÉNYADAT" SZEKCIÓI SEM MIND EGYFORMÁN TARTÓSAK (2026-08-22, mérve).** A fenti Dream-szabály úgy szól, hogy a Top-3-at újra kell mérni, a memória-egészség és a skill-flotta szekció viszont "változatlanul átvehető, azok tényadatok". Ez a mondat egy különbséget elfed: a mért ARÁNYOK (vektorizáltság, duplikátum-szám) tényleg állnak reggelig, de a DARABSZÁMOK közül azok, amiket A SAJÁT ÉJSZAKAI MUNKÁNK változtat, hajnalra elavulnak. Nálam a skill-szám: a Dream 227-et írt 02:07-kor, reggelre 229 volt, mert az éjjeli körök két skillt hoztak létre.
 **ELJÁRÁS: minden olyan számot, amit mi magunk tudunk elmozdítani két óra alatt (skill-szám, kártya-szám, nyitott PR), a kiküldés előtt mérd újra egy paranccsal;** a külső mérésből jövő arányokat vedd át. Egy rossz szám a "tényadat" szekcióban rosszabb, mint egy hiányzó: az olvasó pont ott bízik benne, ahol nem ellenőrzi.
+
+
+🔴 **A `-p` session FONETIKUSAN ELRONTJA a technikai neveket, és a KAPU ezt nem fogja meg.**
+2026-09-03, msg 742: a DREAM.md-ben kétszer, helyesen `ledger-live-drain` állt (mérve:
+`grep -c` = 2, nulla torzult alak), a kiküldött napindítóban mégis `ledép- és őrhookok`
+és `ledég-live-drain` ment ki. A kapu `tiszta` sort írt, teljes joggal: a torzult alak
+ékezetes magyar szónak látszik, tehát sem az ékezet-, sem a gondolatjel-ellenőrzés nem
+szól. Ez az összefoglaló MODELL-hibája, nem a szállítási úté.
+**Miért pont itt fáj:** a napindító azért olvassa a DREAM.md-t, hogy a gazda a saját
+rendszereinek NEVÉN lássa a leletet. Egy elrontott komponensnév a leletet
+visszakereshetetlenné teszi -- a gazda nem tud rágrepelni arra, ami nincs.
+**ELJÁRÁS a kiküldés után (a `KAPU: tiszta` NEM zárja le a kört):** vesd össze a
+kiküldött szöveg technikai neveit a forrással, egy paranccsal:
+```bash
+grep -oE '[a-z]+-[a-z-]{3,}' store/morning.log | sort -u | while read w; do
+  grep -q -- "$w" DREAM.md || echo "NINCS a forrasban: $w"
+done
+```
+Ami a forrásban nincs meg szó szerint, az vagy torzulás, vagy új szó -- mindkettőt
+nézd meg. Ha torzulás: egyetlen rövid javító sorban told utána a helyes nevet, ne az
+egész napindítót küldd újra.
