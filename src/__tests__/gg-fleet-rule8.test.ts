@@ -53,6 +53,24 @@ describe('ggFleetRule8: only your own gg-mcp token', () => {
     expect(rule).not.toContain('/home/gg/marveen/.mcp.json')
   })
 
+  // bubi, 2026-09-03: the rule USED to read "GG_MCP_TOKEN_FILE a SAJÁT
+  // .mcp.json-odból (<path>)", which every agent read as "set it TO the
+  // .mcp.json". That fails -- the proxy puts the WHOLE file into the Bearer
+  // header and dies with `invalid header value` -- so the rule cost time on
+  // every shell-path call instead of saving it. (No permission risk: the
+  // wrapper is fail-closed.) The .mcp.json is the CARRIER of the value, not
+  // the value.
+  it('says the .mcp.json is where the value is READ FROM, not the value itself', () => {
+    expect(rule).toContain('ÉRTÉKÉT')
+    expect(rule).toContain('OLVASD KI')
+    expect(rule).toContain('NEM maga a `.mcp.json`')
+    // The concrete failure mode has to stay in the text: without it the next
+    // editor cannot tell the wording apart from harmless pedantry.
+    expect(rule).toContain('invalid header value')
+    // A copy-pasteable extractor, so nobody has to guess the JSON shape.
+    expect(rule).toContain("['mcpServers']['gg-access']['env']['GG_MCP_TOKEN_FILE']")
+  })
+
   it('names both env vars the shell path needs, with the agent own label', () => {
     expect(rule).toContain('GG_MCP_TOKEN_FILE')
     expect(rule).toContain('GG_MCP_AGENT_LABEL=marveen/jean')
