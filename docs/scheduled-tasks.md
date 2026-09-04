@@ -213,6 +213,20 @@ születik:**
    tartja meg, csak ritkábban --, hanem hogy az **utolsó futás mondja ki, mi hiányzik**.
    Így a csend nem azt jelenti, hogy minden rendben, hanem azt, hogy tudunk róla.
 
+**A feladat SABLONT is kap? Ügyfél-feladatnál jellemzően NEM, és ez tudatos döntés.**
+A drift-mérő (`scripts/scheduled-task-drift.sh`) minden sablon nélküli élő feladatot
+kiír, és a reflex az, hogy pótoljuk. **Egy ügyfél-folyamatnál ez adatszivárgás lenne:**
+a repo-sablon a PUBLIKUS forkba megy, a prompt viszont neveket, díjazást, folyamatban
+lévő tartozást tartalmazhat. Ilyenkor a `task-config.json` kapjon `"ephemeral": true`-t
+-- a mérő ettől nevesítve, külön sorban listázza, tehát a döntés látszik, de nem zajként.
+
+⚠️ **Az `ephemeral` neve félrevezet, a jelentése tágabb.** Eddig „ügyfélhez és DÁTUMHOZ
+kötött, ideiglenes" feladatokat jelölt (egy lakás decemberi figyelése). 2026-09-03-án
+két HAVONTA, tartósan futó elszámolási feladat is ezt kapta: a közös bennük nem az
+élettartam, hanem hogy **nem termék-viselkedés, és személyes adatot hordoz.** A mérő ezt
+a különbséget nem tudja megállapítani -- csak a szerző. (Mérve ugyanaznap: `sablon nelkul`
+5 -> 3, `efemer` 2 -> 4, egyetlen mezővel, sablon-írás nélkül.)
+
 **Visszaigazolás:** a `{"ok":true}` nem bizonyíték. Olvasd vissza a promptot a lementett
 `~/.claude/scheduled-tasks/<nev>/SKILL.md`-ből (hossz + a kritikus mondatok), és nézd meg,
 hogy a runner listázza-e a feladatot -- csak ezt jelentsd késznek.
