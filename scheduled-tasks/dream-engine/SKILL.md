@@ -406,3 +406,19 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
   hamis-hiany buktatot fentebb). Ha a szkript hianyzik vagy hibazik, a fenti kezi
   `diff` parancsok tovabbra is ervenyesek -- de akkor ne felejtsd az osszes
   helyorzot, ne csak az `{{INSTALL_DIR}}`-t.
+
+
+🔴 **A DREAM.md-t a KIMENŐ-KAPU NEM ellenőrzi, pedig a napindító FORRÁSA, tehát a
+gondolatjel-tilalom itt kézi felelősség.** Mérve 2026-09-04: a saját, előző hajnalban
+írt DREAM.md **15 em dasht** és egy ` -- ` gondolatjel-pótlót tartalmazott, mert a kapu
+csak a kimenő üzenetekre (PreToolUse hook) és az explicit `--check-file` hívásra fut,
+a fájl-írásra nem. Aznap a napindító `KAPU-FIGYELMEZTETES`-sel ment ki (gondolatjel
+1 helyen), és bár az a példány a `-p` session saját címsorából jött, a forrás
+fertőzöttsége ugyanezt a hibát bármikor kiviheti a gazdához.
+**ELJÁRÁS: a kör UTOLSÓ lépése a saját szöveged átengedése a kapun:**
+```bash
+python3 {{INSTALL_DIR}}/scripts/hooks/outgoing-copy-gate.py --check-file {{INSTALL_DIR}}/DREAM.md
+```
+`exit 0` -> kész. Nem nulla -> javítsd, MIELŐTT lezárod a kört: reggel már késő, mert
+a napindító ebből dolgozik. A csere nem stílus-kérdés: a magyar szövegben a közbevetés
+vesszővel vagy kettősponttal ugyanazt mondja, gondolatjel nélkül.
