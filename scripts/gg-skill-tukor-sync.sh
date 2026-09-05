@@ -18,11 +18,18 @@
 # Usage:
 #   gg-skill-tukor-sync.sh            report only, exit 1 if any mirror is stale
 #   gg-skill-tukor-sync.sh --fix      copy live -> mirror for every stale pair
+#   gg-skill-tukor-sync.sh --adopt    give every UNVERSIONED agent skill a mirror
 set -u
-cd "$(dirname "$0")/.." || exit 1
+# GG_SYNC_ROOT exists so the tests can run this against a scratch tree; in normal
+# use it is unset and the script operates on its own checkout.
+cd "${GG_SYNC_ROOT:-$(dirname "$0")/..}" || exit 1
 
 FIX=0
-[ "${1:-}" = "--fix" ] && FIX=1
+ADOPT=0
+case "${1:-}" in
+  --fix) FIX=1 ;;
+  --adopt) ADOPT=1 ;;
+esac
 
 # Where the GG-specific mirror lives. 2026-09-01, the owner's decision: GG skills
 # go to the PRIVATE GuestGuru/gg-agent-skills repo, not to this PUBLIC fork.
@@ -38,7 +45,7 @@ PRIVATE_MIRROR_ROOT="${GG_PRIVATE_SKILLS:-$HOME/gg-agent-skills}"
 # GG-specific ones moved out. Kept as a list so a future third target is one word.
 MIRRORS="seed-skills skills"
 
-stale=0; synced=0; same=0; unversioned=0
+stale=0; synced=0; same=0; unversioned=0; adopted=0
 unversioned_list=""
 
 # Files that live NEXT TO a skill but deliberately never reach the mirror: build
@@ -98,8 +105,51 @@ check_one() {
     fi
     return 0
   done
+  # --adopt: close the leak for the one class where the destination is NOT a
+  # judgement call. Measured 2026-09-05: all twelve unversioned skills lived under
+  # agents/<name>/.claude/skills/, all twelve were GG-specific (GG3, owner billing,
+  # a Google Sheet), and the precedent was already in the private repo
+  # (gg3-tulaj-lakas-lekerdezes, likewise an agent skill). The count had gone
+  # 0 -> 4 -> 8 -> 12 in four days while a "decision" was waiting that, once
+  # measured, did not exist.
+  #
+  # A GLOBAL unversioned skill is deliberately NOT adopted: that one really is a
+  # decision (seed-skills/ if machine-independent, private repo if GG-specific),
+  # and this script must not make it silently.
+  if [ "$ADOPT" = "1" ] && [ "${scope#agens:}" != "$scope" ]; then
+    if ! adopt_one "$live" "$name" "$scope"; then
+      unversioned=$((unversioned + 1))
+      unversioned_list="$unversioned_list $name"
+    fi
+    return 0
+  fi
   unversioned=$((unversioned + 1))
   unversioned_list="$unversioned_list $name"
+  return 0
+}
+
+# Copy an unversioned agent skill into the private mirror and stage it.
+#
+# Deliberately stops at `git add`: the commit message is the author's to write, and
+# the PUSH needs the CALLER's own gg-mcp identity (CLAUDE.md's hardest rule -- a
+# script must never bake one agent's token path into a path other agents run).
+# Returns non-zero when the skill must stay on the "decision needed" list.
+adopt_one() {
+  local live="$1" name="$2" scope="$3" hits
+  # A mirror is a git repo; a secret committed there is permanent. This is the same
+  # screen the manual round used, kept here so the automatic path is not weaker than
+  # the hand one it replaces.
+  hits=$(grep -rniE 'ghp_[0-9A-Za-z]{20,}|github_pat_[0-9A-Za-z_]{20,}|sk-[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{30,}|xox[baprs]-[0-9A-Za-z-]{10,}|BEGIN [A-Z ]*PRIVATE KEY' "$live" 2>/dev/null | head -3)
+  if [ -n "$hits" ]; then
+    echo "  NEM ADOPTALVA  $name  ($scope)  -- hitelesito-adat gyanuja, NEZD MEG KEZZEL:"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    return 1
+  fi
+  mkdir -p "$PRIVATE_MIRROR_ROOT/skills/$name" || return 1
+  cp -r "$live/." "$PRIVATE_MIRROR_ROOT/skills/$name/" || return 1
+  git -C "$PRIVATE_MIRROR_ROOT" add "skills/$name" || return 1
+  echo "  ADOPTALVA  $name  ($scope -> $PRIVATE_MIRROR_ROOT/skills/$name)"
+  adopted=$((adopted + 1))
   return 0
 }
 
@@ -123,7 +173,14 @@ for d in agents/*/.claude/skills/*/; do
 done
 
 echo
-echo "azonos=$same  elter=$stale  szinkronizalva=$synced  verziozatlan=$unversioned"
+echo "azonos=$same  elter=$stale  szinkronizalva=$synced  adoptalva=$adopted  verziozatlan=$unversioned"
+if [ "$adopted" -gt 0 ]; then
+  # Say the remaining step out loud. The copy is the easy half; the half that gets
+  # forgotten is the push, and the private repo does not ride the marveen chain.
+  echo "A masolas KESZ es stagelve, de MEG NINCS FENT. Hatralevo lepesek:"
+  echo "  git -C $PRIVATE_MIRROR_ROOT commit -m \"skills: <mit adoptaltal>\""
+  echo "  majd push a SAJAT gg-mcp identitasoddal (ld. gg-fork-push-lanc)."
+fi
 if [ "$unversioned" -gt 0 ]; then
   echo "verziozatlan (nincs kovetett tukre, DONTES kell -- seed-skills/ ha gep-fuggetlen, a PRIVAT gg-agent-skills/skills/ ha GG-specifikus):"
   for n in $unversioned_list; do echo "  - $n"; done

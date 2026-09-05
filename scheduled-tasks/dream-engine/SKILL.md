@@ -370,6 +370,17 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
   `csak-elo` / `csak-repo` sorszamot. **A bucket 5 elejen futtasd.** Elso eles
   futasa ugyanaznap HAT tovabbi elavult tukrot talalt azon a ketton felul, amirol
   tudtam -- vagyis a szivargas rendszerszintu volt, nem ket elszigetelt eset.
+  ⚠️ **UJ skillnel a `--fix` NEM eleg: az a MAR KOVETETT tukroket frissiti.**
+  Egy tukor nelkuli skillre 2026-09-05-ig kezi masolas kellett, es a szam ezert
+  nott negy nap alatt 0-rol 12-re. Azota van ra mod:
+  ```bash
+  scripts/gg-skill-tukor-sync.sh --adopt   # tukor nelkuli AGENS-skill -> privat repo + git add
+  ```
+  Adoptalas utan a commit es a push MEG HATRAVAN, a script ki is irja. A `--adopt`
+  szandekosan csak az `agens:<nev>` hatokoru skilleket veszi at (a celjuk merve
+  van: GG-specifikusak, a privat repoba valok), a GLOBALIS verziozatlan skillt
+  dontesre hagyja, es hitelesito-adat gyanujanal megall. Ha a `verziozatlan` sor
+  nem nulla a `--adopt` UTAN, az a maradek valoban dontes.
   ⚠️ **UJ skillnel a masolas MEG NEM eleg: a szam csak a PUSH-LANC utan megy nullara.**
   A szkript `git ls-files --error-unmatch`-csel a KOVETETT fajlt keresi, tehat egy
   frissen a tukorbe masolt, meg untracked fajl tovabbra is `verziozatlan`. Ez helyes
