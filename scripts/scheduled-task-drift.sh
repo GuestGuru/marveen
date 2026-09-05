@@ -82,8 +82,9 @@ find_template() {
   return 1
 }
 
-total_live=0 total_tpl=0 missing=0 ephemeral=0
-ephemeral_list=""
+total_live=0 total_tpl=0 missing=0 ephemeral=0 eph_unexplained=0
+EPH_FILE="$(mktemp)"
+trap 'rm -f "$EPH_FILE"' EXIT
 
 # Egy feladat lehet SZANDEKOSAN sablon nelkul: ugyfelhez es datumhoz kotott, nem
 # termek-viselkedes (pl. "figyeld X lakas decemberet, amig be nem telik"). Ezt a
@@ -91,13 +92,26 @@ ephemeral_list=""
 # feladat "sablon nelkul"-kent jelent meg, es a szam NOTT (1 -> 2), tehat a zaj
 # elkezdte elfedni a valodi hianyt -- pont azt, amiert ez a mero letezik.
 # A dontes NEM tunik el: az efemer feladatok kulon sorban, nevvel jelennek meg.
+# Ket mezot ad vissza tabbal elvalasztva: a jelolest es az INDOKOT.
+#
+# Az indok 2026-09-05-en kerult be, es nem kozmetika. Az "ephemeral" nev azt
+# sugallja, hogy a feladat ideiglenes, a valodi kriterium viszont MAS: hogy nem
+# termek-viselkedes, es rendszerint azert, mert szemelyes adatot hordoz -- ez a
+# fork PUBLIKUS, tehat egy ilyen feladatnak sablont irni nem rendrakas, hanem
+# adatszivargas. 2026-09-04-en ket olyan feladat kapta meg a jelolest, ami
+# havonta, TARTOSAN fut (kommunikator-havi-elszamolas, -fizetve-rogzites), tehat
+# az "ideiglenes" olvasat rajuk kifejezetten hamis. A kulonbseget csak a SZERZO
+# tudja, es ha nem irja le, a kovetkezo ugyfel-feladatnal ugyanaz a kor lefut.
 is_ephemeral() {
   python3 - "$1" <<'PYEOF' 2>/dev/null
 import json, sys
 try:
-    print('1' if json.load(open(sys.argv[1], encoding='utf-8')).get('ephemeral') is True else '0')
+    c = json.load(open(sys.argv[1], encoding='utf-8'))
+    flag = '1' if c.get('ephemeral') is True else '0'
+    reason = str(c.get('ephemeral_reason') or '').replace('\t', ' ').strip()
+    print(flag + '\t' + reason)
 except Exception:
-    print('0')
+    print('0\t')
 PYEOF
 }
 printf '%-26s %-24s %8s %8s\n' TASK SABLON 'CSAK-ELO' 'CSAK-SABLON'
@@ -109,9 +123,10 @@ for dir in "$LIVE_DIR"/*/; do
   [ -f "$dir/SKILL.md" ] || continue
 
   if ! tpl="$(find_template "$t")"; then
-    if [ "$(is_ephemeral "$dir/task-config.json")" = "1" ]; then
+    eph="$(is_ephemeral "$dir/task-config.json")"
+    if [ "${eph%%	*}" = "1" ]; then
       ephemeral=$((ephemeral + 1))
-      ephemeral_list="$ephemeral_list $t"
+      printf '%s\t%s\n' "$t" "${eph#*	}" >> "$EPH_FILE"
     else
       printf '%-26s %-24s %8s %8s\n' "$t" '(NINCS SABLON)' '-' '-'
       missing=$((missing + 1))
@@ -142,7 +157,16 @@ echo
 echo "osszesen: csak-elo=$total_live  csak-sablon=$total_tpl  sablon nelkul=$missing  efemer=$ephemeral"
 if [ "$ephemeral" -gt 0 ]; then
   echo "efemer (SZANDEKOSAN nincs sablon, task-config.json -> \"ephemeral\": true):"
-  for n in $ephemeral_list; do echo "  - $n"; done
+  while IFS="$(printf '\t')" read -r n r; do
+    [ -n "$n" ] || continue
+    if [ -n "$r" ]; then
+      echo "  - $n: $r"
+    else
+      echo "  - $n: (NINCS ephemeral_reason -- ird meg, kulonben a kovetkezo olvaso talalgat)"
+      eph_unexplained=$((eph_unexplained + 1))
+    fi
+  done < "$EPH_FILE"
+  [ "$eph_unexplained" -gt 0 ] && echo "  ^ $eph_unexplained feladatnal hianyzik az indok."
 fi
 cat <<'EOF'
 
