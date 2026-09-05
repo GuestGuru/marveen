@@ -308,6 +308,26 @@ _Az upstream v1.36 ugyanennek a feladatnak a SABLONJAT bovitette meresekkel. A f
 **ELJÁRÁS: minden olyan számot, amit mi magunk tudunk elmozdítani két óra alatt (skill-szám, kártya-szám, nyitott PR), a kiküldés előtt mérd újra egy paranccsal;** a külső mérésből jövő arányokat vedd át. Egy rossz szám a "tényadat" szekcióban rosszabb, mint egy hiányzó: az olvasó pont ott bízik benne, ahol nem ellenőrzi.
 
 
+🔴 **És a HARMADIK forras-vs-kikuldott elteres-osztaly: a `-p` session SZAMOKAT is
+elir, felfele.** 2026-09-05, msg 752: a DREAM.md-ben a hook-bekotesnel `Negyedik
+napja` allt (merve, `grep -n` a forrasban), a kikuldott napinditoban `most mar
+otodik napja` ment ki. A kapu `tiszta` sort irt, teljes joggal: egy szamnev nem
+ekezet- es nem gondolatjel-hiba.
+**Ez harom egymast koveto reggelen harom KULONBOZO osztaly volt, ugyanabban a
+lepesben** (09-03 fonetikus nevtorzitas, 09-04 gondolatjel, 09-05 felnagyitott
+napszam), tehat a mintazat nem a szallitasi ut, hanem az OSSZEFOGLALAS: a modell
+ujrafogalmaz, es kozben allitasokat mozdit el. A nevekre mar van ellenorzo
+(a kovetkezo buktato); a szamokra ez:
+```bash
+sed -n "/=== Reggeli napindito $(date '+%a %b %e')/,$p" store/morning.log \
+  | grep -oiE '(elso|masodik|harmadik|negyedik|otodik|hatodik|hetedik|nyolcadik) nap' | sort -u
+```
+Minden talalatot vess ossze a DREAM.md megfelelo soraval. **Az irany szinte mindig
+felfele van** (a regebbi ugy dramaibb), tehat a felnagyitas a varhato hiba, nem a
+kicsinyites. Ugyanez all minden szamra, amit a napindito a DREAM.md-bol vesz at
+(tier-eloszlas, drift-szamok, skill-paritas): a forras a mervado, nem az
+osszefoglalo emlekezete.
+
 🔴 **A `-p` session FONETIKUSAN ELRONTJA a technikai neveket, és a KAPU ezt nem fogja meg.**
 2026-09-03, msg 742: a DREAM.md-ben kétszer, helyesen `ledger-live-drain` állt (mérve:
 `grep -c` = 2, nulla torzult alak), a kiküldött napindítóban mégis `ledép- és őrhookok`

@@ -242,6 +242,17 @@ curl -s -X PUT http://localhost:3420/api/schedules/feladat-neve \
 
 Csak a megadott mezők frissülnek -- a többi változatlan marad.
 
+⚠️ **De CSAK az ISMERT mezők -- egy ismeretlen kulcsot a végpont NÉMÁN eldob, és
+`{"ok":true}`-val nyugtáz.** Mérve 2026-09-05: két feladatra kiadott
+`PUT {"ephemeral_reason": "..."}` mindkétszer `ok:true`-t adott, és a
+`task-config.json` egyikben sem változott. A `200` itt tehát azt jelenti, hogy a
+kérés értelmes volt, nem azt, hogy megtörtént, ami a legrosszabb fajta csend: a
+hívó késznek jelenti a munkát.
+**Eljárás:** minden PUT után olvasd vissza a mezőt a fájlból, ne a válaszkódból
+higgy. Ha a mező nincs a whitelistán (dokumentációs mezők, pl. `ephemeral_reason`
+tipikusan nincsenek), írd közvetlenül a `task-config.json`-ba, atomikusan
+(`json.load` -> módosítás -> `.tmp` -> `os.replace`), a többi kulcs megtartásával.
+
 ⚠️ **Éles feladaton ne próbálgasd, létezik-e a végpont.** A merge-elő szemantika
 fentebb ki van mondva, tehát nincs mit felderíteni. 2026-08-27: egy üres `PUT`-tal
 "teszteltem" a végpont létezését egy perccel korábban létrehozott, MÁS ágensnek

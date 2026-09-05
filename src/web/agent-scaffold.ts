@@ -17,6 +17,7 @@ import { withOwnGgIdentity } from '../gg/mcp-identity.js'
 // GG fork: fleet rules 7-8 live in the fork's own module (see src/gg/fleet-rules.ts).
 // Rule 7 is owner-overruled here; rule 8 forbids using any token but your own.
 import { ggFleetRule7, ggFleetRule8 } from '../gg/fleet-rules.js'
+import { fleetChannelHooks, wantsFleetChannelHooks } from '../gg/fleet-channel-hooks.js'
 
 // Resolve the base URL agents should use to reach the dashboard API.
 // DASHBOARD_PUBLIC_URL wins when set (distributed / k3s deployment); falls
@@ -242,6 +243,18 @@ export function ensureAgentHooks(name: string): boolean {
     } catch { /* overwrite */ }
   }
   const tplHooks = tpl.hooks as Record<string, unknown>
+  // GG fork (FLEETHOOK905): the shipped template has no conversation-ledger and no
+  // outgoing-copy guard, so until 2026-09-05 no sub-agent had either -- their
+  // outgoing Hungarian was unchecked and a restart lost the thread. Merged in here
+  // rather than added to the template because the template is an upstream file.
+  // The main agent is skipped on purpose: it already runs these from PROJECT scope,
+  // and both scopes fire, so adding them to its USER-scope file would double them.
+  if (wantsFleetChannelHooks(name, MAIN_AGENT_ID)) {
+    for (const [event, entries] of Object.entries(fleetChannelHooks(PROJECT_ROOT))) {
+      const merged = [...((tplHooks[event] as unknown[]) ?? []), ...(entries as unknown[])]
+      tplHooks[event] = merged
+    }
+  }
   if (existing.hooks) {
     // Merge strategy:
     //   0. Upgrade pass: in-place replace any legacy bare hook commands with the
