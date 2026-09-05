@@ -157,7 +157,8 @@ a régi minták fel vannak írva. Minden ágens sorolja fel a sajátjait ide:
 | salesninja | `## Adatfrissites es forrasellenorzes, <datum>` | 1 | 2026-08-13 |
 | salesninja | `TER-takaritas, <datum>.` | 2 | 2026-08-31 |
 | salesninja | `Lezaro statusz, <datum> (Antos Peter).` | 4 | 2026-08-31 |
-| marveen | (nincs komment-minta; két ISSUE: IT-482, IT-583, mindkettő kérésre) | 2 | 2026-08-09, 08-29 |
+| marveen | (nincs régi komment-minta; két ISSUE: IT-482, IT-583, mindkettő kérésre) | 2 | 2026-08-09, 08-29 |
+| marveen | KOMMENT, a mai szabály szerint jelölve: IT-674 (`comment-9898847c`), a záró sorban `[AI: marveen]`. Visszaolvasva a `user.name` **Krasser Tamás** -- ez a mérés harmadszor is megerősíti, hogy a per-user broker a gazda szerzőségével rögzít. | 1 | 2026-09-05 |
 | brokermarcsi | (nincs; mérve: nulla külső írás, tranzakció-szinten) | 0 | — |
 | marlenka | (nincs; mérve: nulla külső írás, 22 transzkript tool_use-szinten) | 0 | — |
 | peppa | komment: nincs (mind a 17 augusztusi Réka-komment átolvasva, egyik sem az övé) | 0 | — |
