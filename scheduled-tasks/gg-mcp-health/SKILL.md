@@ -54,11 +54,33 @@ Ha az ágensnek van tulajdonosa (agent-config.json -> owner), a párosítást ő
 elvégezni a saját belépésével -- a restart ezen nem segít, mert nem a processz hiányzik.
 
 Ha van DEAD vagy STALE:
+0. 🔴 **STALE-nél ELŐSZÖR mérd meg, MI változott a buildben. Ne írd azt, hogy nem tudod.**
+   2026-09-06 10:00: 7/7 STALE után azt jelentettem Tamásnak, hogy „a telepített mappa nem
+   git-checkout, tehát nem tudom megmondani, mi változott" -- holott a
+   `gg-mcp-verzio-ellenorzes` skill 2. és 3. pontja pontosan erre való, és a skill MAGA
+   mondja ki, hogy nincs `.git`. Külön üzenetben kellett pontosítanom. Ez ugyanaz a
+   hibaosztály, mint egy megírt dologról „ez hiányzik"-ot állítani: munkát és bizalmat
+   is visz, mert a gazda egy megválaszolható kérdést lát megválaszolatlanul.
+   **A lokális mérés két sor, és a legtöbb esetben ELÉG** (a build a lokális forrásból
+   készül, tehát ami változott, annak az mtime-ja a build ideje):
+   ```bash
+   find /home/gg/gg-mcp/src -name '*.ts' -newermt '<a build napja> 00:00' -printf '%TH:%TM %p\n' | sort
+   grep -ohE '"(gg|gg3|sales|channex|github|sentry|gcp|irnok|wiki|slack)_[a-z_]+"' \
+     /home/gg/gg-mcp/dist/tools/<a valtozott fajl>.js | tr -d '"' | sort -u
+   ```
+   Az első megmondja, MELYIK forrásfájl változott, a második, hogy jött-e ÚJ tool.
+   **A kettő együtt dönti el a sürgősséget:** új tool nélkül a kollégák semmit nem
+   vesznek észre a régi kódon, tehát a hajnali auto-restart bőven elég. Ha a lokális
+   mérés nem elég (pl. a forrás mtime-ja sem mozdult), akkor jön a skill 3. pontja,
+   a blob-hash összevetés a GitHub tree-vel.
 1. NE indítsd újra magadtól az ágenst. Egy restart munkát szakít meg, és sub-ágensnél idegen tulajdonos (pl. Péter) munkáját viszi el.
 2. Írj Tamásnak Telegramon (reply tool, chat_id 0): melyik ágens, milyen állapot, mióta (session_started), és mit jelent gyakorlatilag. DEAD-nél mondd ki, hogy az ágens most nem éri el a GG-rendszereket.
 3. Javasold a javítást: POST /api/agents/<nev>/restart {"fresh": true}. A fresh azért kell, mert a --channels plugin csak friss induláskor töltődik be megbízhatóan, continue-nál néma maradhat a bot.
 4. Ha az ágensnek van tulajdonosa (agent-config.json -> owner), írd oda, hogy az ő munkáját érinti.
 5. Restart előtt az érintett ágenst inter-agent üzenetben kérd meg, hogy mentse a memóriáját és írjon taskstate-et, mert fresh indulásnál a taskstate-replay hook nem fut.
+   ✅ **És ez nem formaság: a mentés-kérés AZ A PILLANAT, amikor az ágens felfedezi, mit felejtett el rögzíteni.** 2026-09-01, brokermarcsi kérésre indított mentése két olyan állapotot pótolt, ami sehol nem volt felírva -- köztük egy „ezt még fel kell vetnem a gazdámnál" bejegyzést, amit MÁR felvetett. Fresh indulás után a friss példány másodszor is megkérdezte volna ugyanazt a gazdától.
+   **Kérd konkrétan**, ne általánosságban: (a) a nyitott ügyeit, (b) amit a mai körben megtudott, és (c) azt, ami épp a te köröd miatt változott meg (új szabály, új skill, aktuális rendszerállapot) -- ezt ő nem tudja kitalálni, és fresh indulás után nem lesz meg neki.
+   **Várd meg a visszajelzését**, de adj határidőt, és ha letelik, indítsd -- a késleltetés is kár.
 6. Írd fel kanban kártyára, ha a probléma két egymást követő futáson át fennáll.
    ⚠️ **KIVÉTEL, ha az ügy MÁR EL VAN DÖNTVE és a megoldás automatikus.**
    2026-08-24: a 15:13-as gg-mcp deploy után a 16:00 ÉS a 18:00 szonda is 7/7 STALE-t
