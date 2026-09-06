@@ -328,6 +328,21 @@ kicsinyites. Ugyanez all minden szamra, amit a napindito a DREAM.md-bol vesz at
 (tier-eloszlas, drift-szamok, skill-paritas): a forras a mervado, nem az
 osszefoglalo emlekezete.
 
+🔴 **A NEGYEDIK osztaly ugyanebbol a lepesbol: az IDOBELI hozzarendeles csuszik el.**
+2026-09-06, msg 765: a kikuldott napindito `a ma reggel felallitott lead-or`-t irt,
+holott az or elozo este keszult; a DREAM.md sehol nem mond `ma reggel`-t. A kapu
+tiszta volt, a napszam-ellenorzo nem fogta meg (nem `<sorszam> nap` alak), es a
+komponensnev-ellenorzo sem (nem tartalmaz kotojeles nevet a torzult resz).
+**A mintazat ezzel negy egymast koveto reggelen negy KULONBOZO osztaly** (09-03
+fonetikus nevtorzitas, 09-04 gondolatjel, 09-05 felnagyitott napszam, 09-06
+idobeli eltolas), es mind az OSSZEFOGLALASBOL jon, nem a szallitasi utbol.
+**Ne uj ellenorzot irj minden osztalyra** -- a kozos ok egy: az ujrafogalmazas
+allitast mozdit. A napindito olyan idohatarozot NE tegyen a szovegbe, ami a
+forrasban nincs (`ma reggel`, `az iment`, `tegnap ota`): ha a DREAM.md nem koti le
+az idopontot, a napindito se kosse le. Az utolagos javitas kuszobe alacsony: ha az
+elcsuszas donteshez vagy felelossegihez er (ki csinalta, mikor), told utana egy
+javito sort; ha csak szinezes, ird fel ide, es ne kuldj masodik uzenetet.
+
 🔴 **A `-p` session FONETIKUSAN ELRONTJA a technikai neveket, és a KAPU ezt nem fogja meg.**
 2026-09-03, msg 742: a DREAM.md-ben kétszer, helyesen `ledger-live-drain` állt (mérve:
 `grep -c` = 2, nulla torzult alak), a kiküldött napindítóban mégis `ledép- és őrhookok`

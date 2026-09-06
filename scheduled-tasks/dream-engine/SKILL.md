@@ -366,7 +366,10 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
   scripts/gg-skill-tukor-sync.sh --fix    # elo -> tukor masolas minden elteronel
   ```
   Vegigmegy a globalis ES az agensspecifikus elo skilleken, megkeresi a KOVETETT
-  tukrot (`gg-skills/`, `seed-skills/`, `skills/` sorrendben), es taskonkent kiirja a
+  tukrot (2026-09-01 ota: a PRIVAT `gg-agent-skills/skills/`, majd `seed-skills/`,
+  `skills/` sorrendben -- a GG-skillek atkoltoztek a privat repoba, a publikus forkba
+  mar NEM tukrozunk; a privat checkout helye `GG_PRIVATE_SKILLS`, alap
+  `~/gg-agent-skills`), es taskonkent kiirja a
   `csak-elo` / `csak-repo` sorszamot. **A bucket 5 elejen futtasd.** Elso eles
   futasa ugyanaznap HAT tovabbi elavult tukrot talalt azon a ketton felul, amirol
   tudtam -- vagyis a szivargas rendszerszintu volt, nem ket elszigetelt eset.
@@ -386,6 +389,9 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
   frissen a tukorbe masolt, meg untracked fajl tovabbra is `verziozatlan`. Ez helyes
   (a "letezik" es a "verziozva van" ket kulon allitas), de konnyen felrevezet:
   2026-08-28-an bubi uj skilljet bemasoltam a `gg-skills/`-be, es a szam maradt 1.
+  ⚠️ **A `--fix` utan a PRIVAT repot KULON kell pusholni** -- az nem a {{MAIN_AGENT_ID}}
+  push-lancon megy. A masolas es a felkuldes ket kulon lepes, es a masodik az,
+  ami el szokott maradni.
   **Kovetkezmeny a riportra:** ha ugyanabban a korben masolsz es mersz, ird oda, hogy
   a szam a lanctol fugg -- kulonben holnap te magad fogod azt hinni, hogy a masolas
   nem sikerult. PATCH-nel ez nem all fenn, mert ott a fajl mar kovetve van.
