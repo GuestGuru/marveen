@@ -270,6 +270,23 @@ jelents" megfogalmazásban maga az X napi futás kimarad. Írd ki: „X-TŐL KEZ
 tehát már az X-i futáskor". 2026-08-27: egy puszta dátum-csere így majdnem némán
 hagyta volna pont azt a kört, ami az első jelentésnek volt szánva.
 
+### EGYSZERI ébresztő: nincs one-shot mód, tehát a törlés a te dolgod
+
+A runner cron-alapú, `run_at` vagy „egyszer" opció **nincs**. Egy konkrét napra szóló
+ébresztőt dátumos cronnal kell felvenni (`0 8 9 9 *` = szeptember 9., 08:00), ez viszont
+**JÖVŐRE ÚJRA LEFUT**, ha senki nem szedi le. A minta, ami 2026-09-08-án bevált
+(peppa kérte, Réka várt tőle egy jelentést másnap reggel):
+
+1. a `name` tartalmazza a dátumot (`peppa-ntak-hollo1-20260909`), hogy egy listázásból
+   is látszódjon, mikor évült el;
+2. a `description` mondja meg, hogy EGYSZERI, ki kérte és miért;
+3. a **prompt utolsó mondata kérje meg a címzettet**, hogy a futás után szóljon vissza,
+   mert ő tudja először, hogy kész;
+4. és ugyanabban a körben menjen egy `hot` memória a törlés-teendővel. **Ez a lépés a
+   fontos:** a 3. pont egy másik ágens emlékezetére bíz egy takarítást, a 4. viszont
+   rád. Ha csak a 3. van meg, a feladat egy évig ott ül.
+
+A törlés maga a lenti `DELETE`.
 ### Törlés
 
 ```bash
