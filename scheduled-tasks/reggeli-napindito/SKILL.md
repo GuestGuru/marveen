@@ -355,10 +355,28 @@ visszakereshetetlenné teszi -- a gazda nem tud rágrepelni arra, ami nincs.
 **ELJÁRÁS a kiküldés után (a `KAPU: tiszta` NEM zárja le a kört):** vesd össze a
 kiküldött szöveg technikai neveit a forrással, egy paranccsal:
 ```bash
-grep -oE '[a-z]+-[a-z-]{3,}' store/morning.log | sort -u | while read w; do
-  grep -q -- "$w" DREAM.md || echo "NINCS a forrasban: $w"
+sed -n "/=== Reggeli napindító $(date '+%a %b %e')/,/AI hírek/p" store/morning.log \
+| grep -oiE '[[:alpha:]]+-[[:alpha:]-]{3,}' | sort -u | while read -r w; do
+    echo "$w" | tr '-' '\n' | while read -r tag; do
+      [ ${#tag} -ge 4 ] || continue
+      grep -qi -- "$(echo "$tag" | cut -c1-5)" DREAM.md \
+        || echo "  GYANUS TAG: $tag  (a szoban: $w)"
+    done
 done
 ```
-Ami a forrásban nincs meg szó szerint, az vagy torzulás, vagy új szó -- mindkettőt
-nézd meg. Ha torzulás: egyetlen rövid javító sorban told utána a helyes nevet, ne az
-egész napindítót küldd újra.
+Ami kiíródik, az vagy torzulás, vagy új szó -- mindkettőt nézd meg. Ha torzulás:
+egyetlen rövid javító sorban told utána a helyes nevet, ne az egész napindítót
+küldd újra.
+
+⚠️ **A parancs 2026-09-08-án JAVÍTVA, mert a régi alakja HAT hamis pozitívot adott
+egyetlen reggelen, és egyet sem valódit.** Három hibája volt, mind a mérőben:
+(1) a `[a-z]` osztály az ELSŐ ékezetes betűnél elvágta a szót (`ágens-nap` ->
+`gens-nap`, `útvonal-javaslat` -> `tvonal-javaslat`), tehát csonkokra keresett;
+(2) a teljes naplóra futott, az AI-hírek és az e-mail szekcióra is, amik NEM a
+DREAM.md-ből jönnek, tehát ott a "nincs a forrásban" a normális; (3) a magyar
+ragozást torzulásnak látta (`repo-oldali` vs a forrásbeli `repo-oldal`).
+**A javított alak tagonként, az első öt karakterre keres**, és így a fonetikus
+torzulást (`ledger` -> `ledép`) továbbra is elkapja, a ragozást viszont nem.
+A tanulság ugyanaz, mint a kapu-tokenizálásnál: ha egy hamis pozitív minden reggel
+megjelenik, a MÉRŐT javítsd, ne írj mellé egy újabb bekezdést arról, hogy mit hagyj
+figyelmen kívül.
