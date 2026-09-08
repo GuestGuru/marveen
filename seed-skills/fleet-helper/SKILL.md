@@ -65,6 +65,18 @@ only does the judgment + notification. Zero scheduler/runner changes. See
 (avoid cron collisions with other heartbeats; `skipIfBusy` trade-off).
 
 ## Buktatók
+- **A Telegram `reply` tool `format` paramétere alapból `text`, nem `markdownv2`.**
+  2026-09-07: escapelt MarkdownV2 szöveget küldtem `format` nélkül, és a címzettnél a
+  backslashek nyersen jelentek meg ("Fura a válaszod: nyers markdown formázás van
+  benne, meg egy csomó felesleges \\ karakter"). **A formázást a paraméter kapcsolja
+  be, nem maga a szöveg** -- az escapelés önmagában csak elrontja a sima szöveget.
+  Ha MarkdownV2-t escapelsz, a `format: "markdownv2"` KÖTELEZŐ ugyanabban a hívásban.
+- **Kimenő ellenőrzőt SOHA ne futtass a küldéssel egy parancsban.**
+  2026-09-07: `gate; agent-msg.sh ...` egy Bash-hívásban -- a gate nyolc hiányzó
+  ékezetet jelzett és 1-gyel lépett ki, de a küldés a `;` után úgyis lefutott, tehát
+  az ékezet nélküli üzenet kiment. Ugyanaz a hibaosztály, mint a lentebbi elsikkadó
+  `%{http_code}`: az ellenőrzés lefut, csak nem KAPUZ. Két külön lépés, és a küldés
+  csak a 0-s exit után.
 - **A `GET /api/messages` mailbox-szűrője `agent=`, NEM `to=` -- és a rossz név nem üres listát ad, hanem hibát.**
   2026-08-24: `?to=marveen&status=pending` -> `{"error":"unknown query parameter","unknown":["to"],...}`.
   Ez most szerencsés volt, mert a végpont KISZÓL; de ha a hívást `| head` vagy
