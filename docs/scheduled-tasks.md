@@ -184,15 +184,23 @@ curl -s -X POST http://localhost:3420/api/schedules \
   }'
 ```
 
-#### Sub-ágensnek szóló feladat: a FŐ-ÁGENS hozza létre, nem ő maga
+#### Sub-ágensnek szóló feladat: ELŐBB próbálja meg ő maga
 
-Egy sub-ágens a saját nevére szóló ütemezést **nem tud** létrehozni: a governance
-hard-gate elutasítja (`Self-pace TILTOTT -- sub-agentkent NEM utemezhetsz sajat
-jovobeli turn-t`). Ez **védelem, nem hiba** -- egy ágens, ami magának ütemez jövőbeli
-turnt, felügyelet nélkül tud munkát generálni magának. A helyes út: a sub-ágens
-inter-agent üzenetben megküldi a kért `name` / `agent` / `type` / `schedule` / `prompt`
-négyest, és a FŐ-ÁGENS POST-olja. (2026-09-03, brokermarcsi -- nála másodszor jött elő,
-tehát ez visszatérő minta, nem egyszeri akadás.)
+🔴 **A korábbi állítás itt MEGDŐLT (2026-09-08).** Ez a szakasz korábban azt mondta, hogy
+a sub-ágens a saját nevére szóló ütemezést **nem tudja** létrehozni, mert a governance
+hard-gate elutasítja (`Self-pace TILTOTT -- sub-agentkent NEM utemezhetsz sajat jovobeli
+turn-t`), tehát a fő-ágensnek kell POST-olnia helyette. **Mérve 2026-09-08:** brokermarcsi
+a SAJÁT tokenjével hozta létre a `konyvelesi-anyag-hianylista` feladatot, és visszaolvasva
+`enabled: true`, `agent: brokermarcsi` (`~/.claude/scheduled-tasks/konyvelesi-anyag-hianylista/task-config.json`,
+`createdAt` 1788891843). A gate tehát nem áll ott, ahol ez a doksi mondta.
+
+**A helyes sorrend ezért:** ha egy sub-ágens ütemezést kér tőled, először kérdezd meg,
+**próbálta-e maga** -- egy `/api/schedules` POST a saját dashboard-tokenjével. A fő-ágens
+csak akkor POST-oljon helyette, ha nála TÉNYLEG elutasításba fut. A tiltás ágensenként és
+időben eltérhet, tehát a mérés dönt, nem ez a bekezdés.
+
+Ha mégis te POST-olsz helyette (mert nála elakadt), a lenti négy ellenőrzés kötelező --
+azok a delegálás miatt kellenek, nem a gate miatt, tehát változatlanul érvényesek.
 
 **Amit a fő-ágensnek ilyenkor ellenőriznie kell, és ami nélkül némán rossz eredmény
 születik:**
