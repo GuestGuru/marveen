@@ -249,7 +249,11 @@ Csak a megadott mezők frissülnek -- a többi változatlan marad.
 kérés értelmes volt, nem azt, hogy megtörtént, ami a legrosszabb fajta csend: a
 hívó késznek jelenti a munkát.
 **Eljárás:** minden PUT után olvasd vissza a mezőt a fájlból, ne a válaszkódból
-higgy. Ha a mező nincs a whitelistán (dokumentációs mezők, pl. `ephemeral_reason`
+higgy. ⚠️ **De a `name` NINCS a `task-config.json`-ban** (mérve 2026-09-08: a
+fájl mezői `agent`, `createdAt`, `description`, `enabled`, `forceSend`, `schedule`,
+`skipIfBusy`, `type`) -- a feladat nevét a KÖNYVTÁR adja. Ha a visszaolvasásban a
+`name`-re is ránézel, `None`-t kapsz, és egy pillanatra úgy tűnik, hogy a létrehozás
+hiányos. Nem az: a `prompt` sem a configban van, hanem a `SKILL.md`-ben. Ha a mező nincs a whitelistán (dokumentációs mezők, pl. `ephemeral_reason`
 tipikusan nincsenek), írd közvetlenül a `task-config.json`-ba, atomikusan
 (`json.load` -> módosítás -> `.tmp` -> `os.replace`), a többi kulcs megtartásával.
 
