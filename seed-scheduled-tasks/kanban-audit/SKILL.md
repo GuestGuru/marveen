@@ -390,6 +390,15 @@ Vagy alternatíva (gyorsabb): minden ping előtt query-old a komment-count-ot az
 - **ÚJ KÁRTYA ELŐTT KERESD MEG A MEGLÉVŐT -- a saját leletedre is áll (2026-08-01, HBWARNSTALE801, saját hiba)**: lemértem, hogy a heartbeat figyelmeztetés-sora 14 egymás utáni körön át betű szerint ugyanaz volt, kártyát nyitottam rá, és „mérés-első" fix-irányt írtam elő a fejlesztőnek. Közben a HBWARN801 ugyanezt írta le **aznap reggel 10:16 óta -- én magam vettem fel --**, és a javítás már mergelve volt (#832, fdab871), csak deployra várt. A fenti első buktató párja, csak fordítva: ott egy meglévő kártyát hittem élőnek, itt egy meglévő kártyát nem is kerestem. ELJÁRÁS új kártya előtt: `sqlite3 store/claudeclaw.db "SELECT id,status,substr(title,1,80) FROM kanban_cards WHERE archived_at IS NULL AND lower(title) LIKE '%<kulcsszó>%'"` -- a JELENSÉG kulcsszavára grepelj (pl. `heartbeat`, `warning`), NE a saját megfogalmazásodra, mert a meglévő kártya majdnem biztosan más szavakkal írja le ugyanazt (lásd `feedback_search_the_concept_not_the_sentence`). Ha van találat: a mérésed KOMMENTKÉNT kerüljön a meglévő kártyára (értékes, mert a fix hatálytalanságát bizonyítja), a duplikátumot pedig zárd és archiváld kimondott indoklással.
 
 
+- **A `kanban_comments.id` INTEGER autoincrement, a `kanban_cards.id` viszont TEXT.**
+  2026-09-07: kommentet uuid-hex azonositoval probaltam beszurni, es
+  `sqlite3.IntegrityError: datatype mismatch` jott -- a hibauzenet NEM mondja meg,
+  melyik oszlop az, tehat a sema-tippeles itt dragan bukik. Az `id`-t hagyd ki a
+  beszurasbol (`INSERT INTO kanban_comments (card_id, author, content, created_at)
+  VALUES (?,?,?,?)`), es ha nem vagy biztos egy tabla alakjaban, a
+  `PRAGMA table_info(<tabla>)` egy hivas. Ugyanez all a dashboard API utjara is:
+  a komment-vegpont sem var azonositot.
+
 ## Ellenőrzés
 - A state-fájl frissült a futás végén.
 - Inter-agent message-ek sikeresek (200 response).
