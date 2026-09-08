@@ -180,6 +180,21 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
   megy ki, tehát egy magabiztos téves ok drágább, mint egy őszinte bizonytalanság.
 
 ## Buktatók
+- 🔴 **A FORDITOTT DRIFT: az ELO peldany maradhat el a SABLON mogott, es akkor a
+  regeneralas a helyes lepes, nem a kezi masolgatas.** Merve 2026-09-08: a
+  `dream-engine` elo peldanya 24 sorral kevesebbet tudott, mint a repo-sablon, es a
+  negy hianyzo buktato mind ENNEK a kornek szolt (`daily_logs` tabla neve, a
+  `changes()` mint hamis bizonyitek, a DREAM.md elozetes beolvasasa, a gondolatjel-kapu).
+  Eddig mindig a masik iranyt kerestem, mert a napi munka az elo peldanyt boviti.
+  **A regeneralas receptje, es a csapdaja:** a sablonbol kell eloallitani az elo
+  peldanyt a helyorzok feloldasaval, DE a helyorzokrol SZOLO magyarazo sorokat
+  erintetlenul kell hagyni. Az elso, naiv `sed` pont azokat a mondatokat irta at
+  ertelmetlenne (`az elo peldanyban {{OWNER_NAME}}nak all, a sablonban {{OWNER_NAME}}nak`).
+  A megkulonboztetes gepies: ha a helyorzo BACKTICK kozott all, magyarazo szoveg,
+  hagyd; ha nem, oldd fel. Ellenorzes a csere utan: `grep -o '{{[A-Z_]*}}'` -- ami
+  marad, annak MIND backtickesnek kell lennie, es a maradekot nezd at egyesevel,
+  mert ket helyen (a fajl-ut es a zaro sor mintaja) a backtickes alak is VALODI
+  ertek, tehat ott kezzel kell feloldani.
 
 - **A `sqlite3` CLI idokozben feltelepult** (2026-07-29: `command not found`; 2026-07-31: /usr/bin/sqlite3 3.45.1, merve). A fenti SQL-snippetek tehat mar futnanak, de a python3-as ut maradjon az alapertelmezes: ha a CLI eltunik, a shell-es SQL NEMAN ures kezzel ter vissza. Mindet a python3 `sqlite3` moduljaval futtasd:
   ```bash
