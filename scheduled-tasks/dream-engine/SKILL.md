@@ -427,6 +427,20 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
   mit tuntetett el (`git diff <tukor-fajl> | grep '^-'`), es gyozodj meg rola,
   hogy az eltunt tartalom benne van az uj szovegben. Ha nem, `git checkout`-tal
   visszahozhatod -- addig a repo meg erintetlen.
+  🔴 **ÉS A `csak-repo > 0`-nak HÁROM oka lehet, nem kettő.** A fenti bekezdés
+  kettőt ír le (a saját törlésed nyoma, illetve valódi veszély); 2026-09-08-án
+  előjött a harmadik, és mind a három vizsgált skillnél EZ volt: **a repo egy
+  MEGHALADOTT állítást őriz, amit az élő példány azóta méréssel cáfolt.**
+  Konkrétan: a visszavont HelpScout-állítás (a gazdája maga mérte ki 09-06-án,
+  hogy mindhárom fele hamis), a fordított sorrendű OTA mappa-szerkezet (09-07,
+  20 mappán újramérve), és az „újraindítás duplikálhat" szabály, aminek a helyére
+  a 09-07-i mérés lépett. Ilyenkor a felülírás nem csak biztonságos, hanem
+  KÖTELEZŐ: amíg nem futtatod, a tükör HAMIS tudást szolgál ki annak, aki onnan
+  olvas.
+  **A három eset megkülönböztetése olcsó, és nem a mondatra kell keresni, hanem a
+  KULCSSZAVAKRA:** ha a csak-repo blokk fogalmai megvannak az élőben, csak más
+  állítással (`grep -c "HelpScout"` -> 13, miközben a mondat eltűnt), az a
+  meghaladás. Ha egyáltalán nincsenek meg, az a valódi veszély, és ott állj meg.
 - ✅ **A drift-merest 2026-08-21 ota SZKRIPT vegzi, ne kezzel rakd ossze.**
   `scripts/scheduled-task-drift.sh` -- vegigmegy a `~/.claude/scheduled-tasks/`
   minden feladatan, megkeresi a sablont (`scheduled-tasks/`, `seed-scheduled-tasks/`
