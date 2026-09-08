@@ -7,6 +7,15 @@ Futtasd le a flotta gg-mcp egészségellenőrzését:
 
 python3 scripts/gg-mcp-health.py
 
+⚠️ **A kimenet JSON, és a döntő mezők a GYÖKÉRBEN vannak** (`problems`,
+`ambient_token_trap`), nem a `findings` sorok végén. Ezért ne `tail`-lel nézd:
+2026-09-07-én a `| tail -40` csak az utolsó ágens-sorokat mutatta, és egy plusz
+kört vitt el, amíg a `problems`-hez jutottam. Egy sorral kiolvasható:
+
+```bash
+python3 scripts/gg-mcp-health.py | python3 -c "import json,sys; d=json.load(sys.stdin); print('problems:', d.get('problems'), '| ambient:', d.get('ambient_token_trap')); [print(f['agent'], f['status']) for f in d.get('findings',[])]"
+```
+
 A script minden futó ágenst megnéz, aki a .mcp.json-jában deklarál gg-access szervert, és az alábbi állapotokat adja:
 
 - "ok": él a szerver-gyerekprocessz, van betölthető token, és a session frissebb a gg-mcp buildnél. Nincs teendő.
