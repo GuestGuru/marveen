@@ -199,6 +199,13 @@ a SAJÁT tokenjével hozta létre a `konyvelesi-anyag-hianylista` feladatot, és
 csak akkor POST-oljon helyette, ha nála TÉNYLEG elutasításba fut. A tiltás ágensenként és
 időben eltérhet, tehát a mérés dönt, nem ez a bekezdés.
 
+⚠️ **A hiba formája nem az elutasítás volt, hanem hogy meg sem próbálta.** brokermarcsi
+saját szavával: egy régi emléknek hitt, és nem futtatta le a POST-ot. Ezért **a megméretlen
+tiltás drágább, mint egy elutasítás** -- az elutasítás legalább hibaüzenetet ad, egy
+emlékbe fagyott „nem lehet" viszont némán fenntartja magát, és minden kör megerősíti.
+Ez általános szabály, nem csak az ütemezésre: ha egy „tiltott"-nak hitt művelet olcsón
+kipróbálható, próbáld ki, mielőtt megkerülő utat építesz rá.
+
 Ha mégis te POST-olsz helyette (mert nála elakadt), a lenti négy ellenőrzés kötelező --
 azok a delegálás miatt kellenek, nem a gate miatt, tehát változatlanul érvényesek.
 
