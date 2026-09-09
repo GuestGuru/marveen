@@ -52,6 +52,17 @@ const dashboardOrigin = resolveDashboardOrigin(DASHBOARD_PUBLIC_URL, WEB_PORT, A
 // 200; this had been silently killing sub-agent memory saves and searches.
 const tokenPath = join(PROJECT_ROOT, 'store', '.dashboard-token')
 
+// GG fork: the generated CLAUDE.md tells agents to write memories and daily-log
+// entries through the fleet-helper, not raw curl. The helper builds the JSON and
+// takes the body on STDIN, so no shell quoting touches the text. Raw `curl -d`
+// fails silently in two ways: a quote or backtick in the content gives HTTP 500
+// (measured 2026-08-31), and inside a nested `python -c` / `$(...)` construction
+// the Hungarian ACCENTS get dropped, because the author avoids anything that
+// could break the quoting. Measured 2026-09-09: ten daily-log entries from three
+// agents went in with zero accents while two other agents wrote cleanly in the
+// same hour -- the API and DB were fine, the write path was not.
+const fleetHelperPath = join(homedir(), '.claude', 'skills', 'fleet-helper', 'scripts', 'fleet.py')
+
 // Hook commands run under `/bin/sh -c` with a NON-interactive PATH. On nvm
 // installs a bare `node` is not on that PATH, so the hook exits 127 -- which
 // Claude Code treats as a NON-blocking error and lets the tool call through:
@@ -1734,11 +1745,24 @@ A memoria 3 retegbol all (hot/warm/cold) + napi naplo.
 
 Minden /api/* végpont Bearer tokenes: a token a store/.dashboard-token fájlban.
 
-Memória mentés:
-curl -s -X POST ${dashboardOrigin}/api/memories -H "Content-Type: application/json" -H "Authorization: Bearer $(cat ${tokenPath})" -d '{"agent_id":"AGENT_NAME","content":"MIT","category":"CATEGORY","keywords":"kulcsszo1, kulcsszo2"}'
+MIÉRT HELPERREL ÉS NEM NYERS CURL-LEL: a JSON-t a helper építi, a tartalom STDIN-ről jön,
+tehát nincs rajta shell-idézőjelezés. A nyers curl -d '{...}' hívás némán hibázik: idézőjel vagy
+backtick a szövegben HTTP 500-at ad (mérve 2026-08-31), ágyazott python -c vagy parancshelyettesítéses
+konstrukcióban pedig az ÉKEZETEK esnek ki, mert az ember reflexből kerüli, ami az
+idézőjelezést törheti. Mérve 2026-09-09: három ágens tíz napi napló-bejegyzése ment be nulla
+ékezettel, miközben másik kettő ugyanabban az órában hibátlanul írt -- az API és a DB tiszta
+volt, a hiba az írás útján keletkezett.
 
-Napi napló (append-only):
-curl -s -X POST ${dashboardOrigin}/api/daily-log -H "Content-Type: application/json" -H "Authorization: Bearer $(cat ${tokenPath})" -d '{"agent_id":"AGENT_NAME","content":"## HH:MM -- Tema\nMi tortent, mi lett az eredmeny"}'
+Memória mentés:
+cat <<'EOF' | CLAW_DIR=${PROJECT_ROOT} CLAW_BASE=${dashboardOrigin} python3 ${fleetHelperPath} mem-save AGENT_NAME - CATEGORY "kulcsszó1, kulcsszó2"
+MIT
+EOF
+
+Napi napló (append-only). A HH:MM-et a date parancsból vedd, ne becsüld:
+cat <<'EOF' | CLAW_DIR=${PROJECT_ROOT} CLAW_BASE=${dashboardOrigin} python3 ${fleetHelperPath} daily-log AGENT_NAME -
+## HH:MM -- Téma
+Mi történt, mi lett az eredmény
+EOF
 
 Keresés (mielőtt válaszolsz, nézd meg van-e releváns emlék):
 curl -s -H "Authorization: Bearer $(cat ${tokenPath})" "${dashboardOrigin}/api/memories?agent=AGENT_NAME&q=KULCSSZO&category=warm"
