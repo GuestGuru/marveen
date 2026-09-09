@@ -278,6 +278,47 @@ azokra helyes a hallgatás.
 ⚠️ **A kapu nem mentesít a saját ellenőrzés alól, ha NEM a helperen írsz.** A
 Telegram-válasz, a wiki-írás és a github_commit nem megy át rajta.
 
+## A küszöb 2,0, és NEM emeljük -- plusz a kereszt-ellenőrzés
+
+⚠️ **Az alulmérés javítása a NYELVI SZŰRŐ elhagyása, nem a küszöb emelése.**
+A kettő nem ugyanaz a lépés, és a második drága (salesninja figyelmeztetése,
+2026-09-09). Mérve ugyanaznap a teljes közös polcon (178 bejegyzés, >=200
+karakter, mind a mai javítások után, tehát mind ÉP):
+
+| küszöb | riasztás |
+|--------|----------|
+| 2,0    | 0        |
+| 3,0    | 2        |
+| 4,0    | 7        |
+| 5,0    | 15       |
+| 5,8    | 34       |
+
+A legalacsonyabb ÉP értékek 2,67 (jean #431) és 2,78 (bubi #635), tehát **már egy
+3,0-es küszöb is hibátlan bejegyzést riasztana**. Adatszerű bejegyzésnél (URL-ek,
+mezőnevek, lakásnév-azonosítók) az arányt a szándékosan ékezet nélküli
+karakterláncok viszik le, nem hiba. Ha a küszöböt emeljük, emberek nekiállnak
+„javítani" olyan bejegyzéseket, amikben a mezőnév a helyes alak.
+
+**KERESZT-ELLENŐRZÉS, ha nulla romlottat akarsz állítani** (peppa módszere,
+2026-09-09): a sűrűség és a szóalak-keresés az ELLENKEZŐ irányba téved.
+- A **sűrűség** adatszerű bejegyzésnél félrevihet: sok azonosító lehúzza az
+  arányt egy egyébként hibátlan magyar szövegben.
+- A **szóalak-keresés** akkor is talál, ha a szöveg tele van azonosítóval:
+  keress ékezet nélküli alakokra, pl. `szerzodes`, `lakas`, `dij`, `merve`,
+  `foglalas`, `takaritas`, `ellenorzes`, `hianyz`.
+
+A kettő EGYÜTT erősebb, mint bármelyik külön. peppa így igazolta, hogy a nyolc
+gyanús bejegyzése valódi romlás volt és nem adatszerű álpozitív: hatnál nulla
+ékezet állt 700-2600 karakter magyar prózában.
+
+⚠️ **A darabszám mellé ÍRD ODA A MÉRÉS IDEJÉT, percre.** Ez a korpusz percek
+alatt változik, ha többen dolgoznak rajta. Mérve 2026-09-09: egy riasztásom
+20:04:44-kor ment ki hét bejegyzésről, a címzett kész-jelentése 20:06:33-kor
+érkezett ugyanarról a hétről -- **109 másodperc** különbség, és ebből egy órás
+vita lett arról, hogy a mérő rossz-e. A mérő jó volt, a jelentés volt hiányos.
+Ellenőrizhető szám nélkül a másik fél a saját, frissebb adatából próbálja
+visszafejteni a szabályodat, és rossz következtetésre jut.
+
 ## Visszamenőleges ékezet-javítás -- eljárás és kivétel
 
 **A munka értéke NEM az ékezet.** Az ékezet az ürügy, ami rákényszerít, hogy egy
