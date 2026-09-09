@@ -11,19 +11,33 @@ description: Minden körben átnézi az ELŐZŐ KÖR ÓTA történteket, menti a
 
 Nézd át, mi történt **az előző memória-kör óta**. Két dolgot csinálj:
 
-> **AZ ABLAK "AZ ELŐZŐ KÖR ÓTA", NEM FIX PERCSZÁM -- MÉRVE 2026-08-22, ÚJRAMÉRVE 2026-08-27.**
+> **AZ ABLAK "AZ ELŐZŐ KÖR ÓTA", NEM FIX PERCSZÁM -- MÉRVE 2026-08-22, ÚJRAMÉRVE 2026-08-27 ÉS 2026-09-09.**
 > A szöveg korábban fix percszámot mondott, és a rögzített szám KÉTSZER is elavult. Ezért nincs
 > benne szám többé: **a fix percszám a konfigurált kadenciával együtt avul, "az előző kör óta" nem.**
 >
-> **AMIT 2026-08-27-EN MEGMERTEM, ha valaki mégis a számra kíváncsi (és ne erre építs):**
-> a `task-config.json` `*/15 * * * *`-ot mond, de a `skipIfBusy: true` miatt a hozzám ELJUTÓ
-> kadencia **30 perc**. A `task_runs` tökéletesen váltakozik: :00 skipped, :15 fired, :30 skipped,
-> :45 fired -- 24 órában 43 fired / 53 skipped, és 17 egymást követő fired-köz pontosan 1800-1803 mp.
-> A :00 és :30 slot rendszeresen ütközik az órás heartbeat-digesttel és a drain-körökkel.
-> Vagyis a KONFIGURÁLT (15) és a KÉZBESÍTETT (30) kadencia két külön szám, és a 2026-08-22-i
-> "a kadencia 15 perc" javítás a konfiguráltat mérte, nem azt, ami ideér.
-> **Következmény, amit érdemes tudni:** ez a kör soha nem fut :00-kor és :30-kor, tehát az óra
-> tetején történtek a következő (:15 vagy :45) körben jönnek fel. Ez nem hiba, csak fáziseltolás.
+> **HARMADSZOR IS ELAVULT, ÚJRAMÉRVE 2026-09-09 -- és most már a MECHANIZMUS van itt, nem szám.**
+> A 08-27-i mérés azt írta ide, hogy a kézbesített kadencia fix 30 perc, tökéletes
+> :00-skipped / :15-fired váltakozással, és hogy "ez a kör SOHA nem fut :00-kor és :30-kor".
+> **Ez utóbbi egyszerűen nem igaz.** 2026-09-09 este mérve a `task_runs`-ból: 21:00, 21:30,
+> 22:30 és 23:00 mind FIRED. A 24 órás arány sem stimmel: **68 fired / 28 skipped** a
+> dokumentált 43/53 helyett.
+>
+> **Amit a slot-elmélet félreértett:** a `skipIfBusy: true` nem az órára néz, hanem RÁM.
+> Ugyanazon az estén 19:00-20:45 között MINDEN slot skipped (dolgoztam), 21:00-23:15 között
+> szinte mind fired (tétlen voltam). Vagyis a kézbesített kadencia a saját foglaltságom
+> függvénye, nem egy fix fáziseltolásé: tétlen sessionben a teljes konfigurált **15 perc**
+> jön át, munka közben akár másfél óra sem.
+>
+> **A gyakorlati következmény, és ez az egyetlen, amire építs:** ha épp hosszan dolgoztál,
+> a következő kör ablaka NEM 15 vagy 30 perc, hanem az egész munkád ideje. Ne percszámból
+> következtess arra, mi fér bele az ablakba -- a `store/memoria-heartbeat-state.json`
+> `last_run_at` mezője megmondja pontosan, mikor zártál utoljára.
+>
+> A lekérdezés, ha újra kell mérni (a `ts` MILLISZEKUNDUM, ezért a `/1000` -- e nélkül a
+> `datetime()` üres sztringet ad vissza, és a szűrő is minden sort beenged):
+> ```bash
+> sqlite3 {{INSTALL_DIR}}/store/claudeclaw.db "SELECT strftime('%H:%M',datetime(ts/1000,'unixepoch','localtime')), status FROM task_runs WHERE name='memoria-heartbeat' AND ts/1000 > strftime('%s','now')-21600 ORDER BY ts;"
+> ```
 > **HA MÉGIS ÁTFEDÉST LÁTSZ:** a mérce nem az idő, hanem hogy *lezártad-e már*. Ha egy munkára már
 > írtál memóriát vagy patcheltél skillt az előző körben, az KÉSZ -- ne írd meg újra más szavakkal.
 
