@@ -380,3 +380,16 @@ torzulást (`ledger` -> `ledép`) továbbra is elkapja, a ragozást viszont nem.
 A tanulság ugyanaz, mint a kapu-tokenizálásnál: ha egy hamis pozitív minden reggel
 megjelenik, a MÉRŐT javítsd, ne írj mellé egy újabb bekezdést arról, hogy mit hagyj
 figyelmen kívül.
+
+- 🔴 **A TILTÓ PÉLDA MAGA IS MINTA LEHET: a `-p` prompt ROSSZ alakokat sorolt fel, és
+  pont az egyik ment ki.** 2026-09-09, msg 799: a napindító `Top harom`-mal ment ki
+  (egyetlen ékezet nélküli szó, a kapu elkapta, fail-open). A `morning-briefing.sh`
+  promptja ekkor szó szerint ezt írta: „Ha a szöveged tartalmaz olyat, hogy `sajat`,
+  `ket`, `kozott`, `harom`, `kovetkezo`, akkor rossz" -- és a kiment hiba pontosan az
+  egyik felsorolt példaszó volt. **Ez HIPOTÉZIS, nem bizonyíték:** egyetlen eset, és a
+  08-26-i prompt-ékezetesítés óta ez volt az ELSŐ ékezet-hiba (a köztes két
+  figyelmeztetés gondolatjel volt, egy pedig hamis pozitív). A javítás mégis megérte,
+  mert kockázatmentes: a példák kikerültek, a szabály maga változatlan. Ha a hiba
+  visszatér a példák nélkül is, a hipotézis megdőlt, és ezt írd is ide.
+  **Az általánosítás, amit érdemes megtartani:** egy tiltó lista, ami a HIBÁS alakot
+  mutatja, ugyanazt a szöveget teszi a kontextusba, amit ki akar zárni.
