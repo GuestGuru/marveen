@@ -104,8 +104,14 @@ check_one() {
       same=$((same + 1))
     elif [ "$FIX" = "1" ] && [ "$(live_copies "$name")" -gt 1 ]; then
       echo "  TOBB-PELDANY  $name  ($scope)  -- NEM fixelek, mert $(live_copies "$name") elo peldany kepzodik le UGYANARRA a tukorre:"
+      # A masolat CSENDBEN avul: a masolo agensnek semmi nem szol, hogy a forras
+      # kozben tovabbment. Merve 2026-09-09: bubi masolata harom koron belul 35
+      # sorral maradt le peppa peldanyatol, es a hianybol ketto tulaj-magyarazat
+      # volt (eppen az, ami egy elszamolas-vitaban kellett volna). Ezert a riport
+      # SZAMOT ad, ne csak listat: a sorkulonbseg mondja meg, mennyire surgos.
       for d in "$HOME/.claude/skills/$name" ".claude/skills/$name" agents/*/.claude/skills/"$name"; do
-        [ -f "$d/SKILL.md" ] && echo "      $d"
+        [ -f "$d/SKILL.md" ] || continue
+        echo "      $(diff "$d/SKILL.md" "$mirror/SKILL.md" 2>/dev/null | grep -c '^[<>]') sor elteres a tukortol: $d"
       done
       echo "      A masolas itt DONTES: melyik peldany a forras? Nezd meg, es fixelj kezzel."
       stale=$((stale + 1))
