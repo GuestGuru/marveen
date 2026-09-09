@@ -54,7 +54,9 @@ if $CLAUDE --dangerously-skip-permissions \
 2. Dream Engine: ha létezik és nem üres a $INSTALL_DIR/DREAM.md, annak az öt
    bucketje kerül a szöveg ELEJÉRE (Skill-javaslatok, Memória-egészség, Top-3,
    External opportunity, Skill-flotta health).
-3. AI hírek: WebSearch a tegnapi dátummal.
+3. AI hírek: WebSearch a tegnapi dátummal. A hírek TARTALMA kell, nem a
+   forráslista: NE tegyél a szöveg végére "Sources:" blokkot vagy link-felsorolást
+   (2026-08-07, 09-02 és 09-09 is így szivárgott be a keresés nyers kimenete).
 4. A végén az e-mail és naptár szekció. Ha egy kategória üres, hagyd ki.
 
 Formátum: sima szöveg, magyarul, tömören. NE használj MarkdownV2
@@ -63,9 +65,12 @@ escape-eket és NE tegyél köré kódblokkot: a kiküldés innen történik.
 KÉT SZABÁLY, amit a gazda kifejezetten számon kér, és amit a 08-22-i első éles
 futás MEGSZEGETT (12 ékezet nélküli szó ment ki hozzá), a 08-26-i pedig újra
 (30 szó):
-  1. MINDEN magyar szó ÉKEZETES. Nem stíluskérdés. Ha a szöveged tartalmaz
-     olyat, hogy \"sajat\", \"ket\", \"kozott\", \"harom\", \"kovetkezo\", akkor
-     rossz: olvasd vissza és javítsd, mielőtt visszaadod.
+  1. MINDEN magyar szó ÉKEZETES. Nem stíluskérdés. Olvasd vissza a kész szöveget,
+     és javítsd az ékezet nélküli alakokat, mielőtt visszaadod. (Itt korábban öt
+     ROSSZ alak állt tiltó példaként; 2026-09-09-én a kiment szöveg pont az egyik
+     felsorolt példaszót tartalmazta ékezet nélkül, ezért a példák kikerültek.
+     Egy eset nem bizonyítja a mintázatot, de a példa nélkül a szabály ugyanolyan
+     világos, tehát a csere kockázatmentes.)
   2. NINCS gondolatjel, és a \" -- \" (dupla kötőjel) sem helyettesítheti.
      Használj kettőspontot, zárójelet vagy új mondatot." \
   > "$BRIEF_OUT" 2>>"$LOG"; then
