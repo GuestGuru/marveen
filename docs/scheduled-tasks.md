@@ -304,6 +304,22 @@ A runner cron-alapú, `run_at` vagy „egyszer" opció **nincs**. Egy konkrét n
 4. és ugyanabban a körben menjen egy `hot` memória a törlés-teendővel. **Ez a lépés a
    fontos:** a 3. pont egy másik ágens emlékezetére bíz egy takarítást, a 4. viszont
    rád. Ha csak a 3. van meg, a feladat egy évig ott ül.
+5. **A törlés ELŐTT mérd le, hogy tényleg lefutott** -- a címzett ágens visszajelzése
+   nem bizonyíték, csak jelzés. Egy törölt ütemezés, ami sosem futott le, némán
+   elveszti a feladatot:
+   ```bash
+   python3 -c "
+   import sqlite3, datetime
+   db = sqlite3.connect('store/claudeclaw.db')
+   for r in db.execute(\"SELECT name, ts, status FROM task_runs WHERE name = 'a-feladat-neve' ORDER BY ts DESC LIMIT 3\"):
+       print(r[0], datetime.datetime.fromtimestamp(r[1]/1000).strftime('%m-%d %H:%M'), r[2])
+   "
+   ```
+   ⚠️ **A tábla oszlopa `name`, NEM `task_name`** (2026-09-09-én ebbe futottam bele:
+   `no such column: task_name`), és a `ts` **ezredmásodperc**, nem másodperc -- a
+   `fromtimestamp(r[1])` osztás nélkül 2026 helyett a távoli jövőbe mutat. A séma
+   ellenőrzése (`PRAGMA table_info(task_runs)`) olcsóbb, mint a találgatás.
+   A `status` `fired` értéke azt jelenti, hogy a prompt kiment az ágenshez.
 
 A törlés maga a lenti `DELETE`.
 ### Törlés
