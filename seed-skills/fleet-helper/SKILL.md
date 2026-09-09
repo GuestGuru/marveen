@@ -278,6 +278,45 @@ azokra helyes a hallgatás.
 ⚠️ **A kapu nem mentesít a saját ellenőrzés alól, ha NEM a helperen írsz.** A
 Telegram-válasz, a wiki-írás és a github_commit nem megy át rajta.
 
+## Visszamenőleges ékezet-javítás -- eljárás és kivétel
+
+**A munka értéke NEM az ékezet.** Az ékezet az ürügy, ami rákényszerít, hogy egy
+hónapokkal ezelőtti bejegyzést szó szerint végigolvass. Mérve 2026-09-09, három
+ágensen: a kényszerű újraolvasás **18 elgépelést** hozott ki magukból az EREDETI
+szövegekből (salesninja 9 + 16 db `%%` maradvány egy régi printf-escapelésből,
+jean 6, marveen 3), amiket addig hat ágens olvasott hónapokig. Ezt mondd el így,
+mert különben kozmetikai feladatnak hangzik, és nem az.
+
+⚠️ **KIVÉTEL: idézett rendszer-szöveget NEM ékezetesítünk** (salesninja szabálya,
+2026-09-09). Ha a bejegyzés egy rendszer saját szövegét idézi (`"Uj webes lead
+erkezett"`), vagy mezőnevet, azonosítót, fájlnevet, log-sort tartalmaz, az nem
+magyar szöveg, hanem **karakterlánc**. Ha ékezetesíted, egy jövőbeli `grep` nem
+találja meg, tehát a javítás elrontja azt, amiért a bejegyzés készült. Az ilyen
+részt hagyd betű szerint, és tedd idézőjelbe vagy backtickbe, hogy a következő
+olvasó lássa: ez szándékos, nem elmaradt javítás. Az ékezet-arányt ez nem rontja
+el érdemben: a 692-es bejegyzés 6684 karakter, benne a fenti idézettel, és
+7,65 ékezet/100 karakteren áll.
+
+⚠️ **A `--accept-diff` nem formalitás, és ezt is mérés mondja.** salesninjánál
+nyolcszor sült el, és a nyolcból **egyszer az ÚJ szöveg volt a hibás, nem a régi**
+(„tölteléket" -> „töltelléket"). Minden `--accept-diff` előtt OLVASD EL a kiírt
+eltérést, ne reflexből tedd hozzá a kapcsolót.
+
+**A lossless-ellenőrzés és a tény-ellenőrzés nem verseng, más tartományra való**
+(jean mérése, 2026-09-09):
+- Ahol a szöveg SZÁNDÉKOSAN változik (záradékolás, mondat-átírás, tényjavítás):
+  a betűazonosság elvileg sem áll fenn, ott a tény-halmazos összevetés (számok,
+  URL-ek, azonosítók, technikai nevek) az egyetlen, ami működik.
+- Ahol csak ékezetesítés történik: a **lossless az erősebb**, mert a prózára is
+  kiterjed. jean tény-ellenőrzője elvileg sem foghatta meg, hogy a „szettartott"
+  nála „szétartott" lett -- egy betű, és a szó jelentése megváltozott.
+- **A helyes sorrend:** futtasd a lossless-t, és amit az elutasít, azt vidd a
+  tény-ellenőrzés elé. Ne válassz a kettő közül.
+
+**Csinálj DB-dumpot a javítás ELŐTT.** jean a reggeli dumpjából tudta utólag
+szétválasztani a 36 javítását (83 betűre azonos, 12 záradékolt, 13 eltérő), és
+ebből derült ki a saját rontása. Enélkül nincs független forrás a javítás után.
+
 ## Utólagos ékezet-audit (`accent-audit`) -- és a `flagged: 0` csapdája
 
 ```bash
