@@ -68,9 +68,224 @@ def api(method, path, payload=None, timeout=20):
         return body
 
 
+
+# --- ekezet-kapu -------------------------------------------------------------
+# Merve 2026-09-09: egy nap alatt tiz napi naplo-bejegyzes ment be nulla
+# ekezettel harom agenstol, es 12 inter-agent uzenet ugyanigy. KET kulon ok van,
+# es ezt fontos szetvalasztani, mert csak az egyiket oldja meg a helper:
+#   (a) AZ IRAS UTJA -- shellbe agyazott printf, `python -c`, `$(...)`: a szerzo
+#       reflexbol kerul mindent, ami az idezojelezest torheti, es az ekezetek az
+#       aposztrofokkal egyutt esnek ki. EZT a helper megoldja (STDIN + json.dumps).
+#   (b) A MUNKAANYAG REGISZTERE -- a szoveg MAR ekezet nelkul szuletik meg (pl.
+#       egy audit kozben negyven regi, ekezet nelkuli bejegyzest olvasol es
+#       javitasz). Ezt a helper NEM fogja meg: a json.dumps pontosan azt viszi be,
+#       amit kap. jean negy azonos uton irt bejegyzese kozul harom nulla volt,
+#       a negyedik 98 -- ott az ut vegig ugyanaz volt.
+# Ezert all itt ez a kapu: a (b) agra CSAK a kikuldes elotti gepi szamolas vedd.
+# NEM blokkol, csak kiir a stderr-re -- a helyes szoveget sosem akarjuk megallitani.
+#
+# A kuszob salesninja meresebol jon (2026-09-09, n=47 naplo + n=173 uzenet):
+# a romlott szovegek 0,00-0,13 ekezet/100 karakter kozott vannak, az epek
+# 5,66-11,36 kozott. A 60-szoros res miatt a 2,0 sem fals riasztast, sem
+# atcsuszast nem ad. A puszta "nulla ekezet" kuszob KEVES: ket romlott bejegyzes
+# egyetlen ekezetet tartott meg (valoszinuleg tulajdonnevben), es atcsuszott volna.
+HU_ACCENTS = set("áéíóöőúüű"
+                 "ÁÉÍÓÖŐÚÜŰ")
+# Ekezet nelkul is felismerheto gyakori magyar szavak: a romlott szoveget is
+# magyarnak kell latnunk, kulonben pont azt engednenk at, amit meg akarunk fogni.
+HU_HINTS = (" hogy ", " nem ", " egy ", " meg ", " volt ", " ami ", " mint ",
+            " csak ", " ezert ", " ez a ", " az a ", " lett ", " tehat ")
+ACCENT_MIN_PER_100 = 2.0
+ACCENT_MIN_LEN = 200
+
+
+# A figyelmeztetes melle kiszamoljuk a MAGYAR MONDATOKRA szukitett aranyt is.
+# brokermarcsi merese, 2026-09-09: a ketnyelvu uzenet (magyar keret + angol level-
+# fogalmazvany) higitja a teljes szovegre vett aranyt -- nala 3,04, a magyar reszen
+# 6,42. Ez nala visszatero forma, nem kivetel.
+# A DONTES ezert is a teljes aranyon marad: a teljes korpuszon (1416 vizsgalt sor,
+# conversation_log + daily_logs + memories) a szukitett arany 3 sorban ter el, es
+# ott is a vegyes -- reszben javitott -- bejegyzeseknel. Merve 2026-09-09: nulla
+# fals riasztas, tehat nincs mit javitani a dontesen. A szukitett arany a
+# FIGYELMEZTETESBEN all, hogy aki riasztast kap, egy pillantasbol lassa, hogy
+# ketnyelvuseg-e az ok, es ne kelljen kezzel megkerdeznie.
+_HU_FUNC = {"hogy", "nem", "egy", "meg", "volt", "ami", "amit", "csak", "ezert",
+            "tehat", "lett", "lesz", "kell", "mert", "mar", "igy", "ezt", "azt",
+            "ez", "ha", "vagy", "es", "de", "mint", "van", "nincs", "sem"}
+_SENT_RE = None
+_WORD_RE = None
+
+
+def hungarian_ratio(text):
+    """(arany, magyar_karakterszam) csak a magyarnak latszo mondatokra, vagy
+    (None, n) ha keves a magyar szoveg ahhoz, hogy velemenye legyen."""
+    global _SENT_RE, _WORD_RE
+    import re
+    if _SENT_RE is None:
+        _SENT_RE = re.compile(r"[^.!?\n]+[.!?]?")
+        _WORD_RE = re.compile(r"[0-9a-zA-Z\u00c0-\u017f]+")
+    hu = []
+    for sent in _SENT_RE.findall(text):
+        words = [w.lower() for w in _WORD_RE.findall(sent)]
+        if not words:
+            continue
+        hits = sum(1 for w in words if w in _HU_FUNC)
+        if hits and hits * 100.0 / len(words) >= 4.0:
+            hu.append(sent)
+    joined = "".join(hu)
+    if len(joined) < 120:
+        return None, len(joined)
+    return sum(1 for ch in joined if ch in HU_ACCENTS) * 100.0 / len(joined), len(joined)
+
+
+def accent_warning(text):
+    """Vissza egy figyelmezteto sort, ha a szoveg magyarnak latszik es gyanusan
+    ekezettelen; egyebkent None. Sosem dob es sosem blokkol."""
+    try:
+        if not text or len(text) < ACCENT_MIN_LEN:
+            return None
+        low = " " + " ".join(text.lower().split()) + " "
+        if sum(1 for h in HU_HINTS if h in low) < 2:
+            return None
+        n = sum(1 for ch in text if ch in HU_ACCENTS)
+        per100 = n * 100.0 / len(text)
+        if per100 >= ACCENT_MIN_PER_100:
+            return None
+        hu_r, hu_len = hungarian_ratio(text)
+        if hu_r is None:
+            hu_note = (f" A magyar mondatokra szukitett resz csak {hu_len} karakter, "
+                       "ahhoz keves, hogy kulon velemenye legyen.")
+        elif hu_r >= ACCENT_MIN_PER_100:
+            hu_note = (f" DE a magyar mondatokra szukitve {hu_r:.2f}/100 "
+                       f"({hu_len} karakter), ami rendben van: valoszinuleg "
+                       "ketnyelvu szoveg (angol blokk higitja az aranyt), nem hiba.")
+        else:
+            hu_note = (f" A magyar mondatokra szukitve is csak {hu_r:.2f}/100 "
+                       f"({hu_len} karakter), tehat nem a ketnyelvuseg az ok.")
+        return (f"FIGYELEM: ekezet-gyanu -- {len(text)} karakter, {n} ekezet "
+                f"({per100:.2f}/100, kuszob {ACCENT_MIN_PER_100:.1f}). "
+                "A szoveg magyarnak latszik, de szinte nincs benne ekezet."
+                + hu_note +
+                " Az iras NEM allt meg. Ha ez hiba, ird ujra ekezettel es javitsd "
+                "(az emlek PUT-tal cserelheto, a napi naplo append-only).")
+    except Exception:
+        return None
+
+
+def _warn_accents(text):
+    w = accent_warning(text)
+    if w:
+        print(w, file=sys.stderr)
+
+# --- utolagos ekezet-audit ---------------------------------------------------
+# brokermarcsi javaslata, 2026-09-09: a kapu a KIKULDES elott szol, de a
+# kikuldott szovegre is van olcso gepi ellenorzes -- a conversation_log
+# direction='out' sorai azt tartalmazzak, ami tenyleg elment a csatornan.
+# Ez nem elozi meg a hibat, hanem kimutatja, es nem a szandekon mulik.
+#
+# Merve 2026-09-09 (n=404 kimeno uzenet, 2026-08-02 ota, hat agens): nulla
+# riasztas. FONTOS kulonbseg a naplohoz kepest: a kimeno oldalon a legalacsonyabb
+# EP ertek 2,61 ekezet/100 karakter (marveen id=126), nem 5,79, mert a csatorna-
+# uzenet gyakran tartalmaz angol kodblokkot, parancsot, URL-t es MarkdownV2
+# backslasheket. A 2,0-es kuszob tartaleka tehat itt 1,3-szoros, nem 2,9-szeres:
+# a kuszobot NEM szabad feljebb vinni.
+_AUDIT_SOURCES = {
+    # nev: (tabla, id-oszlop, szoveg-oszlop, datum-kifejezes, extra WHERE)
+    "out":  ("conversation_log", "id", "text",
+             "date(created_at,'unixepoch','localtime')", "direction = 'out'"),
+    "log":  ("daily_logs", "id", "content", "date", "1"),
+    "mem":  ("memories", "id", "content",
+             "date(created_at,'unixepoch','localtime')", "1"),
+}
+
+
+def accent_audit(source="out", agent=None, days=None):
+    """A kaput lefuttatja mar LEIRT szovegeken. Visszaad minden vizsgalt sort,
+    amelyik riaszt, plusz a vizsgalt darabszamot -- teljesseg-allitashoz DB-bol
+    olvas, nem az API-bol (az nemam csonkit).
+
+    A "flagged: 0" ONMAGABAN NEM TELJESSEG-ALLITAS. bubi merese, 2026-09-09:
+    34 sajat emlekebol az audit 28-at vizsgalt meg, a hatbol ketto TENYLEG
+    romlott volt (0,00 ekezet/100), es a nyelvi szuro rejtette el oket. Az ok
+    szerkezeti: a ket bejegyzes jorészt TULAJDONNEVEKBOL es rendszernevekbol allt
+    (lakasnev, agensnev, e-mail, EUR-osszeg), tehat keves benne a magyar
+    funkcioszo -- a szuro pont ott gyengul el, ahol a szoveg adatszeru, es a
+    memoriaban pont az ilyen bejegyzes a gyakori. Ket FUGGETLEN szuro (a helperé
+    es bubie) ugyanott vakult meg, tehat nem kuszob-hangolas a megoldas.
+    Ezert a valasz "skipped" bontast is ad (short / nonhu), es a nyelvi szuro
+    altal kihagyott, de kuszob ALATTI sorokat kulon listaban (nonhu_below_rows)
+    -- igy a nulla eredmeny mellett rogton latszik, hogy mihez kepest nulla."""
+    if source not in _AUDIT_SOURCES:
+        raise RuntimeError(f"ismeretlen forras: {source} (out|log|mem)")
+    table, idcol, textcol, datexpr, extra = _AUDIT_SOURCES[source]
+    sql = (f"SELECT {idcol}, agent_id, {datexpr}, {textcol} FROM {table} "
+           f"WHERE {extra} AND {textcol} IS NOT NULL")
+    params = []
+    if agent:
+        sql += " AND agent_id = ?"
+        params.append(agent)
+    if days:
+        sql += f" AND {datexpr} >= date('now','localtime',?)"
+        params.append(f"-{int(days)} days")
+    con = sqlite3.connect(db_path())
+    try:
+        rows = con.execute(sql, params).fetchall()
+    finally:
+        con.close()
+    def _row(rid, aid, day, text, n, per100):
+        return {"id": rid, "agent": aid, "date": day, "chars": len(text),
+                "accents": n, "per100": round(per100, 2),
+                "head": " ".join(text.split())[:120]}
+
+    checked, flagged = 0, []
+    skipped_short, skipped_nonhu, nonhu_below = 0, 0, []
+    for rid, aid, day, text in rows:
+        if not text:
+            continue
+        n = sum(1 for ch in text if ch in HU_ACCENTS)
+        per100 = n * 100.0 / len(text)
+        if len(text) < ACCENT_MIN_LEN:
+            skipped_short += 1
+            continue
+        low = " " + " ".join(text.lower().split()) + " "
+        if sum(1 for h in HU_HINTS if h in low) < 2:
+            skipped_nonhu += 1
+            # A nyelvi szuro a bizonyitott vakfolt: a kihagyott sorok kozul
+            # KULON kigyujtjuk azokat, amik amugy a kuszob alatt allnanak.
+            if per100 < ACCENT_MIN_PER_100:
+                nonhu_below.append(_row(rid, aid, day, text, n, per100))
+            continue
+        checked += 1
+        if per100 < ACCENT_MIN_PER_100:
+            flagged.append(_row(rid, aid, day, text, n, per100))
+    flagged.sort(key=lambda f: (f["date"], f["id"]))
+    nonhu_below.sort(key=lambda f: (f["date"], f["id"]))
+    return {"source": source, "checked": checked, "flagged": len(flagged),
+            "skipped": {"short": skipped_short, "nonhu": skipped_nonhu,
+                        "nonhu_below_threshold": len(nonhu_below)},
+            "threshold": ACCENT_MIN_PER_100, "rows": flagged,
+            "nonhu_below_rows": nonhu_below}
+
+
 def save_memory(agent, content, category="warm", keywords=""):
+    _warn_accents(content)
     return api("POST", "/api/memories", {"agent_id": agent, "content": content,
                                          "category": category, "keywords": keywords})
+
+
+def update_memory(agent, mem_id, content, category=None, keywords=None):
+    """Meglevo emlek TELJES tartalmanak csereje (a PUT cserel, nem fuz hozza).
+    bubi kerese, 2026-09-09: a visszamenoleges javitashoz eddig modulkent kellett
+    importalni a fleet-et, mert csak mem-save volt. Az `owner` mezot innen mindig
+    a hivo agens adja, tehat egy elgepelt id nem irhat at mas emleket -- ez a
+    szerver elgepeles-vedelme, nem jogosultsag."""
+    _warn_accents(content)
+    payload = {"content": content, "owner": agent}
+    if category:
+        payload["category"] = category
+    if keywords is not None:
+        payload["keywords"] = keywords
+    return api("PUT", f"/api/memories/{int(mem_id)}", payload)
 
 
 def search_memory(agent, q, category=None):
@@ -81,11 +296,62 @@ def search_memory(agent, q, category=None):
     return api("GET", path)
 
 
+# --- naplo-fejlec ideje ------------------------------------------------------
+# jean javaslata, 2026-09-09: a `## HH:MM` fejlecet ne kezzel irjuk be. A hiba
+# nem a szabaly nem-ismerese: jean mindketszer lefuttatta elotte a date-et, de a
+# szoveg megirasa alatt eltelt ido, es a MAR LATOTT erteket gepelte be (+1,3 es
+# +0,8 perc a jovoben). Ugyanez nagyban: peppa 25 bejegyzesebol 17 fejlece kerult
+# a jovobe, a legnagyobb elteres 361 perc, mert minden fejlecet az elozo KITALALT
+# fejlechez igazitott.
+# Ezert a helper csereli a fejlecet a bekuldes pillanataban:
+#   - a literal "HH:MM" helyorzot mindig,
+#   - a JOVOBELI idopontot (1-120 perccel a szerveridonel kesobb) szinten.
+# A korabbi fejlecet NEM bantja: az jelolheti a munka kezdetet, es a szabaly
+# iranya egyertelmu -- a fejlec lehet korabbi, kesobbi soha. A 120 perces korlat
+# az ejfel-atfordulas es a szandekosan mas napra irt bejegyzes miatt van.
+_HEADER_RE = None
+
+
+def fix_log_header(content, now=None):
+    """(javitott_tartalom, megjegyzes_vagy_None). Sosem dob."""
+    global _HEADER_RE
+    try:
+        import re
+        import datetime
+        if _HEADER_RE is None:
+            _HEADER_RE = re.compile(r"^(\s*#{1,6}\s*)(HH:MM|([01]?\d|2[0-3]):([0-5]\d))")
+        first_nl = content.find("\n")
+        head = content if first_nl < 0 else content[:first_nl]
+        m = _HEADER_RE.match(head)
+        if not m:
+            return content, None
+        now = now or datetime.datetime.now()
+        real = now.strftime("%H:%M")
+        if m.group(2) == "HH:MM":
+            return content.replace(m.group(0), m.group(1) + real, 1), \
+                f"naplo-fejlec: HH:MM helyorzo -> {real}"
+        written = int(m.group(3)) * 60 + int(m.group(4))
+        current = now.hour * 60 + now.minute
+        drift = written - current
+        if 0 < drift <= 120:
+            return content.replace(m.group(0), m.group(1) + real, 1), \
+                (f"naplo-fejlec javitva: {m.group(2)} -> {real} "
+                 f"({drift} perccel a JOVOBEN volt; a fejlec lehet korabbi, kesobbi soha)")
+        return content, None
+    except Exception:
+        return content, None
+
+
 def daily_log(agent, content):
+    content, note = fix_log_header(content)
+    if note:
+        print(note, file=sys.stderr)
+    _warn_accents(content)
     return api("POST", "/api/daily-log", {"agent_id": agent, "content": content})
 
 
 def send_message(from_agent, to_agent, content):
+    _warn_accents(content)
     return api("POST", "/api/messages", {"from": from_agent, "to": to_agent, "content": content})
 
 
@@ -202,6 +468,10 @@ def main(argv):
                          rest[3] if len(rest) > 3 else ""))
     elif cmd == "mem-search":
         _out(search_memory(rest[0], rest[1], rest[2] if len(rest) > 2 else None))
+    elif cmd == "mem-update":
+        _out(update_memory(rest[0], rest[1], _arg(rest[2]),
+                           rest[3] if len(rest) > 3 else None,
+                           rest[4] if len(rest) > 4 else None))
     elif cmd == "daily-log":
         _out(daily_log(rest[0], _arg(rest[1])))
     elif cmd == "msg":
@@ -209,6 +479,10 @@ def main(argv):
     elif cmd == "agents":
         _out([{"name": a.get("name"), "running": a.get("running"),
                "model": a.get("model")} for a in list_agents()])
+    elif cmd == "accent-audit":
+        _out(accent_audit(rest[0] if rest else "out",
+                          rest[1] if len(rest) > 1 and rest[1] != "-" else None,
+                          rest[2] if len(rest) > 2 else None))
     elif cmd == "kanban-due":
         _out(kanban_due_today())
     elif cmd == "kanban-stuck":
