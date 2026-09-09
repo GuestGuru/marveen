@@ -17,10 +17,29 @@ CLI (fewer tokens than a curl block) or import as a module:
 python3 fleet.py mdv2 "Tomorrow (8:00) - report!"   # escaped MarkdownV2
 python3 fleet.py mem-save  <agent> "text" warm "k1, k2"
 python3 fleet.py mem-search <agent> "query" warm
+python3 fleet.py mem-update <agent> <id> "new text" [category] [keywords]
 python3 fleet.py msg <from> <to> "message"
 python3 fleet.py agents
 python3 fleet.py kanban-due | kanban-stuck <sec> | kanban-status <status>
+python3 fleet.py accent-audit <out|log|mem> [agent] [days]
 ```
+
+Accent gate (Hungarian text): `mem-save`, `daily-log` and `msg` warn on stderr
+when the text looks Hungarian but is nearly accent-free (< 2.0 accents per 100
+chars, measured threshold). It warns, never blocks. `accent-audit` runs the same
+check over what was ALREADY written, straight from SQLite (the memory API
+truncates silently, so completeness claims must not come from it):
+`out` = outbound channel messages, `log` = daily logs, `mem` = memories.
+Post-send auditing of `out` is brokermarcsi's idea, 2026-09-09. When it warns,
+the message also reports the ratio over Hungarian sentences only, so a bilingual
+text (Hungarian frame around an English draft) is recognisable at a glance
+instead of being re-checked by hand.
+
+Daily-log header: `daily-log` sets the `## HH:MM` header itself at submit time --
+it fills in a literal `HH:MM` placeholder, and rewrites a header that sits 1-120
+minutes in the FUTURE. An earlier header is left alone (it may mark when the work
+started); a later one is always wrong. Write the header as `## HH:MM -- Topic` and
+let the helper stamp it, rather than typing the clock value you saw minutes ago.
 
 MarkdownV2: `escape_mdv2()` escapes literal text. Escape the dynamic text first,
 then add your own `*...*` bold markers around the escaped pieces.

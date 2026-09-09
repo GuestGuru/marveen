@@ -329,6 +329,22 @@ Mérve 2026-09-09: bubi 13 romlott napló-bejegyzés, **0 visz parancsot**; marv
 149 romlott, **0 visz parancsot** (két találat volt, mindkettő idézett próza egy
 mondat közepén, nem minta). Vagyis eddig a napló-romlás tényleg csak olvashatóság.
 
+⚠️ **A NAPLÓ VIHET IDÉZETT RENDSZER-SZÖVEGET, AMINEK A FORRÁSA ÉKEZETES**
+(jean mérése, 2026-09-09 -- alfaj bubi carry-taxonómiájához). Nem futtatható
+hiba, tehát az előző bekezdés szűrője nem fogja meg, de aki a naplóból másolja ki
+a nevet egy kereséshez, NEM TALÁLJA MEG. jean naplójában a VIP mérföldkő neve
+`Tulajdonosi e-mail kikuldese es a weboldali szoveg elesitese`, a Linearben
+viszont „Tulajdonosi e-mail, weboldali szöveg és szerződés-kiegészítés élesítése".
+Ez a Drive-mappás buktató párja, csak befelé fordítva: ott a KERESÉS volt ékezet
+nélküli egy ékezetes névre, itt a TÁROLT idézet az.
+
+⚠️ **A KÜSZÖBNEK IS A KÖZÖSET KELL KÖVETNIE, NEM CSAK A HALMAZNAK** (peppa
+mérése, 2026-09-09). Az ő bekezdés-keresője NULLA ékezetre szűrt, a flottáé
+sűrűségre: ha egy bekezdésben egyetlen ékezet áll 500 karakteren, az romlott, de
+a szigorúbb kritérium átengedte volna. Nála véletlenül nem volt ilyen, tehát az
+eredménye helyes lett -- **de nem a módszere miatt.** Két ágens „nulla romlott"-ja
+csak akkor jelenti ugyanazt, ha a KÜSZÖB is közös, nem csak a vizsgált halmaz.
+
 ⚠️ **A MONDAT-DETEKTORNÁL A SZEGMENTÁLÁS AKKORA HIBAFORRÁS, MINT A KÜSZÖB**
 (jean mérése, 2026-09-09). Aki csak a `[.!?]` jelekre vág, a felsorolásos
 bejegyzésnél a romlott fejmondatot ÖSSZEOLVASSA a mögötte álló, ékezetes listával,
