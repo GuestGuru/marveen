@@ -176,6 +176,45 @@ def worst_paragraph(text):
         return None, 0, None
 
 
+# jean merese, 2026-09-09 este: a bekezdes-szintu vizsgalat NEM eleg, mert a
+# hungarian_ratio a bekezdesen BELUL is atlagol. Ha egy bekezdesben a mai,
+# ekezetes zaradek egyutt all a regi, ekezet nelkuli mondatokkal, a bekezdes
+# atlaga a kuszob FOLE kerul, es a romlott mondatok elrejtoznek. Minel gondosabb
+# a zaradek, annal tisztabbnak latszik a romlott torzs.
+# A MONDAT-szintu ellenorzes ezt megfogja: magyarnak latszo, 120 karakternel
+# hosszabb mondat NULLA ekezettel. Merve a teljes korpuszon: a ket modszer
+# egymast EGESZITI KI, nem valtja -- 3 sort csak a mondat-szintu talal (jean
+# #439 shared, bubi #532, marveen #762), 3 sort csak a bekezdes-szintu.
+# Ezert a partial a KETTO UNIOJA, es a sor megmondja, melyik fogta meg.
+SENTENCE_MIN_LEN = 120
+_ZS_SENT = None
+_ZS_WORD = None
+
+
+def zero_accent_sentences(text):
+    """Magyarnak latszo, hosszu mondatok NULLA ekezettel. Sosem dob."""
+    global _ZS_SENT, _ZS_WORD
+    try:
+        import re
+        if _ZS_SENT is None:
+            _ZS_SENT = re.compile(r"[^.!?\n]+[.!?]?")
+            _ZS_WORD = re.compile(r"[0-9a-zA-Z\u00c0-\u017f]+")
+        out = []
+        for sent in _ZS_SENT.findall(text or ""):
+            if len(sent) < SENTENCE_MIN_LEN:
+                continue
+            words = [w.lower() for w in _ZS_WORD.findall(sent)]
+            if len(words) < 5:
+                continue
+            if sum(1 for w in words if w in _HU_FUNC) < 2:
+                continue
+            if not any(ch in HU_ACCENTS for ch in sent):
+                out.append(sent)
+        return out
+    except Exception:
+        return []
+
+
 def accent_warning(text):
     """Vissza egy figyelmezteto sort, ha a szoveg magyarnak latszik es gyanusan
     ekezettelen; egyebkent None. Sosem dob es sosem blokkol."""
@@ -298,11 +337,18 @@ def accent_audit(source="out", agent=None, days=None):
             flagged.append(_row(rid, aid, day, text, n, per100))
         else:
             p_ratio, p_hu_len, para = worst_paragraph(text)
-            if p_ratio is not None:
+            zsents = zero_accent_sentences(text)
+            if p_ratio is not None or zsents:
                 row = _row(rid, aid, day, text, n, per100)
-                row["worst_paragraph_per100"] = round(p_ratio, 2)
-                row["worst_paragraph_hu_chars"] = p_hu_len
-                row["head"] = " ".join(para.split())[:120]
+                row["detector"] = ("both" if (p_ratio is not None and zsents)
+                                   else ("paragraph" if p_ratio is not None
+                                         else "sentence"))
+                if p_ratio is not None:
+                    row["worst_paragraph_per100"] = round(p_ratio, 2)
+                    row["worst_paragraph_hu_chars"] = p_hu_len
+                row["zero_accent_sentences"] = len(zsents)
+                sample = para if p_ratio is not None else zsents[0]
+                row["head"] = " ".join(sample.split())[:120]
                 partial.append(row)
     flagged.sort(key=lambda f: (f["date"], f["id"]))
     partial.sort(key=lambda f: (f["date"], f["id"]))

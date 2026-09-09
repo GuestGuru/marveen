@@ -292,9 +292,30 @@ javítások után): **14 ilyen sor**, ebből 2 a közös polcon. Három kézzel
 ellenőrzött minta (jean #431, #437, salesninja #630) mind valódi romlás volt --
 összefüggő magyar próza, nulla ékezettel, egy egyébként ép bejegyzés belsejében.
 
-Az `accent-audit` ezért a küszöb FÖLÖTTI sorokat is megnézi bekezdésenként, és
-külön adja vissza őket: `partial` (darabszám) és `partial_rows`, soronként a
-`worst_paragraph_per100` értékkel és a bekezdés első 120 karakterével.
+Az `accent-audit` ezért a küszöb FÖLÖTTI sorokat is megnézi, és külön adja vissza
+őket: `partial` (darabszám) és `partial_rows`. **KÉT detektor uniója**, mert a
+kettő egymást egészíti ki, nem váltja:
+
+- **`paragraph`** -- a bekezdés magyar mondataira vett arány a küszöb alatt van.
+- **`sentence`** -- van magyarnak látszó, 120 karakternél hosszabb mondat NULLA
+  ékezettel. jean mérése, 2026-09-09 este: **a bekezdés-szintű vizsgálat sem
+  elég**, mert a `hungarian_ratio` a bekezdésen BELÜL is átlagol. Ha a mai,
+  ékezetes záradék ugyanabban a bekezdésben áll a régi, ékezet nélküli
+  mondatokkal, a bekezdés átlaga a küszöb fölé kerül. **Minél gondosabb a
+  záradék, annál tisztábbnak látszik a romlott törzs.**
+
+Mérve a teljes korpuszon: 3 sort CSAK a mondat-szintű talál (jean #439 shared,
+bubi #532, marveen #762), és 3 sort CSAK a bekezdés-szintű. Ezért kell mindkettő.
+A sor `detector` mezője megmondja, melyik fogta meg (`paragraph` / `sentence` /
+`both`), a minta pedig a `head`-ben áll.
+
+⚠️ **A SABLONBÓL GENERÁLT SZÖVEG N BEJEGYZÉST ront el egyszerre** (salesninja
+mérése, 2026-09-09): egy Python-konstansból generált záradékot négy bejegyzésbe
+másolt, és a konstans ékezet nélkül készült. Hármat később kézzel újraírt, a
+negyedik (#630) bennmaradt. **Egy kézzel írt hiba egy bejegyzést ront el, egy
+sablon-hiba annyit, ahányba beteszed.** Ha egy javítás TÖBB bejegyzésbe visz
+azonos szöveget, azt az EGY szöveget mérd meg, mielőtt kiküldöd -- harminc
+másodperc, és nála négy bejegyzést mentett volna meg.
 
 **A bekezdés-vizsgálat a MAGYAR MONDATOKRA szűkítve fut**, nem nyers
 karakterarányon -- és ez nem finomkodás. Nyers aránnyal 21 találat jönne, és
