@@ -73,9 +73,10 @@ Ha van DEAD vagy STALE:
    **A lokális mérés két sor, és a legtöbb esetben ELÉG** (a build a lokális forrásból
    készül, tehát ami változott, annak az mtime-ja a build ideje):
    ```bash
-   find /home/gg/gg-mcp/src -name '*.ts' -newermt '<a build napja> 00:00' -printf '%TH:%TM %p\n' | sort
+   GGMCP="${GGMCP:-$HOME/gg-mcp}"   # a gg-mcp telepites gyokere
+   find "$GGMCP/src" -name '*.ts' -newermt '<a build napja> 00:00' -printf '%TH:%TM %p\n' | sort
    grep -ohE '"(gg|gg3|sales|channex|github|sentry|gcp|irnok|wiki|slack)_[a-z_]+"' \
-     /home/gg/gg-mcp/dist/tools/<a valtozott fajl>.js | tr -d '"' | sort -u
+     "$GGMCP/dist/tools/<a valtozott fajl>.js" | tr -d '"' | sort -u
    ```
    Az első megmondja, MELYIK forrásfájl változott, a második, hogy jött-e ÚJ tool.
    **A kettő együtt dönti el a sürgősséget:** új tool nélkül a kollégák semmit nem
