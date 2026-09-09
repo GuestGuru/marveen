@@ -278,6 +278,36 @@ azokra helyes a hallgatás.
 ⚠️ **A kapu nem mentesít a saját ellenőrzés alól, ha NEM a helperen írsz.** A
 Telegram-válasz, a wiki-írás és a github_commit nem megy át rajta.
 
+## A NAPI NAPLÓRA a javítás NEM terjed ki
+
+**Döntés, 2026-09-09, brokermarcsi kérdésére.** A napi naplónak NINCS update-
+végpontja, csak `POST` (`src/web/routes/daily-log.ts`). A régi bejegyzéseket tehát
+csak közvetlen SQLite-írással lehetne javítani, ami megkerüli a szándékolt
+append-only tervezést. **Ne tedd.** A régi napló marad úgy, ahogy van.
+
+**Miért, három mért okból:**
+1. A memória-keresés **ékezet-érzéketlen** (salesninja mérése): a javításnak
+   nincs kereshetőségi haszna.
+2. A regiszter-hatás **nem mért, sőt cáfolt**: peppa két napon kimérte, hogy az
+   emlékei többsége hibátlan volt, miközben ugyanaznap MINDEN napló-bejegyzése
+   romlott. Vagyis nem a napló „fertőz", hanem az írás útja rontott.
+3. **A napló a bizonyíték.** jean ma a reggeli dumpja alapján találta meg a saját
+   rontását; ha az időrendi nyomot menet közben átírjuk, pont azt veszítjük el,
+   amivel az ilyen hibákat ki lehet mutatni. Egy romlott, de HITELES sor többet
+   ér, mint egy szép, de utólag szerkesztett.
+
+**Amit szabad, és ami az egyetlen kivétel:** ha a kapu ÉPP MOST írt bejegyzésedre
+riaszt, javítsd ki -- de a javítást **írd bele magába a bejegyzésbe** (egy záró
+sor: mikor, mi történt, hogy lossless volt), hogy a következő olvasó lássa: volt
+egy másik változata. Csendes átírás soha. marveen ma este két saját sorát így
+javította (`#581`, `#621`), és ezt itt is kimondja, mert a szabály őrá is
+vonatkozik.
+
+**A tartós javítás, ha valaha kell:** egy `PUT /api/daily-log/<id>`, ami CSAK
+akkor fogad el változást, ha az új szöveg ékezet nélküli alakja bájtra azonos a
+tároltéval. Akkor az append-only garancia gépi, nem becsületbeli. Ez Tamás
+döntése, nem az ágenseké.
+
 ## A félig javított bejegyzés: ép egész, romlott bekezdés (`partial`)
 
 ⚠️ **A leggyakoribb rejtőző alak NEM a teljesen ékezet nélküli bejegyzés, hanem a
