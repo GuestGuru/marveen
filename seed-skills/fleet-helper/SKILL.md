@@ -245,6 +245,75 @@ only does the judgment + notification. Zero scheduler/runner changes. See
   a lekérdezés egyáltalán lefutott-e (exit kód, kivétel), különben a hiányzó CLI
   vagy egy rossz oszlopnév hamis "minden tiszta" jelentéssé válik.
 
+## Ékezet-kapu a write-ágakon (2026-09-09 óta)
+
+A `daily-log`, `mem-save` és `msg` ág kiküldés ELŐTT megnézi a tartalmat, és ha
+200 karakternél hosszabb, magyarnak látszik (legalább két gyakori magyar
+kötőszó ékezet nélkül is felismerhető alakban), és 2,0 ékezet/100 karakter alatt
+van, egy `FIGYELEM: ekezet-gyanu` sort ír a **stderr**-re. **NEM blokkol** -- a
+helyes szöveget sosem akarjuk megállítani, és egy fals riasztás nem érhet többet
+egy elveszett bejegyzésnél.
+
+**Miért kell, ha a helper amúgy is átviszi az ékezetet:** mert két külön ok van,
+és a helper csak az egyiket zárja ki.
+- **(a) az írás útja** -- ágyazott `printf`, `python -c`, `$(...)`: az ékezetek az
+  aposztrófokkal együtt esnek ki. Ezt a STDIN + `json.dumps` megoldja.
+- **(b) a munkaanyag regisztere** -- a szöveg MÁR ékezet nélkül születik meg (pl.
+  egy audit közben olvasott sok régi, ékezet nélküli bejegyzés után). Ezt a
+  helper NEM fogja meg, mert pontosan azt viszi be, amit kap. Bizonyíték: jean
+  négy bejegyzése közül három nulla ékezetes volt, a negyedik 98, és mind a négy
+  ugyanazon az úton ment be.
+
+**A küszöb mért, nem tippelt** (salesninja, 2026-09-09, n=47 napló + n=173
+üzenet): a romlott szövegek 0,00-0,13 ékezet/100 karakter között vannak, az épek
+5,66-11,36 között. A 60-szoros rés miatt a 2,0 sem fals riasztást, sem
+átcsúszást nem ad. **A puszta „nulla ékezet" ellenőrzés KEVÉS**: két romlott
+bejegyzés egyetlen ékezetet megtartott (tulajdonnévben), és átcsúszott volna.
+
+**Visszamérve a valós adaton:** napi napló 10/10 elkapva, 0 elszalasztva, 0 fals
+riasztás; üzenetek 10 elkapva, 0 fals riasztás. A két „nem jelzett" romlott
+üzenet gépi hook-riasztás volt (PROD-FA ŐRSÉG), nem ágens által írt próza --
+azokra helyes a hallgatás.
+
+⚠️ **A kapu nem mentesít a saját ellenőrzés alól, ha NEM a helperen írsz.** A
+Telegram-válasz, a wiki-írás és a github_commit nem megy át rajta.
+
+## Utólagos ékezet-audit (`accent-audit`) -- és a `flagged: 0` csapdája
+
+```bash
+python3 $P/fleet.py accent-audit mem  marveen      # forrás: out | log | mem
+python3 $P/fleet.py accent-audit out  -  7         # minden ágens, utolsó 7 nap
+```
+
+A kaput lefuttatja MÁR LEÍRT szövegeken, a **DB-ből** (nem az API-ból, az némán
+csonkít). Ez nem előzi meg a hibát, hanem kimutatja, és nem a szándékon múlik.
+
+⚠️ **A `flagged: 0` ÖNMAGÁBAN NEM TELJESSÉG-ÁLLÍTÁS, és ezt mérve tudjuk.**
+bubi mérése, 2026-09-09: 34 saját emlékéből az audit **28-at vizsgált meg**, a
+hatból **kettő tényleg romlott volt** (0,00 ékezet/100 karakter), és a nyelvi
+szűrő rejtette el őket. Ugyanezen a napon nálam a shared polcon egy bejegyzés
+(#721) ugyanígy csúszott át, miután épp azt jelentettem, hogy nulla romlott van.
+
+**Az ok szerkezeti, nem küszöb-hangolás kérdése.** A kihagyott bejegyzések
+jórészt TULAJDONNEVEKBŐL és rendszernevekből állnak (lakásnév, ágensnév, e-mail
+cím, összegek), tehát kevés bennük a magyar funkciószó. A nyelvi szűrő pont ott
+gyengül el, ahol a szöveg adatszerű -- és a memóriában pont az ilyen bejegyzés a
+gyakori. bubi saját, FÜGGETLENÜL írt szűrője ugyanezt a két sort hagyta ki,
+ugyanezért: két egymástól független szűrő ugyanott vakult meg.
+
+**Ezért a válasz megmondja, mihez képest nulla:**
+- `checked` -- ennyi sort vizsgált meg ténylegesen
+- `skipped.short` -- 200 karakter alatt, ki sem került a vizsgálatba
+- `skipped.nonhu` -- a nyelvi szűrő dobta ki
+- `skipped.nonhu_below_threshold` + `nonhu_below_rows` -- ezek közül HÁNY (és
+  melyik) állna a küszöb alatt, ha mégis megmérnénk. **Ez a lista a lényeg:**
+  amíg ez nem üres, a `flagged: 0` nem jelenti, hogy nincs romlott sor.
+
+**Teljesség-állítás előtt** ezért mindig a `checked` + `skipped` összegét vesd
+össze a korpusz méretével, és nézd meg a `nonhu_below_rows`-t. Ha nulla romlottat
+akarsz állítani, azt nyelvi szűrő NÉLKÜL, csak hosszra szűrve mérd -- az a mérés
+nem tud alulmérni.
+
 ## Safety
 - Token is read from `store/.dashboard-token` at call time; never printed or committed.
 - Kanban helpers are READ-ONLY; mutations stay in your own audited flows.
