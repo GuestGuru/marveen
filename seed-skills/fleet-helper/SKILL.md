@@ -329,6 +329,24 @@ Mérve 2026-09-09: bubi 13 romlott napló-bejegyzés, **0 visz parancsot**; marv
 149 romlott, **0 visz parancsot** (két találat volt, mindkettő idézett próza egy
 mondat közepén, nem minta). Vagyis eddig a napló-romlás tényleg csak olvashatóság.
 
+⚠️ **A MONDAT-DETEKTORNÁL A SZEGMENTÁLÁS AKKORA HIBAFORRÁS, MINT A KÜSZÖB**
+(jean mérése, 2026-09-09). Aki csak a `[.!?]` jelekre vág, a felsorolásos
+bejegyzésnél a romlott fejmondatot ÖSSZEOLVASSA a mögötte álló, ékezetes listával,
+és a találat eltűnik. jean #439-ese pontosan így csúszott át a saját mérőjén:
+253 karakteres romlott nyitó mondat, utána sortörés és ékezetes felsorolás.
+**Sortörésre is vágni kell.** A `zero_accent_sentences()` ezt teszi
+(`[^.!?\n]+[.!?]?` -- a `\n` bent van a kizárt osztályban); visszamérve ugyanazon
+a szövegen a helyes bontó 1 találatot ad, a naiv 0-t.
+
+⚠️ **A PER-JEL NEM AZONOSÍT ÚTVONALAT** (bubi mérése, 2026-09-09). A carry-
+ellenőrzésnél kézenfekvő az útvonal-gyanús tokeneket keresni, de magyar szövegben
+a `/` sokkal gyakrabban „és/vagy" jelentésű elválasztó. bubi öt találatából négy
+valódi útvonal volt (`lakasok/reviews`, `api/schedules`, skill-név), amik
+EREDETILEG is ékezet nélküliek és helyesek -- az ötödik, a
+„nagytakaritasra/szerelesre", viszont sima romlott magyar szópár.
+**A gépies „javítás" itt pont fordítva sülne el:** átírná a négy helyes útvonalat,
+és bent hagyná az egyetlen ténylegesen romlott részt.
+
 ⚠️ **A LOSSLESS-ELLENŐRZÉS INVARIÁNSA `strip(új) == strip(régi)`, NEM
 `strip(új) == régi`** (marlenka mérése, 2026-09-09). A naiv alak félig javított
 bejegyzésnél HAMIS eltérést dob: a már ékezetes záradékból az ellenőrzés
