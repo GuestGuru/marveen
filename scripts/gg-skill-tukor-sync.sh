@@ -67,6 +67,25 @@ done < <(sed -nE 's#^skills/\*\*/(.+)$#\1#p' "$PRIVATE_MIRROR_ROOT/.gitignore" 2
 # report a confident "azonos" while a helper silently drifted. That is the same
 # blind spot as the agents/ one below, one level down -- found 2026-08-28 while
 # fixing the first.
+# How many LIVE copies of a skill NAME exist across the three scopes.
+#
+# Measured 2026-09-09: bubi asked for a copy of two of peppa's skills, with a
+# provenance line added to the copy. Both live copies then mapped onto the SAME
+# tracked mirror, so `--fix` would have overwritten peppa's mirror with bubi's
+# annotated copy -- silently, on the next routine parity run by whoever got there
+# first. The report is still right (the difference IS real), but the automatic
+# repair is not: with two live copies there is no single source of truth to copy
+# FROM, and picking one is a decision, not a sync.
+live_copies() {
+  local name="$1" n=0 d
+  [ -f "$HOME/.claude/skills/$name/SKILL.md" ] && n=$((n + 1))
+  [ -f ".claude/skills/$name/SKILL.md" ] && n=$((n + 1))
+  for d in agents/*/.claude/skills/"$name"/SKILL.md; do
+    [ -f "$d" ] && n=$((n + 1))
+  done
+  echo "$n"
+}
+
 check_one() {
   local live="$1" name="$2" scope="$3" m mirror lf mf f repo
   # The PRIVATE repo is checked first: since 2026-09-01 that is where a GG-specific
@@ -83,6 +102,13 @@ check_one() {
     git -C "$repo" ls-files --error-unmatch "${mirror#$repo/}/SKILL.md" >/dev/null 2>&1 || continue
     if diff -rq $DIFF_EXCLUDES "$live" "$mirror" >/dev/null 2>&1; then
       same=$((same + 1))
+    elif [ "$FIX" = "1" ] && [ "$(live_copies "$name")" -gt 1 ]; then
+      echo "  TOBB-PELDANY  $name  ($scope)  -- NEM fixelek, mert $(live_copies "$name") elo peldany kepzodik le UGYANARRA a tukorre:"
+      for d in "$HOME/.claude/skills/$name" ".claude/skills/$name" agents/*/.claude/skills/"$name"; do
+        [ -f "$d/SKILL.md" ] && echo "      $d"
+      done
+      echo "      A masolas itt DONTES: melyik peldany a forras? Nezd meg, es fixelj kezzel."
+      stale=$((stale + 1))
     elif [ "$FIX" = "1" ]; then
       cp -r "$live/." "$mirror/"
       # A file dropped from the live skill must disappear from the mirror too,
