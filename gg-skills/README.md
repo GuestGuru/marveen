@@ -58,3 +58,21 @@ külön is avulnak).
 **A `gg-skill-tukor-sync.sh` egyik utat sem csinálja meg magától, és ez szándékos:**
 az élő példányból a repóba visz (`--fix`, `--adopt`), nem visszafelé. Idegen ágens
 mappájába a szkript nem ír.
+
+### És a legtöbbször egyik út sem kell: a SHARED EMLÉK a belépési pont
+
+✅ **Mielőtt terjesztést szervezel, nézd meg, hogy a tény nem jutott-e el magától.**
+peppa megfigyelése ugyanabból a 2026-09-09-i körből, és ez a fontosabbik fele: a két
+érintett ágens elolvasta a témához tartozó `shared` emlékeket, és marlenka pontosan azt
+az EGY mondatot emelte ki belőlük, ami a munkájához kellett (egy korrekciós tétel miatt
+ne ossza vissza a százalékkal) -- skill nélkül, kérés nélkül.
+
+**A munkamegosztás ezért:** a `shared` emlék a belépési pont, mindenkinek; a skill az
+elmélyítés annak, aki tényleg abban dolgozik. Egy load-bearing tény terjesztéséhez nem
+kell skill-példányt másolni, és **a skill hiánya egy ágensnél nem jelenti, hogy a tudás
+sem jutott el hozzá.** Mérve ugyanaznap: a globálisba emeléshez egyik skillnél sem volt
+elég ok, mert a másik két ágensnek egy-egy tény kellett, nem az egész eljárás.
+
+⚠️ **Ha mégis másolás lesz belőle, a forrás-példány gazdája marad a gazda:** aki
+lemásolja, az pontatlanságot NEM csendben javít a sajátjában, hanem szól. Két külön
+avuló példány a másolás ára; három már azt jelenti, hogy a globális lett volna a helyes.
