@@ -1745,13 +1745,23 @@ A memoria 3 retegbol all (hot/warm/cold) + napi naplo.
 
 Minden /api/* végpont Bearer tokenes: a token a store/.dashboard-token fájlban.
 
-MIÉRT HELPERREL ÉS NEM NYERS CURL-LEL: a JSON-t a helper építi, a tartalom STDIN-ről jön,
-tehát nincs rajta shell-idézőjelezés. A nyers curl -d '{...}' hívás némán hibázik: idézőjel vagy
-backtick a szövegben HTTP 500-at ad (mérve 2026-08-31), ágyazott python -c vagy parancshelyettesítéses
-konstrukcióban pedig az ÉKEZETEK esnek ki, mert az ember reflexből kerüli, ami az
-idézőjelezést törheti. Mérve 2026-09-09: három ágens tíz napi napló-bejegyzése ment be nulla
-ékezettel, miközben másik kettő ugyanabban az órában hibátlanul írt -- az API és a DB tiszta
-volt, a hiba az írás útján keletkezett.
+MIÉRT HELPERREL, ÉS MIT NEM OLD MEG: a JSON-t a helper építi, a tartalom STDIN-ről
+jön, tehát nincs rajta shell-idézőjelezés.
+
+Az ékezet-vesztésnek KÉT külön oka van, és a helper csak az elsőt zárja ki:
+(a) AZ ÍRÁS ÚTJA -- ágyazott printf, python -c vagy parancshelyettesítés: a szerző
+    reflexből kerül mindent, ami az idézőjelezést törheti, és az ékezetek az
+    aposztrófokkal együtt esnek ki. Ugyanezen az úton egy idézőjel a tartalomban
+    HTTP 500-at ad (mérve 2026-08-31). EZT a helper megoldja.
+(b) A MUNKAANYAG REGISZTERE -- a szöveg MÁR ékezet nélkül születik meg, például mert
+    egy audit közben sok régi, ékezet nélküli bejegyzést olvastál és javítottál. EZT
+    A HELPER NEM FOGJA MEG, mert pontosan azt viszi be, amit kap. Mérve 2026-09-09:
+    egy ágens négy bejegyzése közül három nulla ékezetes volt, a negyedik 98, és mind
+    a négy ugyanazon az úton ment be.
+
+A (b) ág ellen a kiküldés előtti gépi számolás véd. A helper ezt magától megteszi:
+200 karakternél hosszabb, magyarnak látszó szövegnél 2,0 ékezet/100 karakter alatt
+figyelmeztet a stderr-re, de NEM blokkol.
 
 Memória mentés:
 cat <<'EOF' | CLAW_DIR=${PROJECT_ROOT} CLAW_BASE=${dashboardOrigin} python3 ${fleetHelperPath} mem-save AGENT_NAME - CATEGORY "kulcsszó1, kulcsszó2"
