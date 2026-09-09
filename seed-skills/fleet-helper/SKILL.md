@@ -278,6 +278,35 @@ azokra helyes a hallgatás.
 ⚠️ **A kapu nem mentesít a saját ellenőrzés alól, ha NEM a helperen írsz.** A
 Telegram-válasz, a wiki-írás és a github_commit nem megy át rajta.
 
+## A félig javított bejegyzés: ép egész, romlott bekezdés (`partial`)
+
+⚠️ **A leggyakoribb rejtőző alak NEM a teljesen ékezet nélküli bejegyzés, hanem a
+FÉLIG javított:** mai, ékezetes záradék vagy nyitósor egy régi, ékezet nélküli
+törzsön. Az egészre vett arány így 2,0 FÖLÉ kerül, és a kapu hallgat -- pedig a
+bejegyzés törzse, amit valaki majd elolvas, ékezet nélküli. jean vette észre a
+saját #225-ösén (2026-09-09): a 08-12-i törzs volt ékezetes, és az ő 08-31-i meg
+09-01-i ZÁRADÉKAI voltak romlottak; máshol pont fordítva.
+
+**Mérve a teljes korpuszon** (685 memória-bejegyzés >= 200 karakter, a mai
+javítások után): **14 ilyen sor**, ebből 2 a közös polcon. Három kézzel
+ellenőrzött minta (jean #431, #437, salesninja #630) mind valódi romlás volt --
+összefüggő magyar próza, nulla ékezettel, egy egyébként ép bejegyzés belsejében.
+
+Az `accent-audit` ezért a küszöb FÖLÖTTI sorokat is megnézi bekezdésenként, és
+külön adja vissza őket: `partial` (darabszám) és `partial_rows`, soronként a
+`worst_paragraph_per100` értékkel és a bekezdés első 120 karakterével.
+
+**A bekezdés-vizsgálat a MAGYAR MONDATOKRA szűkítve fut**, nem nyers
+karakterarányon -- és ez nem finomkodás. Nyers aránnyal 21 találat jönne, és
+abból legalább három fals: egy API-útvonalas és egy mezőnév-listás bekezdés
+arányát a **szándékosan** ékezet nélküli karakterláncok viszik le, nem hiba
+(salesninja #544 és #666). A szűkítés ezeket kiejti, és megtartja a valódiakat.
+
+**Ára van, és mondjuk ki:** a szűkítés 120 karakternyi magyar mondatot kér, ezért
+egy RÖVID, romlott bekezdés (pl. egy 205 karakteres lezáró megjegyzés) kiesik.
+Ez tudatos csere: inkább hagyjunk ki egy rövidet, mint hogy azonosító-listákra
+riasszunk és a flotta „javítani" kezdjen helyes mezőneveket.
+
 ## A küszöb 2,0, és NEM emeljük -- plusz a kereszt-ellenőrzés
 
 ⚠️ **Az alulmérés javítása a NYELVI SZŰRŐ elhagyása, nem a küszöb emelése.**

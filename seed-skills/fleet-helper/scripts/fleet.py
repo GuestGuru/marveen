@@ -138,6 +138,44 @@ def hungarian_ratio(text):
     return sum(1 for ch in joined if ch in HU_ACCENTS) * 100.0 / len(joined), len(joined)
 
 
+# --- felig javitott bejegyzes: ep egesz, romlott bekezdes -------------------
+# jean merese, 2026-09-09: a leggyakoribb rejtozo alak nem a teljesen ekezet
+# nelkuli bejegyzes, hanem a FELIG javitott -- mai, ekezetes zaradek vagy nyitosor
+# egy regi, ekezet nelkuli torzson. Az egeszre vett arany igy 2,0 FOLE kerul, es a
+# kapu hallgat. Merve a teljes korpuszon (685 bejegyzes >=200 karakter): 14 ilyen
+# sor, ebbol 2 a kozos polcon; mindharom kezzel ellenorzott minta valodi romlas
+# volt (jean #431, #437, salesninja #630).
+# A bekezdesre ugyanazt a MAGYAR-mondat szukitest hasznaljuk, mint a
+# figyelmeztetesben. Nyers karakterarannyal 21 talalat jonne, es abbol legalabb
+# harom fals: egy API-utvonalas es egy mezonev-listas bekezdes aranyat a
+# szandekosan ekezet nelkuli karakterlancok viszik le, nem hiba (salesninja
+# figyelmeztetese). A szukites ezeket kiejti.
+PARAGRAPH_MIN_LEN = 200
+_PARA_RE = None
+
+
+def worst_paragraph(text):
+    """(arany, hossz, bekezdes) a legrosszabb, magyarnak latszo bekezdesre egy
+    egeszkent EP szovegben, vagy (None, 0, None) ha nincs ilyen. Sosem dob."""
+    global _PARA_RE
+    try:
+        import re
+        if _PARA_RE is None:
+            _PARA_RE = re.compile(r"\n\s*\n")
+        worst = (None, 0, None)
+        for para in _PARA_RE.split(text or ""):
+            if len(para) < PARAGRAPH_MIN_LEN:
+                continue
+            ratio, hu_len = hungarian_ratio(para)
+            if ratio is None or ratio >= ACCENT_MIN_PER_100:
+                continue
+            if worst[0] is None or ratio < worst[0]:
+                worst = (ratio, hu_len, para)
+        return worst
+    except Exception:
+        return None, 0, None
+
+
 def accent_warning(text):
     """Vissza egy figyelmezteto sort, ha a szoveg magyarnak latszik es gyanusan
     ekezettelen; egyebkent None. Sosem dob es sosem blokkol."""
@@ -237,7 +275,7 @@ def accent_audit(source="out", agent=None, days=None):
                 "accents": n, "per100": round(per100, 2),
                 "head": " ".join(text.split())[:120]}
 
-    checked, flagged = 0, []
+    checked, flagged, partial = 0, [], []
     skipped_short, skipped_nonhu, nonhu_below = 0, 0, []
     for rid, aid, day, text in rows:
         if not text:
@@ -258,12 +296,23 @@ def accent_audit(source="out", agent=None, days=None):
         checked += 1
         if per100 < ACCENT_MIN_PER_100:
             flagged.append(_row(rid, aid, day, text, n, per100))
+        else:
+            p_ratio, p_hu_len, para = worst_paragraph(text)
+            if p_ratio is not None:
+                row = _row(rid, aid, day, text, n, per100)
+                row["worst_paragraph_per100"] = round(p_ratio, 2)
+                row["worst_paragraph_hu_chars"] = p_hu_len
+                row["head"] = " ".join(para.split())[:120]
+                partial.append(row)
     flagged.sort(key=lambda f: (f["date"], f["id"]))
+    partial.sort(key=lambda f: (f["date"], f["id"]))
     nonhu_below.sort(key=lambda f: (f["date"], f["id"]))
     return {"source": source, "checked": checked, "flagged": len(flagged),
+            "partial": len(partial),
             "skipped": {"short": skipped_short, "nonhu": skipped_nonhu,
                         "nonhu_below_threshold": len(nonhu_below)},
             "threshold": ACCENT_MIN_PER_100, "rows": flagged,
+            "partial_rows": partial,
             "nonhu_below_rows": nonhu_below}
 
 
