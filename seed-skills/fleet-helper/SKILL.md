@@ -308,6 +308,43 @@ akkor fogad el változást, ha az új szöveg ékezet nélküli alakja bájtra a
 tároltéval. Akkor az append-only garancia gépi, nem becsületbeli. Ez Tamás
 döntése, nem az ágenseké.
 
+**AMIT VISZONT MEG KELL MÉRNI A NAPLÓN** (bubi eljárása, 2026-09-09): mivel a
+romlás ott véglegesen bent marad, az egyetlen érdemi kérdés, hogy **visz-e tovább
+futtatható vagy másolható részt** -- parancsot, regexet, SQL-t, keresési mintát.
+Egy ékezet nélküli PRÓZA csak olvashatósági kár; egy ékezet nélküli MINTA viszont
+némán rossz eredményt ad annak, aki később kimásolja.
+
+```bash
+python3 $P/fleet.py accent-audit log <agens>     # eloszor: mi romlott, es mihez kepest
+```
+Utána a romlott sorokban keresd a parancsokat (`grep`, `curl`, `sqlite3`, `jq`,
+`python3`, `sed`, `SELECT`) ÉS a mellettük álló idézett mintákat. **Nem elég a
+parancs jelenlétét nézni**: egy prózában emlegetett `grep` nem hiba. A kérdés az,
+hogy egy MINTA vagy STRING vesztett-e ékezetet.
+- Ha nincs ilyen: tudomásul vesszük, a bejegyzés marad.
+- Ha van: a parancsot egy ÚJ, ékezetes bejegyzésben kell helyesbíteni, mert a
+  régit nem lehet. Hivatkozz benne a régi bejegyzés dátumára.
+
+Mérve 2026-09-09: bubi 13 romlott napló-bejegyzés, **0 visz parancsot**; marveen
+149 romlott, **0 visz parancsot** (két találat volt, mindkettő idézett próza egy
+mondat közepén, nem minta). Vagyis eddig a napló-romlás tényleg csak olvashatóság.
+
+⚠️ **A LOSSLESS-ELLENŐRZÉS INVARIÁNSA `strip(új) == strip(régi)`, NEM
+`strip(új) == régi`** (marlenka mérése, 2026-09-09). A naiv alak félig javított
+bejegyzésnél HAMIS eltérést dob: a már ékezetes záradékból az ellenőrzés
+lecsupaszítja az ékezetet, a régi oldalon viszont bent van. Aki így ellenőriz, azt
+hiszi, elrontotta a javítást -- rosszabb esetben „visszajavítja" a jó záradékot.
+A `agents/salesninja/tools/accent-fix.py` a HELYES alakot használja (41. sor),
+de aki saját ellenőrzőt ír, könnyen a naivat írja meg.
+
+⚠️ **A rendszernév-kivétel SZÓ-szintű, nem bejegyzés- és nem bekezdés-szintű**
+(jean mérése, 2026-09-09). Ugyanaz a MONDAT tartalmazhat javítandó magyar prózát
+ÉS érinthetetlen karakterláncot: „a Shared Drive lakas-mappa gyujtoje ... abban
+négy almappa: `Szerzodesek` / `Listing fotok` / `Info anyagok` / `Hivatalos
+doksik`" -- a próza javítandó, a négy mappanév betű szerint marad, mert a Drive-on
+tényleg így hívják. **Ezt gép nem tudja eldönteni, csak ember.** Ezért a
+`partial_rows` és a `flagged` helyes olvasata: **„nézd meg", nem „javítsd ki".**
+
 ## A félig javított bejegyzés: ép egész, romlott bekezdés (`partial`)
 
 ⚠️ **A leggyakoribb rejtőző alak NEM a teljesen ékezet nélküli bejegyzés, hanem a
