@@ -113,6 +113,19 @@ export async function tryHandleMemories(ctx: RouteContext): Promise<boolean> {
       created_label: new Date(m.created_at * 1000).toLocaleString('hu-HU', { timeZone: APP_TZ }),
       accessed_label: new Date(m.accessed_at * 1000).toLocaleString('hu-HU', { timeZone: APP_TZ }),
     }))
+    // GG fork 2026-09-09: say it out loud when the cap truncated the answer.
+    // The `limit` is silently clamped to 200 above, so a caller asking for 1000
+    // gets exactly 200 rows and NOTHING in the response says the rest exist.
+    // Measured by salesninja that day during a credential audit: 67 rows came
+    // back for an agent that has 105 in the database, so 38 memories were
+    // missing from an audit whose answer looked complete. A truncated audit that
+    // looks complete is worse than a failed one -- hence a header, not a schema
+    // change (the dashboard consumes this array as-is).
+    if (results.length >= limit) {
+      res.setHeader('X-Memories-Truncated', 'true')
+      res.setHeader('X-Memories-Limit', String(limit))
+      logger.warn({ agentId, limit, returned: results.length }, 'GET /api/memories: cap reached, answer is truncated')
+    }
     jsonMaybeGzip(req, res, formatted)
     return true
   }
