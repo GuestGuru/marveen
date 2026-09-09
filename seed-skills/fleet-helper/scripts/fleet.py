@@ -151,6 +151,16 @@ def hungarian_ratio(text):
 # szandekosan ekezet nelkuli karakterlancok viszik le, nem hiba (salesninja
 # figyelmeztetese). A szukites ezeket kiejti.
 PARAGRAPH_MIN_LEN = 200
+# A BEKEZDES-detektornak SZIGORUBB kuszob kell, mint az egesz szovegnek, mert egy
+# bekezdesben surubben allnak az azonositok, es azok huzzak le az aranyt. Merve
+# 2026-09-09, kilenc kezzel ellenorzott talalaton: a VALODI romlasok 0,00-0,19
+# kozott vannak, a FALS pozitivok 1,31-1,82 kozott (salesninja #544 API-utvonalas
+# es #666 mezonev-listas bekezdese, marveen #710, ahol a bekezdes vegig ekezetes,
+# csak tele van ilyennel: 05-prod-tree-guard, /home/gg/marveen, node_modules).
+# Az 1,0 a res kozepe. FIGYELEM: ez kilenc megfigyelesbol allitott konstans, nem
+# szaz -- ezert ad a sor `head` mezot is, hogy a talalat ranezesre ellenorizheto
+# legyen. A partial JELOLTLISTA, nem itelet.
+PARAGRAPH_MAX_PER_100 = 1.0
 _PARA_RE = None
 
 
@@ -167,7 +177,7 @@ def worst_paragraph(text):
             if len(para) < PARAGRAPH_MIN_LEN:
                 continue
             ratio, hu_len = hungarian_ratio(para)
-            if ratio is None or ratio >= ACCENT_MIN_PER_100:
+            if ratio is None or ratio >= PARAGRAPH_MAX_PER_100:
                 continue
             if worst[0] is None or ratio < worst[0]:
                 worst = (ratio, hu_len, para)
