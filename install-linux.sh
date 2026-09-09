@@ -1842,6 +1842,48 @@ StandardError=journal
 WantedBy=default.target
 EOF
 
+# channel-keepalive-probe.service/.timer -- token-free IDLE-path keepalive
+# producer (scripts/channel-keepalive-probe.sh). WHY IT MUST BE INSTALLED: the
+# freshness signal store/.channel-keepalive has two producers, and organic
+# inbound is only one of them. Without this timer, a QUIET channel ages past
+# channel-monitor's 45-min liveness-trust ceiling and the watchdog respawn-panes
+# a perfectly healthy session -- then keeps doing it every 15 min (the respawn
+# grace), because a respawn does not touch the file either. Measured on the
+# reference host 2026-09-09: 5 respawns in one hour of silence, each one losing
+# the running conversation. The probe is fail-closed (it only touches the file
+# after proving a telegram poller descends from the session's pane), so it can
+# never mask a real outage. Unit names are unprefixed on purpose: the probe
+# script itself looks for the sibling `channel-watchdog.timer` by that name.
+cat >"$SYSTEMD_DIR/channel-keepalive-probe.service" <<EOF
+[Unit]
+Description=${BOT_NAME} token-free idle-path channel keepalive probe (prevents false watchdog respawns of an idle-but-healthy channels session)
+After=${CHAN_UNIT}.service
+
+[Service]
+Type=oneshot
+ExecStart=$INSTALL_DIR/scripts/channel-keepalive-probe.sh
+Environment=PATH=$HOME/.local/bin:$HOME/.bun/bin:/usr/local/bin:/usr/bin:/bin
+Environment=HOME=$HOME
+${TZ_LINE}
+StandardOutput=append:$INSTALL_DIR/store/channel-keepalive-probe.log
+StandardError=append:$INSTALL_DIR/store/channel-keepalive-probe.log
+EOF
+
+cat >"$SYSTEMD_DIR/channel-keepalive-probe.timer" <<EOF
+[Unit]
+Description=Run the ${BOT_NAME} token-free channel keepalive probe every 3 minutes
+
+[Timer]
+# Fires well inside the 18-min staleness threshold so an idle but healthy
+# session never ages into a false respawn.
+OnBootSec=90s
+OnUnitActiveSec=3min
+AccuracySec=20s
+
+[Install]
+WantedBy=timers.target
+EOF
+
 # marveen-notify@.service -- templated app-crash notifier, fired by OnFailure=
 # drop-ins on the dashboard/channels units. OnFailure => app crash (vs the
 # host-watchdog's btime-change => host restart).
@@ -1902,16 +1944,16 @@ if pidof systemd >/dev/null 2>&1 && systemctl --user status >/dev/null 2>&1; the
   # macOS branch had. `if` rather than `&&`: a failing enable inside an if
   # CONDITION is exempt from errexit and from the ERR trap, so the installer
   # reports it instead of dying on it.
-  if systemctl --user enable "${DASH_UNIT}" "${CHAN_UNIT}" "${MORN_UNIT}.timer" "${SERVICE_ID}-host-watchdog.service" 2>/dev/null; then
+  if systemctl --user enable "${DASH_UNIT}" "${CHAN_UNIT}" "${MORN_UNIT}.timer" "${SERVICE_ID}-host-watchdog.service" "channel-keepalive-probe.timer" 2>/dev/null; then
     ok "systemd unitok generalva es engedelyezve"
   else
     warn "A unit-fajlok elkeszultek, de az engedelyezesuk nem sikerult -- ujrainditas utan a szolgaltatasok nem indulnak el maguktol."
-    # ALL FOUR units the enable above covers, not just the two services. A
-    # command that silently drops the timer and the watchdog would leave them
+    # ALL FIVE units the enable above covers, not just the two services. A
+    # command that silently drops a timer or the watchdog would leave it
     # disabled while the operator sees no error and believes the fix worked --
     # an incomplete instruction ends the same way as a false claim.
     # The label gets its own line. With "Javitas most:" in front of the command,
-    # the backslashes join all three printed lines into ONE command whose first
+    # the backslashes join all the printed lines into ONE command whose first
     # token is `Javitas`, so a pasted block fails with "Javitas: command not
     # found" and enables nothing. Measured by rendering the block and running it.
     # `bash -n` does NOT catch this: the pasted text is valid shell, just a
@@ -1920,9 +1962,13 @@ if pidof systemd >/dev/null 2>&1 && systemctl --user status >/dev/null 2>&1; the
     echo -e "  ${DIM}Javitas most:${NC}"
     echo -e "  ${DIM}systemctl --user enable \\${NC}"
     echo -e "  ${DIM}    ${DASH_UNIT} ${CHAN_UNIT} \\${NC}"
-    echo -e "  ${DIM}    ${MORN_UNIT}.timer ${SERVICE_ID}-host-watchdog.service${NC}"
+    echo -e "  ${DIM}    ${MORN_UNIT}.timer ${SERVICE_ID}-host-watchdog.service \\${NC}"
+    echo -e "  ${DIM}    channel-keepalive-probe.timer${NC}"
   fi
   systemctl --user start "${DASH_UNIT}" "${CHAN_UNIT}" 2>/dev/null || true
+  # The timer needs an explicit start: `enable` only arms it for the next boot,
+  # and until it actually ticks the keepalive stays stale-by-default.
+  systemctl --user start "channel-keepalive-probe.timer" 2>/dev/null || true
   sleep 2
   for svc in "${DASH_UNIT}" "${CHAN_UNIT}"; do
     if systemctl --user is-active --quiet "$svc" 2>/dev/null; then
