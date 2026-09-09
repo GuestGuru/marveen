@@ -14,7 +14,9 @@ const MIN = 60_000
 const GRACE = 30_000
 const TIMEOUT = 5 * MIN
 const MAX_TRACK = 6 * 60 * MIN
-const OPTS = { graceMs: GRACE, timeoutMs: TIMEOUT, maxTrackMs: MAX_TRACK }
+// ownerExtraMs: upstream v1.37 masodik fokozata (a gazdanak szolo eszkalacio).
+const OWNER_EXTRA = 75 * MIN
+const OPTS = { graceMs: GRACE, timeoutMs: TIMEOUT, maxTrackMs: MAX_TRACK, ownerExtraMs: OWNER_EXTRA }
 
 // A pane shaped like the real TUI mid-tool-call.
 function busyPane(seconds: number, tail = ''): string {
@@ -83,7 +85,7 @@ describe('decideTaskTimeout: the stall rule', () => {
   // sawTurn: az upstream 1.36-ban kerult a Pick-be (a befecskendezes tenylegesen
   // inditott-e fordulot). A GG progress-szabaly fuggetlen tole, ezert a fixture
   // false-szal indul -- a teszt targya a stalledSince, nem a sawTurn.
-  const entry = { injectedAt: 0, alerted: false, sawTurn: false }
+  const entry = { injectedAt: 0, alerted: false, ownerAlerted: false, sawTurn: false }
 
   it('REGRESSION 2026-08-14: a long but visibly working task is not a hang', () => {
     // The 07:45 memoria-heartbeat: twelve minutes of real work on a 5-minute
@@ -123,9 +125,25 @@ describe('decideTaskTimeout: the stall rule', () => {
     expect(decideTaskTimeout({ ...entry, stalledSince: 0 }, 'busy', GRACE - 1, OPTS)).toBe('hold')
   })
 
-  it('alerts at most once', () => {
-    const stalled = { injectedAt: 0, alerted: true, sawTurn: false, stalledSince: 0 }
-    expect(decideTaskTimeout(stalled, 'busy', 12 * MIN, OPTS)).toBe('hold')
+  // 2026-09-09, az upstream v1.37 atvetelekor: ez a teszt korabban azt pinnelte,
+  // hogy egy mar riasztott bejegyzes MINDIG 'hold'. Az upstream szandekosan
+  // ketteosztotta a letrat (stage 1: fo-agens, stage 2: gazda), tehat az elvaras
+  // avult el, nem a kod. A GG szabaly a MASODIK fokozatra is all: a fagyott ora
+  // szamit, nem a befecskendezes ota eltelt ido.
+  it('stage 2 is not a second stage-1: an alerted entry holds until the owner window', () => {
+    const stalled = { ...entry, alerted: true, stalledSince: 0 }
+    expect(decideTaskTimeout(stalled, 'busy', TIMEOUT + OWNER_EXTRA - 1, OPTS)).toBe('hold')
+    expect(decideTaskTimeout(stalled, 'busy', TIMEOUT + OWNER_EXTRA, OPTS)).toBe('escalate')
+    // Egyszer eszkalal, nem tickenkent.
+    expect(decideTaskTimeout({ ...stalled, ownerAlerted: true }, 'busy', 5 * 60 * MIN, OPTS)).toBe('hold')
+  })
+
+  it('GG: a stage-2 escalation also needs a FROZEN pane, not just elapsed time', () => {
+    // Regi, de vegig dolgozo feladat: a befecskendezes ota tul van a gazda-ablakon,
+    // a panel viszont ket masodperce mozgott -- ez nem beragadas.
+    const now = TIMEOUT + OWNER_EXTRA + MIN
+    const working = { ...entry, alerted: true, stalledSince: now - 2000 }
+    expect(decideTaskTimeout(working, 'busy', now, OPTS)).toBe('hold')
   })
 })
 
