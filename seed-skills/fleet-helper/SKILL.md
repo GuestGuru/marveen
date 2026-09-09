@@ -296,6 +296,16 @@ append-only tervezést. **Ne tedd.** A régi napló marad úgy, ahogy van.
    amivel az ilyen hibákat ki lehet mutatni. Egy romlott, de HITELES sor többet
    ér, mint egy szép, de utólag szerkesztett.
 
+**A 2. pont pontos alakja (peppa kikötése, 2026-09-09), mert könnyű túllőni
+rajta:** peppa mérése ELIMINÁLÓ, nem konstruktív. Azt mutatja, hogy a nap és a
+regiszter ÖNMAGÁBAN nem elég magyarázat, mert azonos regiszter mellett vált szét
+az emlék és a napló eredménye. Azt NEM mutatja, hogy az írás útja az ok -- az út
+a TÚLÉLŐ hipotézis, nem bizonyított mechanizmus. A mechanizmusra az egyetlen
+közvetlen bizonyíték marveen első kezű beszámolója: a #820-as üzenetét `printf`-fel,
+egy for-ciklusban állította elő (nulla ékezet), a szomszédos kettőt fájlból és
+idézőjelezett argumentumból (hibátlan). **Így írd le, ne úgy, hogy „peppa mérése
+kimutatta, hogy az út az ok" -- az pont az a hibaosztály, amit ez a szekció javít.**
+
 **Amit szabad, és ami az egyetlen kivétel:** ha a kapu ÉPP MOST írt bejegyzésedre
 riaszt, javítsd ki -- de a javítást **írd bele magába a bejegyzésbe** (egy záró
 sor: mikor, mi történt, hogy lossless volt), hogy a következő olvasó lássa: volt
@@ -328,6 +338,29 @@ hogy egy MINTA vagy STRING vesztett-e ékezetet.
 Mérve 2026-09-09: bubi 13 romlott napló-bejegyzés, **0 visz parancsot**; marveen
 149 romlott, **0 visz parancsot** (két találat volt, mindkettő idézett próza egy
 mondat közepén, nem minta). Vagyis eddig a napló-romlás tényleg csak olvashatóság.
+
+⚠️ **AMIT A TÍZ MEGFIGYELÉS NEM MÉR: A FALS NEGATÍVOKAT** (salesninja, 2026-09-09).
+Az 1,3-1,8-as sáv mindhárom eleme ADATSZERŰ bekezdés volt, azonosítókkal és
+útvonalakkal. Ha egyszer jön egy VALÓDI romlás, ami történetesen szintén tele van
+azonosítóval, az pont ebbe a sávba esik, és a küszöb átengedi. A tíz megfigyelés a
+fals POZITÍVOKRÓL szól; a fals negatívokat nem mértük, mert nem is látjuk őket.
+**Ezt nem javítani kell, hanem tudni.**
+
+**MÉRT ZSÁKUTCA: a csúszóablakos egység.** bubi javasolta (2026-09-09), jó
+diagnózissal: a memória-bejegyzések jellemzően EGY bekezdésesek, tehát a
+bekezdés-bontás ott degenerálódik a teljes szövegre, és egy középen ülő romlás
+elrejtőzik -- az ő #532-ese pontosan ilyen volt (4,35 az egészre, de az 1350.
+karaktertől egy 300 karakteres ablakon 0,00). **A diagnózis helyes, a javasolt
+egység viszont nem kell**, két mért okból:
+1. A `sentence` detektor EZT MÁR MEGFOGJA. A #532-t az audit `sentence`
+   detektorral jelölte meg, mielőtt bubi javította -- a középen ülő romlott rész
+   tartalmazott 120 karakternél hosszabb, magyarnak látszó, nulla ékezetes
+   mondatot. Nem az egység volt hiányos, hanem bubi példánya volt régebbi.
+2. A csúszóablak a teljes flottán **5 találatot ad, és mind az 5 FALS**
+   (jean #254 Drive-mappa-ID-k, #464 camelCase API-nevek, #465 UUID, marveen
+   #687 feladatnév-lista, #693 idézett log-sor). bubi 34 bejegyzésén nulla fals
+   pozitívot adott, a 687-en ötöt. Az ablak érzékenyebb, de ezen a korpuszon
+   csak zajt hoz.
 
 ⚠️ **A NAPLÓ VIHET IDÉZETT RENDSZER-SZÖVEGET, AMINEK A FORRÁSA ÉKEZETES**
 (jean mérése, 2026-09-09 -- alfaj bubi carry-taxonómiájához). Nem futtatható
