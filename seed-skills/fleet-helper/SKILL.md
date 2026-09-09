@@ -309,6 +309,18 @@ bubi #532, marveen #762), és 3 sort CSAK a bekezdés-szintű. Ezért kell mindk
 A sor `detector` mezője megmondja, melyik fogta meg (`paragraph` / `sentence` /
 `both`), a minta pedig a `head`-ben áll.
 
+⚠️ **A bekezdés-detektor küszöbe SZIGORÚBB (1,0), mint az egész szövegé (2,0).**
+Egy bekezdésben sűrűbben állnak az azonosítók, és azok húzzák le az arányt. Mérve
+kilenc kézzel ellenőrzött találaton: a VALÓDI romlások **0,00-0,19** között
+vannak, a FALS pozitívok **1,31-1,82** között -- salesninja #544 (API-útvonalak)
+és #666 (mezőnév-lista), valamint marveen #710, ahol a bekezdés végig ékezetes,
+csak tele van ilyennel: `05-prod-tree-guard`, `/home/gg/marveen`, `node_modules`.
+Az 1,0 a rés közepe, és a 2,0-es küszöbbel mind a három fals pozitív bejött volna.
+
+**Ez kilenc megfigyelésből állított konstans, nem százból.** Ezért ad a sor `head`
+mezőt is: a `partial` **JELÖLTLISTA, nem ítélet** -- ránézésre ellenőrizd, mielőtt
+javítasz.
+
 ⚠️ **A SABLONBÓL GENERÁLT SZÖVEG N BEJEGYZÉST ront el egyszerre** (salesninja
 mérése, 2026-09-09): egy Python-konstansból generált záradékot négy bejegyzésbe
 másolt, és a konstans ékezet nélkül készült. Hármat később kézzel újraírt, a
