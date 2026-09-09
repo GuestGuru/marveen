@@ -130,8 +130,20 @@ describe('generateClaudeMd prompt: no hardcoded localhost:3420', () => {
     expect(fnBody).toContain('${dashboardOrigin}/api/memories')
   })
 
-  it('references dashboardOrigin in the daily-log API curl example', () => {
-    expect(fnBody).toContain('${dashboardOrigin}/api/daily-log')
+  // GG fork 2026-09-09: the memory and daily-log examples moved from raw curl to
+  // the fleet-helper, which takes the body on STDIN so no shell quoting touches
+  // the text (raw `curl -d` dropped Hungarian accents inside nested quoting, and
+  // 500s on a quote in the content). The helper reads the dashboard URL from
+  // CLAW_BASE, so THAT is now what has to carry dashboardOrigin -- the property
+  // this test guards (no baked-in host) is unchanged, only the mechanism moved.
+  it('passes dashboardOrigin to the fleet-helper as CLAW_BASE', () => {
+    const uses = fnBody.match(/CLAW_BASE=\$\{dashboardOrigin\}/g) ?? []
+    expect(uses.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('writes the daily log through the fleet-helper, not raw curl', () => {
+    expect(fnBody).toContain('fleetHelperPath} daily-log')
+    expect(fnBody).not.toMatch(/curl[^\n]*\/api\/daily-log/)
   })
 
   it('references dashboardOrigin in the schedules API curl example', () => {
