@@ -123,9 +123,26 @@ try:
   d=json.load(sys.stdin); print(d.get("id","") if isinstance(d,dict) else "")
 except Exception:
   print("")' 2>/dev/null)"
+  # GG fork: a VEGPONT sajat ekezet-figyelmeztetese a valasz accentWarning mezojeben
+  # jon (src/gg/accent-gate.ts). salesninja meresi megjegyzese, 2026-09-10: a helper
+  # eddig CSAK az id-t olvasta ki, tehat ezt a mezot eldobta. Normal esetben nem
+  # veszteseg, mert a lokalis kapu ugyanazt a detektort futtatja -- DE a lokalis kapu
+  # kimarad, ha a fleet-helper nincs telepitve (szandekos, `[ -r "$FLEET_PY" ]`), es
+  # akkor a szerver uzenete az EGYETLEN jelzes. Pont a friss, fel-telepitett agensnel
+  # harapna. Ha a lokalis kapu mar szolt, nem duplazunk.
+  SRV_WARN="$(printf '%s' "$JSON" | python3 -c 'import sys,json
+try:
+  d=json.load(sys.stdin); print(d.get("accentWarning","") if isinstance(d,dict) else "")
+except Exception:
+  print("")' 2>/dev/null)"
   if { [ "$CODE" = "200" ] || [ "$CODE" = "201" ]; } && [ -n "$ID" ]; then
     # GG fork: a kapu figyelmeztetese naplozva is, mert a hivo gyakran `2>&1 | tail -2`-vel
     # hivja a scriptet, es akkor a stderr-sor elveszik. Igy utolag is kimutathato.
+    if [ -z "${ACCENT_WARN:-}" ] && [ -n "${SRV_WARN:-}" ]; then
+      # a lokalis kapu hallgatott (vagy ki sem futott), de a szerver szolt
+      ACCENT_WARN="[vegpont] $SRV_WARN"
+      printf '%s\n' "$ACCENT_WARN" >&2
+    fi
     [ -n "${ACCENT_WARN:-}" ] && printf '%s\tACCENT\tfrom=%s\tto=%s\tid=%s\t%s\n' \
       "$(date '+%Y-%m-%d %H:%M:%S')" "$FROM" "$TO" "$ID" "$ACCENT_WARN" >> "$ACCENT_LOG" 2>/dev/null || true
     echo "OK id=$ID"; exit 0
