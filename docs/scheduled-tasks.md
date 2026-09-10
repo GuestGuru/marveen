@@ -322,6 +322,24 @@ A runner cron-alapú, `run_at` vagy „egyszer" opció **nincs**. Egy konkrét n
    A `status` `fired` értéke azt jelenti, hogy a prompt kiment az ágenshez.
 
 A törlés maga a lenti `DELETE`.
+
+⚠️ **SUB-ÁGENSNÉL az 5. lépés NEM a `DELETE`, hanem egy törlés-kérés a fő-ágenshez, és
+ez SZÁNDÉKOS.** A `scripts/self-pace-gate.mjs` a `/api/schedules` írásait megtagadja
+minden sub-ágensnek, és a `HTTP_WRITE_RX` (130. sor) a `DELETE`-et is felsorolja a
+`POST/PUT/PATCH` mellett, tehát a takarító hívás ugyanúgy fennakad, mint a létrehozó.
+Mérve 2026-09-10: jean egyszeri Zoe-emlékeztetője lefutott 08:00-kor, magát törölni nem
+tudta, és a fenti öt lépést egyébként hibátlanul végigvitte. A falba a DOKUMENTÁCIÓ
+miatt futott bele, ami idáig a `DELETE`-et adta utolsó lépésként.
+
+**Miért nem nyitjuk ki a gate-et erre:** a gate nem tudja megkülönböztetni az elavult
+egyszeri feladat törlését attól, hogy egy ágens a SAJÁT heartbeat- vagy felügyeleti
+feladatát szedi le. Mindkettő ugyanaz a hívás ugyanattól az ágenstől, tehát a „szűk"
+kinyitás pont azt engedné meg, amiért a gate létezik.
+
+**A működő eljárás, ami 09-10-én elsőre végigment:** a sub-ágens inter-agent üzenetben
+kéri a törlést, megadva a feladat nevét és azt, hogy lefutott; a fő-ágens a törlés ELŐTT
+lemér a `task_runs`-ból (fenti 5. pont), és csak utána hívja a `DELETE`-et. A `hot`
+memória a törlés-teendőről (4. pont) így a fő-ágensnél is jár, nem csak a létrehozónál.
 ### Törlés
 
 ```bash
