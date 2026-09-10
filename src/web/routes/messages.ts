@@ -12,9 +12,10 @@ import { logger } from '../../logger.js'
 import { COORDINATOR_AGENT_ID } from '../../channel-coordinator/ingest.js'
 import { sanitizeAgentIdent } from '../../prompt-safety.js'
 import { accentGateNote } from '../../gg/accent-gate.js'
+import { mainRecipientWaitNote, recipientIsReachable } from '../../gg/main-recipient-running.js'
 import { isKnownAgent } from '../agent-config.js'
-import { OWNER_NAME, SYSTEM_SENDER_IDS, parseSystemSenderIds } from '../../config.js'
-import { isAgentRunning } from '../agent-process.js'
+import { OWNER_NAME, SYSTEM_SENDER_IDS, parseSystemSenderIds, MAIN_AGENT_ID } from '../../config.js'
+import { isAgentRunning, sessionExistsOnHost } from '../agent-process.js'
 import { readBody, json, jsonMaybeGzip } from '../http-helpers.js'
 import { normalizeKanbanRefs } from '../kanban-ref-normalize.js'
 import { parseQualifiedId, formatQualifiedId } from '../federation/address.js'
@@ -224,13 +225,20 @@ export async function tryHandleMessages(ctx: RouteContext): Promise<boolean> {
     // error at creation time (see above) -- give the local path the same
     // courtesy, as a non-breaking warning field rather than a status change, so
     // existing callers keep working.
-    if (!storedTo.includes('/') && !isAgentRunning(sanitizeAgentIdent(storedTo))) {
-      logger.warn({ id: msg.id, to: msg.to_agent }, 'Agent message queued for a STOPPED agent -- likely to be abandoned')
+    // GG fork: the main agent does NOT run in `agent-<name>`, so isAgentRunning()
+    // answered false for it on EVERY message -- a permanently firing warning on the
+    // fleet's most-addressed recipient, which teaches everyone to ignore the field
+    // that carries the real warning for everyone else. See src/gg/main-recipient-running.ts.
+    if (!storedTo.includes('/') && !recipientIsReachable(storedTo, MAIN_AGENT_ID, isAgentRunning, sessionExistsOnHost, sanitizeAgentIdent)) {
+      const waitNote = mainRecipientWaitNote(storedTo, MAIN_AGENT_ID, msg.to_agent)
+      logger.warn({ id: msg.id, to: msg.to_agent }, waitNote
+        ? 'Agent message queued for the main agent whose session is absent -- it waits for the next turn'
+        : 'Agent message queued for a STOPPED agent -- likely to be abandoned')
       json(res, {
         ...msg,
         targetRunning: false,
         ...(accentNote ? { accentWarning: accentNote } : {}),
-        warning: `'${msg.to_agent}' nem fut -- indítsd el (POST /api/agents/${msg.to_agent}/start), várd meg amíg feláll, és küldd újra. Egy leállított ügynöknek küldött üzenet nem várakozik, hanem elveszik.`,
+        warning: waitNote ?? `'${msg.to_agent}' nem fut -- indítsd el (POST /api/agents/${msg.to_agent}/start), várd meg amíg feláll, és küldd újra. Egy leállított ügynöknek küldött üzenet nem várakozik, hanem elveszik.`,
       })
       return true
     }
