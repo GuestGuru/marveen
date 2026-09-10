@@ -25,7 +25,7 @@
 #   large / multi-line content may come from STDIN when the 3rd arg is "-":
 #     echo "<long text>" | bash scripts/agent-msg.sh <from> <to> -
 # Output: success -> "OK id=<n>"; failure -> "FAIL <reason>" + a line in store/agent-msg-failures.log, exit 1.
-# Env: MARVEEN_WEB_PORT (default 3420).
+# Env: MARVEEN_WEB_PORT (default 3420), FLEET_HELPER_PY (ekezet-kapu, GG fork -- lasd alabb).
 set -uo pipefail
 
 # base dir = the parent of this script's dir (scripts/..), so it works from any CWD / any install
@@ -34,11 +34,53 @@ PORT="${MARVEEN_WEB_PORT:-3420}"
 TOKEN_FILE="$BASE/store/.dashboard-token"
 URL="http://localhost:${PORT}/api/messages"
 LOG="$BASE/store/agent-msg-failures.log"
+ACCENT_LOG="$BASE/store/agent-msg-accent.log"   # GG fork: ekezet-kapu utolagos nyoma
 
 FROM="${1:?from required}"; TO="${2:?to required}"; C="${3:?content required (or - for STDIN)}"
 [ "$C" = "-" ] && C="$(cat)"
 [ -r "$TOKEN_FILE" ] || { echo "FAIL: no token file at $TOKEN_FILE"; exit 1; }
 TOKEN="$(cat "$TOKEN_FILE")"
+
+# GG fork: ekezet-kapu a KIMENO inter-agent uzenetre (nem upstream igeny, a
+# fleet-helper skillre tamaszkodik). A fleet-helper mar merte, hogy a magyar szoveg
+# ket kulon uton veszti el az ekezeteket (idezojel-kerulo iras, illetve mar ekezet
+# nelkul szuletett munkaanyag), es a mem-save / daily-log uton ezert figyelmeztet.
+# Az inter-agent ut volt az EGYETLEN orizetlen, pedig ez a flotta legnagyobb magyar
+# szovegforgalma. Merve 2026-09-10 (n=1064 uzenet, kilenc kuldo): 309 esik a kapuba,
+# ebbol 191 a fo-agens sajat kimenoje (37,5%), es meg aznap is 101-bol 37.
+# NEM BLOKKOL, a mem-save-vel azonos szemantikaval: csak stderr-re szol, es a
+# kuldes akkor is lefut. Ha a fleet-helper nincs telepitve, a kapu csendben kimarad.
+FLEET_PY="${FLEET_HELPER_PY:-$HOME/.claude/skills/fleet-helper/scripts/fleet.py}"
+ACCENT_WARN=""
+if [ -r "$FLEET_PY" ]; then
+  ACCENT_WARN="$(C="$C" FLEET_PY="$FLEET_PY" python3 - <<'PYGATE' 2>/dev/null || true
+import os, importlib.util
+try:
+    spec = importlib.util.spec_from_file_location("fleet_gate", os.environ["FLEET_PY"])
+    m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+    t = os.environ.get("C", "")
+    out = []
+    w = m.accent_warning(t)
+    if w:
+        out.append(w)
+    z = m.zero_accent_sentences(t)
+    if z:
+        out.append("FIGYELEM: %d ekezet nelkuli magyar mondat a kimeno uzenetben. Elso: %s"
+                   % (len(z), z[0].strip()[:120]))
+    if out:
+        # a fleet.py altalanos tanacsa a memoriara szol (PUT-tal cserelheto); az
+        # inter-agent uzenet MAR a cimzett sessionjebe kerult es nem szerkesztheto,
+        # tehat itt csak az ujrakuldes javit.
+        out.append("Ez inter-agent uzenet: a kuldes lefut, es a cimzettnel NEM "
+                   "szerkesztheto. Ha hiba, kuldd ujra ekezettel, es mondd meg, "
+                   "melyik uzenetet valtja.")
+    print(" | ".join(out))
+except Exception:
+    pass
+PYGATE
+)"
+  [ -n "$ACCENT_WARN" ] && printf '%s\n' "$ACCENT_WARN" >&2
+fi
 
 BODY="$(FROM="$FROM" TO="$TO" C="$C" python3 -c 'import json,os; print(json.dumps({"from":os.environ["FROM"],"to":os.environ["TO"],"content":os.environ["C"]}))')"
 
@@ -54,6 +96,10 @@ try:
 except Exception:
   print("")' 2>/dev/null)"
   if { [ "$CODE" = "200" ] || [ "$CODE" = "201" ]; } && [ -n "$ID" ]; then
+    # GG fork: a kapu figyelmeztetese naplozva is, mert a hivo gyakran `2>&1 | tail -2`-vel
+    # hivja a scriptet, es akkor a stderr-sor elveszik. Igy utolag is kimutathato.
+    [ -n "${ACCENT_WARN:-}" ] && printf '%s\tACCENT\tfrom=%s\tto=%s\tid=%s\t%s\n' \
+      "$(date '+%Y-%m-%d %H:%M:%S')" "$FROM" "$TO" "$ID" "$ACCENT_WARN" >> "$ACCENT_LOG" 2>/dev/null || true
     echo "OK id=$ID"; exit 0
   fi
   sleep 1
