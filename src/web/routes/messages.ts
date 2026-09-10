@@ -11,6 +11,7 @@ import {
 import { logger } from '../../logger.js'
 import { COORDINATOR_AGENT_ID } from '../../channel-coordinator/ingest.js'
 import { sanitizeAgentIdent } from '../../prompt-safety.js'
+import { accentGateNote } from '../../gg/accent-gate.js'
 import { isKnownAgent } from '../agent-config.js'
 import { OWNER_NAME, SYSTEM_SENDER_IDS, parseSystemSenderIds } from '../../config.js'
 import { isAgentRunning } from '../agent-process.js'
@@ -207,6 +208,15 @@ export async function tryHandleMessages(ctx: RouteContext): Promise<boolean> {
     const trimmedOriginNote = origin_note?.trim().slice(0, 120) || null
     const msg = createAgentMessage(from.trim(), storedTo, normalizedContent, trimmedOriginNote)
     logger.info({ id: msg.id, from: msg.from_agent, to: msg.to_agent, originNote: msg.origin_note }, 'Agent message created')
+    // GG fork: ekezet-kapu. This endpoint is the ONE point every sender passes
+    // through, whatever tool it uses -- the same check shipped in
+    // scripts/agent-msg.sh first, and guarded a single sender out of nine because
+    // the other agents POST here with raw curl. Additive `accentWarning` field, so
+    // it cannot collide with the `warning` below and cannot break a caller that
+    // only reads `id`. Never blocks: the row is already stored, and correct text
+    // must never be stopped by a cosmetic check.
+    const accentNote = accentGateNote(normalizedContent)
+    if (accentNote) logger.warn({ id: msg.id, from: msg.from_agent, to: msg.to_agent }, accentNote)
     // A LOCAL recipient that is not running never receives this: the router
     // retries for a while and then abandons it, and the failure notice goes to
     // the MAIN agent, not to the sender. The caller therefore sees a plain 200
@@ -219,11 +229,12 @@ export async function tryHandleMessages(ctx: RouteContext): Promise<boolean> {
       json(res, {
         ...msg,
         targetRunning: false,
+        ...(accentNote ? { accentWarning: accentNote } : {}),
         warning: `'${msg.to_agent}' nem fut -- indítsd el (POST /api/agents/${msg.to_agent}/start), várd meg amíg feláll, és küldd újra. Egy leállított ügynöknek küldött üzenet nem várakozik, hanem elveszik.`,
       })
       return true
     }
-    json(res, msg)
+    json(res, accentNote ? { ...msg, accentWarning: accentNote } : msg)
     return true
   }
 
