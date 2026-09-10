@@ -66,12 +66,23 @@ describe('buildSendReliabilityBody', () => {
     expect(body).toContain('küldés ELŐTT')
   })
 
+  // jean, 2026-09-10: the resend is a POSITIVE CONTROL, not just a fix -- same sender,
+  // same content, ten quote characters, 3326 characters, intact through STDIN. Saying
+  // only what breaks it leaves the reader without a known-good path.
+  it('carries the positive control, not only the failure', () => {
+    const body = buildSendReliabilityBody(IDENTITY)
+    expect(body).toContain('MÉRVE NEM RONTJA EL')
+    expect(body).toContain('TÍZ idézőjellel')
+  })
+
   // jean's boundary: state what was measured and what was not, so nobody reads the
   // delivery result as a blanket guarantee.
   it('states the limits of the delivery measurement instead of generalising it', () => {
     const body = buildSendReliabilityBody(IDENTITY)
     expect(body).toContain('Amit NEM mértünk')
     expect(body).toContain('ne általánosíts')
+    // one receiver only -- the sample size of the delivery leg is 1, and it must say so
+    expect(body).toContain('EGYETLEN fogadón')
   })
 })
 
