@@ -1,5 +1,32 @@
 # Ami az upstream-atvetelbol KIMARADT, es miert
 
+## Piros baseline: két bukó teszt a HEAD-en (mérve 2026-09-10)
+
+A teljes suite ezen a napon **2 failed / 393 passed** (5046 teszt zöld, 1 skipped).
+Mindkettő a HEAD-en is bukik, egy érintetlen worktree-n megismételve, tehát nem az aznapi
+változások okozták. Azért áll itt, mert **egy piros baseline elrejti az új törést**: aki
+ezután futtatja a suite-ot, nem tudja megkülönböztetni a sajátját a régitől, és a doksi
+egy szekcióval lejjebb pont azt mondja ki, hogy CI híján minden „zöld" állítás lokális
+mérés marad.
+
+1. **`template-identity-hygiene`** -- ez a MIÉNK volt, és **javítva** (1b94c54):
+   a `seed-skills/fleet-helper` két fájljában élő abszolút útvonal (`/home/gg/marveen`)
+   állt egy kommentben, amit a teszt tilt, mert a seed-skillek más telepítésekre mennek.
+   A magyarázó példa `<install-dir>`-re cserélve, mind a négy példányban (seed és élő).
+
+2. **`scripts/__tests__/conversation-ledger.test.sh`** -- 48/50, **NEM javítva**, mert
+   upstream kód és upstream teszt (LEDGERPROV826 / #1079, illetve a provider-tudatos
+   kézbesítés #1074). A két bukás:
+   - `discord inbound keeps its chat_id`: a teszt `20000000002`-t vár, a kód
+     `discord:20000000002`-t ad. A provider-prefix a több-provideres átállás része,
+     tehát valószínűleg a TESZT az elavult, de ezt nem találgatjuk.
+   - `live drain: did not surface the open question`: a formátum-illesztés bukik,
+     a kérdés szövege egyébként ott van a kimenetben.
+
+   **Miért nem javítottuk:** ha a teszt állítását igazítjuk a kódhoz, azzal elfedhetünk
+   egy valódi upstream regressziót. Ez upstream döntés, nem fork-döntés. A fork-oldali
+   teendő annyi, hogy a baseline ismert legyen, és ne számítson új törésnek.
+
 ## v1.36.0 (merge 2026-09-01)
 
 **`.github/workflows/test.yml`** -- az upstream uj CI-munkafolyamata, ami PR-eken
