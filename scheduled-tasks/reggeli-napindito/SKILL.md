@@ -343,6 +343,25 @@ az idopontot, a napindito se kosse le. Az utolagos javitas kuszobe alacsony: ha 
 elcsuszas donteshez vagy felelossegihez er (ki csinalta, mikor), told utana egy
 javito sort; ha csak szinezes, ird fel ide, es ne kuldj masodik uzenetet.
 
+🔴 **AZ OTODIK osztaly, es ez a legdragabb: SZUBJEKTUM-INVERZIO. A lelet ALANYA cserel
+helyet, tehat a defekt egy HIBATLAN komponensre kerul.** 2026-09-10, msg 823: a
+skill-flotta szekcio azt irta, hogy "a `gg-eles-sql-shellbol` skill ELO peldanya ekezet
+nelkuli nevkeresest hasznalt". A DREAM.md pont az ellenkezojet mondja: az elo peldany
+tudott TOBBET (14 sorral), es a VERZIOZOTT TUKOR volt elavult, azt potoltam. A kikuldott
+alak igy egy mukodo skillnek tulajdonit hibat, ES elfedi a valodi leletet, hogy a
+verziozott oldal szivargott -- pedig a tukor az, amit a kollegak olvasnak.
+**Miert ez a legrosszabb a ot kozul:** a masik negy (ekezet, gondolatjel, napszam,
+idokotes) a szoveg FELSZINET rontja, ezt viszont csak az tudja eszrevenni, aki a leletet
+ERTI. Egyik meglevo ellenorzo sem fogja meg: nem ekezet, nem gondolatjel, nem nev
+(a nevek helyesek voltak), nem szam (a szamok egyeztek), nem idokotes.
+**NE irj ra hatodik ellenorzot** -- ot osztaly ota ugyanaz az egy ok all mogotte
+(az ujrafogalmazas allitast mozdit), es a hatodik regex ugyanugy csak a hetediket nem
+fogja meg. Ehelyett a DREAM.md minden atvett leletenel tedd fel EGY kerdest:
+**KI vagy MI volt a hibas, es a kikuldott mondat ugyanazt nevezi-e meg?** Ha a lelet
+"A rosszabb volt B-nel" alaku (elo vs tukor, main vs dist, sablon vs elo peldany), az
+IRANY a lelet lenyege, nem a diszitese: forditva atadva nem tomoritettem, hanem mast
+allitottam. Ez donteshez er, tehat javito sor jar (msg 824).
+
 🔴 **A `-p` session FONETIKUSAN ELRONTJA a technikai neveket, és a KAPU ezt nem fogja meg.**
 2026-09-03, msg 742: a DREAM.md-ben kétszer, helyesen `ledger-live-drain` állt (mérve:
 `grep -c` = 2, nulla torzult alak), a kiküldött napindítóban mégis `ledép- és őrhookok`
