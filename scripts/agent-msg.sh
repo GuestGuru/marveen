@@ -22,6 +22,15 @@
 #     ... text with `backticks` and $vars kept verbatim ...
 #     EOF
 #   (The quoted 'EOF' is what disables expansion; an unquoted EOF re-opens the same hole.)
+#
+#   NOT BYTE-FAITHFUL, and not meant to be: `C="$(cat)"` strips TRAILING NEWLINES, so every
+#   message sent through this helper loses them (the endpoint's own content.trim() would do the
+#   same, but the helper gets there first -- measured 2026-09-10 with a staged probe: 10000
+#   characters with no trailing newline store as 10000, the same text with one stores as 9999).
+#   For prose this is nothing. For a code fragment, a file excerpt, or anything where trailing
+#   whitespace carries meaning, the content changes SILENTLY and the send still reports OK.
+#   jean's conclusion, and the right one: not a bug to fix, because this channel carries
+#   MESSAGES, not data. If you need to move bytes, write a file and send the path.
 #   large / multi-line content may come from STDIN when the 3rd arg is "-":
 #     echo "<long text>" | bash scripts/agent-msg.sh <from> <to> -
 # Output: success -> "OK id=<n>"; failure -> "FAIL <reason>" + a line in store/agent-msg-failures.log, exit 1.
