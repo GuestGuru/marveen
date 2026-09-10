@@ -34,6 +34,15 @@ import subprocess
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOOK = os.path.join(os.path.dirname(HERE), "hooks", "outgoing-copy-gate.py")
 
+# A tobbi eset a hookot SUBPROCESSKENT futtatja (az a valodi kontraktus). A
+# GATEUILABEL910 esetei viszont egyetlen fuggveny viselkedeset merik, es ott a
+# subprocess csak zaj lenne, ezert a modult kozvetlenul is betoltjuk.
+import importlib.util as _ilu
+
+_spec = _ilu.spec_from_file_location("outgoing_copy_gate", HOOK)
+gate = _ilu.module_from_spec(_spec)
+_spec.loader.exec_module(gate)
+
 CLEAN_HU = "Szia! Koszonom szepen, holnap kuldom at a szamlat es a reszleteket."
 # proper accents, no dash, no homoglyph, no bad name -- a payload that should
 # sail through every check except whatever the test deliberately breaks.
@@ -240,6 +249,46 @@ def main():
                    "tool_input": {"message_id": "1", "text": CLEAN_HU_OK}}
         code, out, err = run_hook(edit_ok, rules_file=active)
         check("edit_message clean passes (exit 0)", code, 0)
+
+        # --- GATEUILABEL910: idegen nyelvu UI-felirat magyar prozaban ------
+        # brokermarcsi merese, 2026-09-10: a kapu az "all"-t az "áll"
+        # ekezetvesztett alakjanak minositette az Airbnb menujeben
+        # ("Filter: all dates - custom dates - previous month"), es TILTOTT.
+        # A kijarat nem a javitas volt, hanem a TARTALOM elrontasa: a kollega
+        # atfogalmazta a menut, hogy atengedje a kapu. Egy blokkolo kapunal ez a
+        # legdragabb hibaforma.
+        HU_FRAME = (
+            "Szia, összeszedem a lépéseket, hogy legközelebb magadtól is meg tudd nézni, mert "
+            "ez a folyamat nem bonyolult, és nem kell hozzá külön jogosultság. Először nyisd meg "
+            "a felületet, utána lépj be az előzményekhez, és ott lesz minden, amit keresel. %s "
+            "Ezután a listában megjelennek az előző hónap kifizetései, és onnan tudod összevetni "
+            "a rögzített összegekkel, ha valami nem stimmel."
+        )
+        # ELOFELTETEL: a keret magyarnak merjen, kulonben a kontroll ures
+        check_true("ui-label: a teszt-keret magyarnak mer (elofeltetel)",
+                   gate.is_hungarian(HU_FRAME % "X"), "a keret nem mer magyarnak")
+
+        def accent_hits(sentence):
+            probs = gate.audit(HU_FRAME % sentence)
+            return [p for p in probs if p.startswith("HIANYZO EKEZETEK")]
+
+        check_true("ui-label: idegen szomszedsagu 'all' NEM talalat",
+                   not accent_hits("A dátumszűrőben ezt válaszd: Filter: all dates és previous month."),
+                   "a hamis pozitiv visszajott")
+        check_true("ui-label: magyar szomszedsagu 'all' TOVABBRA IS talalat",
+                   accent_hits("A gép all és nem mozdul, úgyhogy indítsd újra."),
+                   "a valodi ekezetveszes atcsuszott")
+        check_true("ui-label: idegen szomszedsagu 'netto' NEM talalat",
+                   not accent_hits("A riportban a Gross netto amount oszlopot keresd."), "")
+        check_true("ui-label: magyar szomszedsagu 'netto' TOVABBRA IS talalat",
+                   accent_hits("A táblázatba a netto összeget írd be, ne a bruttót."), "")
+        check_true("ui-label: nem-ambivalens szo valtozatlanul talalat",
+                   accent_hits("Az elozo honap adatait nyisd meg."),
+                   "a szukites tul sokat engedett at")
+        # a bare nevelo NEM magyar jel: "a Gross netto amount" pont igy csuszott
+        # at a javitas elso koren
+        check_true("ui-label: a puszta nevelo nem szamit magyar jelnek",
+                   not gate._hungarian_signal("a") and not gate._hungarian_signal("az"), "")
 
     if FAILS:
         print(f"\n{len(FAILS)} FAILED: {FAILS}", file=sys.stderr)
