@@ -76,6 +76,18 @@ done < <(sed -nE 's#^skills/\*\*/(.+)$#\1#p' "$PRIVATE_MIRROR_ROOT/.gitignore" 2
 # first. The report is still right (the difference IS real), but the automatic
 # repair is not: with two live copies there is no single source of truth to copy
 # FROM, and picking one is a decision, not a sync.
+# A tukor-peldany JELOLT masolat-e, es ha igen, ki a megnevezett forras?
+# Kiirja a forras agens-nevet (vagy ures sztringet), exit 0 ha van zaradek.
+# Merve 2026-09-10 (peppa jelezte): ket skillnel a tukor es a forras kozti TELJES
+# elteres ez a zaradek volt, tehat a "lemaradt peldany" olvasat hamis, es egy --fix
+# NEMAN LETOROLTE volna a szarmazas-jelolest.
+provenance_src() {
+  local f="$1"
+  grep -qE 'SZ[AÁ]RMAZ[AÁ]S:' "$f" 2>/dev/null || return 1
+  sed -nE 's/.*SZ[AÁ]RMAZ[AÁ]S:\*\* ez a skill \*\*([a-z0-9_-]+)\*\*.*/\1/p' "$f" | head -1
+  return 0
+}
+
 live_copies() {
   local name="$1" n=0 d
   [ -f "$HOME/.claude/skills/$name/SKILL.md" ] && n=$((n + 1))
@@ -102,6 +114,18 @@ check_one() {
     git -C "$repo" ls-files --error-unmatch "${mirror#$repo/}/SKILL.md" >/dev/null 2>&1 || continue
     if diff -rq $DIFF_EXCLUDES "$live" "$mirror" >/dev/null 2>&1; then
       same=$((same + 1))
+    elif psrc="$(provenance_src "$mirror/SKILL.md" 2>/dev/null)" \
+         && [ -n "$psrc" ] && [ "$scope" = "agens:$psrc" ] \
+         && [ "$(diff "$live/SKILL.md" "$mirror/SKILL.md" 2>/dev/null \
+                 | grep '^>' | grep -vcE 'SZ[AÁ]RMAZ[AÁ]S|forras-peldany|^> *$|^> *---*$|^> *> ')" -eq 0 ]; then
+      # JELOLT MASOLAT a megnevezett FORRASAVAL szemben: a teljes elteres a
+      # szarmazas-zaradek, tehat NEM drift. EZ AZ AG A FIX-AGAK ELOTT VAN, es ez a
+      # lenyeg: egy --fix itt a forrasbol masolna a tukorre, es NEMAN LETOROLNE a
+      # szarmazas-jelolest. Merve 2026-09-10, peppa jelezte: ket skillnel a 7 soros
+      # elteres teljes egeszeben a zaradek volt. A zaradek visszamasolasa a forrasba
+      # ugyanigy hibas: azt iratna vele, hogy o a sajat maga masolata.
+      echo "  JELOLT MASOLAT  $name  ($scope a FORRAS, a tukor a masolat)  -- nem drift, nem fixelem"
+      same=$((same + 1))
     elif [ "$FIX" = "1" ] && [ "$(live_copies "$name")" -gt 1 ]; then
       echo "  TOBB-PELDANY  $name  ($scope)  -- NEM fixelek, mert $(live_copies "$name") elo peldany kepzodik le UGYANARRA a tukorre:"
       # A masolat CSENDBEN avul: a masolo agensnek semmi nem szol, hogy a forras
@@ -113,7 +137,23 @@ check_one() {
         [ -f "$d/SKILL.md" ] || continue
         echo "      $(diff "$d/SKILL.md" "$mirror/SKILL.md" 2>/dev/null | grep -c '^[<>]') sor elteres a tukortol: $d"
       done
-      echo "      A masolas itt DONTES: melyik peldany a forras? Nezd meg, es fixelj kezzel."
+      # SZARMAZAS-ZARADEK: ha a tukor-peldany JELOLVE van masolatkent ("SZARMAZAS:"
+      # blokk, amit a masolo ir bele), akkor a forras es a masolat viszonya
+      # SZANDEKOS, es a kulonbseg jellemzoen PONT ez a zaradek. Ilyenkor a
+      # "melyik a forras" kerdes el van dontve, nem kell ujra feltenni.
+      # Merve 2026-09-10 (peppa jelezte): ket skillnel a 7 soros elteres TELJES
+      # EGESZEBEN a zaradek volt, es a "lemaradt peldany" olvasat hamis -- aki a
+      # zaradekot visszamasolja a FORRASBA, azt iratja vele, hogy o a sajat maga
+      # masolata, tehat korkoros hivatkozast csinal. A szonda ezert megnevezi a
+      # forrast, es nem dontest ker.
+      if grep -qE '^\s*>?\s*\*\*SZARMAZAS|^\s*>?\s*\*\*SZÁRMAZÁS' "$mirror/SKILL.md" 2>/dev/null; then
+        src=$(sed -nE 's/.*SZ[AÁ]RMAZ[AÁ]S:\*\* ez a skill \*\*([a-z0-9_-]+)\*\*.*/\1/p' "$mirror/SKILL.md" | head -1)
+        echo "      JELOLT MASOLAT: a tukor-peldany SZARMAZAS-zaradekot visel${src:+ (forras: $src)}."
+        echo "      Ez SZANDEKOS, nem drift. A zaradekot NE masold vissza a forrasba: korkoros lenne."
+        echo "      Dontes csak akkor kell, ha a zaradekon TUL is van elteres -- azt nezd meg."
+      else
+        echo "      A masolas itt DONTES: melyik peldany a forras? Nezd meg, es fixelj kezzel."
+      fi
       stale=$((stale + 1))
     elif [ "$FIX" = "1" ]; then
       cp -r "$live/." "$mirror/"
@@ -131,7 +171,13 @@ check_one() {
       echo "  SZINKRONIZALVA  $name  ($scope -> $mirror)"
       synced=$((synced + 1))
     else
-      echo "  ELTER  $name  ($scope vs $mirror)"
+      if psrc="$(provenance_src "$mirror/SKILL.md" 2>/dev/null)" && [ -n "$psrc" ]; then
+        # Jelolt masolat, de IDE jutott: tehat a zaradekon TUL is van elteres, vagy
+        # nem a megnevezett forrast hasonlitjuk hozza. Mindketto valodi lelet.
+        echo "  ELTER  $name  ($scope vs $mirror)  -- JELOLT masolat (forras: $psrc), a zaradekon TUL is van elteres"
+      else
+        echo "  ELTER  $name  ($scope vs $mirror)"
+      fi
       diff -rq $DIFF_EXCLUDES "$live" "$mirror" 2>&1 | sed 's/^/      /'
       stale=$((stale + 1))
     fi
