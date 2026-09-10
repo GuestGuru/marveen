@@ -76,6 +76,17 @@ done < <(sed -nE 's#^skills/\*\*/(.+)$#\1#p' "$PRIVATE_MIRROR_ROOT/.gitignore" 2
 # first. The report is still right (the difference IS real), but the automatic
 # repair is not: with two live copies there is no single source of truth to copy
 # FROM, and picking one is a decision, not a sync.
+# A SZARMAZAS-blokk kimentese a fajlbol (az utolso '---' valasztotol a vegeig).
+# Ures kimenet, ha nincs zaradek.
+provenance_block() {
+  local f="$1" ln sep
+  ln=$(grep -nE 'SZ[AÁ]RMAZ[AÁ]S:' "$f" 2>/dev/null | head -1 | cut -d: -f1) || return 1
+  [ -n "$ln" ] || return 1
+  sep=$(head -n "$ln" "$f" | grep -nE '^-{3,}$' | tail -1 | cut -d: -f1)
+  [ -n "$sep" ] || sep="$ln"
+  tail -n "+$sep" "$f"
+}
+
 # A tukor-peldany JELOLT masolat-e, es ha igen, ki a megnevezett forras?
 # Kiirja a forras agens-nevet (vagy ures sztringet), exit 0 ha van zaradek.
 # Merve 2026-09-10 (peppa jelezte): ket skillnel a tukor es a forras kozti TELJES
@@ -116,6 +127,7 @@ check_one() {
       same=$((same + 1))
     elif psrc="$(provenance_src "$mirror/SKILL.md" 2>/dev/null)" \
          && [ -n "$psrc" ] && [ "$scope" = "agens:$psrc" ] \
+         && [ "$(diff "$live/SKILL.md" "$mirror/SKILL.md" 2>/dev/null | grep -c '^<')" -eq 0 ] \
          && [ "$(diff "$live/SKILL.md" "$mirror/SKILL.md" 2>/dev/null \
                  | grep '^>' | grep -vcE 'SZ[AÁ]RMAZ[AÁ]S|forras-peldany|^> *$|^> *---*$|^> *> ')" -eq 0 ]; then
       # JELOLT MASOLAT a megnevezett FORRASAVAL szemben: a teljes elteres a
@@ -124,6 +136,10 @@ check_one() {
       # szarmazas-jelolest. Merve 2026-09-10, peppa jelezte: ket skillnel a 7 soros
       # elteres teljes egeszeben a zaradek volt. A zaradek visszamasolasa a forrasba
       # ugyanigy hibas: azt iratna vele, hogy o a sajat maga masolata.
+      # A '<' (csak-forras) sorok szamat KULON kell nezni: az elso valtozatom csak a
+      # '>' oldalt merte, ezert a guard AKKOR IS fogott, amikor a FORRAS bovult -- a
+      # bovites egyszeruen nem jutott at a tukorre. Szintetikus fan merve 2026-09-10,
+      # a javitas elott: az uj forras-sor nulla peldanyban volt a tukorben.
       echo "  JELOLT MASOLAT  $name  ($scope a FORRAS, a tukor a masolat)  -- nem drift, nem fixelem"
       same=$((same + 1))
     elif [ "$FIX" = "1" ] && [ "$(live_copies "$name")" -gt 1 ]; then
@@ -156,7 +172,19 @@ check_one() {
       fi
       stale=$((stale + 1))
     elif [ "$FIX" = "1" ]; then
+      # A SZARMAZAS-zaradek TULELI a masolast. peppa jelezte 2026-09-10-en, hogy a
+      # korabbi guard pont a lenyegi esetben engedett at: amig senki nem nyul a
+      # forrashoz, kihagyta a part, de amint a FORRAS BOVUL, az elteres mar nem a
+      # puszta zaradek, a guard nem fog, es a --fix NEMAN letorli a jelolest. Utana
+      # semmi nem mutatja, hogy valaha jelolt masolat volt, mert a ket fajl
+      # konzisztens. Ezert itt nem "masol vagy kihagy" a kerdes: masolunk ES
+      # visszafuzzuk a zaradekot.
+      prov_keep="$(provenance_block "$mirror/SKILL.md" 2>/dev/null || true)"
       cp -r "$live/." "$mirror/"
+      if [ -n "$prov_keep" ] && ! grep -qE 'SZ[AÁ]RMAZ[AÁ]S:' "$mirror/SKILL.md" 2>/dev/null; then
+        printf '\n%s\n' "$prov_keep" >> "$mirror/SKILL.md"
+        echo "  ZARADEK VISSZAFUZVE  $name  (a masolas torolte volna a SZARMAZAS-jelolest)"
+      fi
       # A file dropped from the live skill must disappear from the mirror too,
       # otherwise the mirror accumulates dead files that nothing ever removes.
       lf=$(mktemp); mf=$(mktemp)
