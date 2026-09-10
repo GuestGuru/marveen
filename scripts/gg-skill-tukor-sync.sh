@@ -76,6 +76,23 @@ done < <(sed -nE 's#^skills/\*\*/(.+)$#\1#p' "$PRIVATE_MIRROR_ROOT/.gitignore" 2
 # first. The report is still right (the difference IS real), but the automatic
 # repair is not: with two live copies there is no single source of truth to copy
 # FROM, and picking one is a decision, not a sync.
+# Hany MASIK elo peldany (a most vizsgalton kivul) ter el a tukortol?
+# peppa merte 2026-09-10-en, hogy a TOBB-PELDANY ag MEGELOZTE a provenance-agat, ezert a
+# jelolt masolat parjain a --fix OROKRE no-op lett: a riport ELTER-t mondott, a --fix
+# kihagyta, es aki csak a --fix-et futtatta, keszen hitte. A ket kimenet egymasnak
+# mondott ellent. A javitas nem az ag eltuntetese: dontes CSAK akkor kell, ha KETTO is
+# mozdult. Ha pontosan a megnevezett FORRAS mozdult, a tobbi pedig 0 elteressel all,
+# nincs mit eldonteni.
+other_live_moved() {
+  local name="$1" self="$2" mirror="$3" n=0 d
+  for d in "$HOME/.claude/skills/$name" ".claude/skills/$name" agents/*/.claude/skills/"$name"; do
+    [ -f "$d/SKILL.md" ] || continue
+    [ "${d%/}" = "${self%/}" ] && continue
+    diff -q "$d/SKILL.md" "$mirror/SKILL.md" >/dev/null 2>&1 || n=$((n + 1))
+  done
+  echo "$n"
+}
+
 # A SZARMAZAS-blokk kimentese a fajlbol (az utolso '---' valasztotol a vegeig).
 # Ures kimenet, ha nincs zaradek.
 provenance_block() {
@@ -142,7 +159,9 @@ check_one() {
       # a javitas elott: az uj forras-sor nulla peldanyban volt a tukorben.
       echo "  JELOLT MASOLAT  $name  ($scope a FORRAS, a tukor a masolat)  -- nem drift, nem fixelem"
       same=$((same + 1))
-    elif [ "$FIX" = "1" ] && [ "$(live_copies "$name")" -gt 1 ]; then
+    elif [ "$FIX" = "1" ] && [ "$(live_copies "$name")" -gt 1 ] \
+         && ! { [ -n "$psrc" ] && [ "$scope" = "agens:$psrc" ] \
+                && [ "$(other_live_moved "$name" "$live" "$mirror")" -eq 0 ]; }; then
       echo "  TOBB-PELDANY  $name  ($scope)  -- NEM fixelek, mert $(live_copies "$name") elo peldany kepzodik le UGYANARRA a tukorre:"
       # A masolat CSENDBEN avul: a masolo agensnek semmi nem szol, hogy a forras
       # kozben tovabbment. Merve 2026-09-09: bubi masolata harom koron belul 35
