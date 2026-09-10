@@ -697,6 +697,13 @@ def strip_technical(text: str) -> str:
     return TECHNICAL.sub(" ", text)
 
 
+# A markerek kozt tobb szavas alak is van ("ez a"), ezert SZOHALMAZRA bontjuk.
+# A puszta hatarozott nevelo KIMARAD: az idegen feliratok elott is ott all
+# ("a Gross netto amount oszlop"), tehat magyar jelkent ertektelen es pont a
+# hamis pozitivot tartotta eletben (merve 2026-09-10, a javitas elso korenel).
+HU_MARKER_WORDS = {w for m in HU_MARKERS for w in m.split()} - {"a", "az"}
+
+
 def is_hungarian(text: str) -> bool:
     low = text.lower()
     return sum(1 for m in HU_MARKERS if m in low) >= 3
@@ -719,6 +726,77 @@ AMBIGUOUS_TRIGGER = {
 
 def accentless_evidence(words):
     return {w for w in words if w in ACCENTLESS and w not in AMBIGUOUS_TRIGGER}
+
+
+# GATEUILABEL910 (2026-09-10, brokermarcsi merese, BLOKKOLT hamis pozitiv): az
+# AMBIGUOUS_TRIGGER szavai eddig csak a TRIGGER-bol voltak kizarva, jelentesbol nem
+# (l. a fenti kommentet). A tervezett eset ez volt: ha a szoveg magyar, a talalat
+# megy. Amire nem szamitott: IDEGEN NYELVU UI-FELIRAT magyar prozaba agyazva.
+# Mert eset: egy magyar folyamatleirasban ott allt az Airbnb menuje szo szerint,
+# "Filter: all dates - custom dates - previous month", es a kapu az "all"-t az "áll"
+# ekezetvesztett alakjanak minositette es TILTOTT. A kijarat nem a javitas volt,
+# hanem a tartalom elrontasa: a kollega atfogalmazta a menut, hogy atengedje a kapu.
+# Egy blokkolo kapunal ez a legdragabb hibaforma, mert a valodi tartalom serul.
+#
+# A DISZKRIMINALO FELTETEL MERVE: a kozvetlen (+-1 szavas) szomszedsag dont, a
+# szelesebb ablak NEM. Az "all" korul itt "Filter" es "dates" all (nulla magyar
+# jel), mig egy valodi magyar mondatban ("A gep all es nem mozdul") "gep" es "es".
+# +-2 szoval az elso eset is atcsuszna, mert a "kivalasztanod" meg belees.
+#
+# AMIT EZ NEM LAZIT: csak a 15 ambivalens szora all, es csak akkor, ha MINDEN
+# elofordulasuk idegen szomszedsagban van. Egy tenylegesen ekezetvesztett magyar
+# szoveget tovabbra is elkap, mert ott a talalatok tobbsege NEM ambivalens szo.
+def _hungarian_signal(word: str) -> bool:
+    """Magyar jel-e ez a szomszed szo: van benne ekezet, vagy funkcionalis magyar
+    marker, vagy olyan szotari alak, ami maga NEM ambivalens."""
+    if any(ch in ACCENTED for ch in word):
+        return True
+    low = word.lower()
+    if low in HU_MARKER_WORDS:
+        return True
+    return low in ACCENTLESS and low not in AMBIGUOUS_TRIGGER
+
+
+_WORD_RUN = re.compile(r"[^\W\d_]+", re.UNICODE)
+
+
+def _neighbours_in_prose(prose: str, pos: int, length: int):
+    """A talalat kozvetlen szomszed szavai A NYERS PROZABOL. Szandekosan nem a
+    token-listabol: az a NAGYBETUS szavakat kihagyja, tehat egy "a Gross netto
+    amount" bal szomszedja a magyar nevelo lenne, nem az angol szo -- ezen a
+    javitas elso kore el is bukott (merve 2026-09-10)."""
+    before = [m.group(0) for m in _WORD_RUN.finditer(prose[max(0, pos - 60):pos])]
+    after = [m.group(0) for m in _WORD_RUN.finditer(prose[pos + length:pos + length + 60])]
+    out = []
+    if before:
+        out.append(before[-1])
+    if after:
+        out.append(after[0])
+    return out
+
+
+def drop_foreign_context_hits(hits, tok_pos, prose):
+    """Kiveszi a talalatok kozul azokat az AMBIGUOUS_TRIGGER-szavakat, amiknek
+    MINDEN elofordulasa idegen (nem magyar) kozvetlen szomszedsagban all."""
+    if not hits:
+        return hits
+    kept = []
+    for h in hits:
+        if h not in AMBIGUOUS_TRIGGER:
+            kept.append(h)
+            continue
+        magyar_kontextusban = False
+        for w, pos in tok_pos:
+            if w != h:
+                continue
+            szomszedok = _neighbours_in_prose(prose, pos, len(h))
+            # szomszed nelkuli (egy szavas) eset: nem tudjuk megitelni, maradjon
+            if not szomszedok or any(_hungarian_signal(x) for x in szomszedok):
+                magyar_kontextusban = True
+                break
+        if magyar_kontextusban:
+            kept.append(h)
+    return kept
 
 
 # collect_bash_body / collect_mcp_body moved VERBATIM to email_extract.py
@@ -869,6 +947,8 @@ def audit(text: str):
     words = [w for w, _ in tok_pos]
     if is_hungarian(plain) or accentless_evidence(words):
         hits = sorted({w for w in words if w in ACCENTLESS})
+        # GATEUILABEL910: idegen szomszedsagu ambivalens szo nem talalat
+        hits = drop_foreign_context_hits(hits, tok_pos, prose)
         # Az aranyot is a prozan merjuk: a technikai tokenekben nincs ekezet, tehat
         # egy kodban gazdag, egyebkent helyes level aranyat lefele huznak.
         letters = sum(1 for ch in prose if ch.isalpha())
