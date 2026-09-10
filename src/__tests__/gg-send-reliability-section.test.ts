@@ -49,6 +49,30 @@ describe('buildSendReliabilityBody', () => {
   it('teaches the QUOTED heredoc, since an unquoted one re-opens the expansion hole', () => {
     expect(buildSendReliabilityBody(IDENTITY)).toContain("<<'EOF'")
   })
+
+  // jean and salesninja, 2026-09-10: the documented raw-curl example is exposed to TWO
+  // measured failure classes, and naming only the missing verify+retry leaves the second
+  // one invisible. The trigger is the QUOTE, not the parenthesis -- "avoid parentheses"
+  // would be a false lesson.
+  it('names the quote, not the parenthesis, as the truncation trigger', () => {
+    const body = buildSendReliabilityBody(IDENTITY)
+    expect(body).toContain('IDÉZŐJEL, nem a zárójel')
+  })
+
+  // The cheapest diagnostic found that day: the stored row separates the two layers.
+  it('gives the stored-length diagnostic that tells the two layers apart', () => {
+    const body = buildSendReliabilityBody(IDENTITY)
+    expect(body).toContain('TÁROLT hosszt')
+    expect(body).toContain('küldés ELŐTT')
+  })
+
+  // jean's boundary: state what was measured and what was not, so nobody reads the
+  // delivery result as a blanket guarantee.
+  it('states the limits of the delivery measurement instead of generalising it', () => {
+    const body = buildSendReliabilityBody(IDENTITY)
+    expect(body).toContain('Amit NEM mértünk')
+    expect(body).toContain('ne általánosíts')
+  })
 })
 
 describe('ensureSendReliabilitySection', () => {
