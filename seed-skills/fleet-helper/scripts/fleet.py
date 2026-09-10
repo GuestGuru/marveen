@@ -156,7 +156,7 @@ PARAGRAPH_MIN_LEN = 200
 # 2026-09-09, kilenc kezzel ellenorzott talalaton: a VALODI romlasok 0,00-0,19
 # kozott vannak, a FALS pozitivok 1,31-1,82 kozott (salesninja #544 API-utvonalas
 # es #666 mezonev-listas bekezdese, marveen #710, ahol a bekezdes vegig ekezetes,
-# csak tele van ilyennel: 05-prod-tree-guard, /home/gg/marveen, node_modules).
+# csak tele van ilyennel: 05-prod-tree-guard, <install-dir>, node_modules).
 # Az 1,0 a res kozepe. FIGYELEM: ez kilenc megfigyelesbol allitott konstans, nem
 # szaz -- ezert ad a sor `head` mezot is, hogy a talalat ranezesre ellenorizheto
 # legyen. A partial JELOLTLISTA, nem itelet.
