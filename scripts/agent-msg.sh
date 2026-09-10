@@ -37,7 +37,35 @@ LOG="$BASE/store/agent-msg-failures.log"
 ACCENT_LOG="$BASE/store/agent-msg-accent.log"   # GG fork: ekezet-kapu utolagos nyoma
 
 FROM="${1:?from required}"; TO="${2:?to required}"; C="${3:?content required (or - for STDIN)}"
-[ "$C" = "-" ] && C="$(cat)"
+FROM_STDIN=0
+if [ "$C" = "-" ]; then C="$(cat)"; FROM_STDIN=1; fi
+
+# GG fork: CSONKULAS-GYANU az argv-uton. A shell a script ELOTT fejti ki az
+# argumentumot, tehat egy idezojel a szovegben lezarhatja a stringet es a maradek
+# elveszik -- a script ebbol semmit nem lat, a POST sikerul, es "OK id=<n>" megy
+# vissza fel tartalommal. Ugyanaz a nema kuldes-hiba, ami ellen a helper keszult,
+# csak egy szinttel beljebb. Merve 2026-09-10 (salesninja, msg 1076): a szoveg 1303
+# karakter utan vagodott el, pontosan ott, ahol egy idezojel kovetkezett volna, es a
+# helper OK id=1076-ot irt. NEM a script evalja az argumentumot (nincs benne eval) --
+# a hivo shellje eszi meg, ezert a script csak a TUNETRE tud szolni.
+# A jelzes kuszobe salesninja meresebol jon (n=1041, 200 karakter feletti uzenet): 20
+# nem mondatzaro vegzodes, abbol 9 utvonal vagy URL, 7 alairas, 4 gyanus -- tehat
+# ritka es olcso. NEM BLOKKOL: egy heurisztika nem utasithat vissza ep uzenetet.
+if [ "$FROM_STDIN" = "0" ]; then
+  C="$C" SELF="${BASH_SOURCE[0]}" FROM="$FROM" TO="$TO" python3 - >&2 <<'PYTRUNC' || true
+import os
+c = (os.environ.get("C") or "").rstrip()
+if c and c[-1] not in ".!?:;)\"'\u2019\u201d\u2026":
+    print("FIGYELEM: az uzenet argv-rol jott es nem mondatvegen er veget: ..."
+          + c[-40:]
+          + " | Ha a szoveg idezojelet vagy zarojelet tartalmazott, a HIVO shellje mar"
+            " levaghatta, es a kuldes akkor is sikeres lesz, csak fel tartalommal."
+            " Biztosabb ut STDIN-rol, IDEZETT heredoc-kal:"
+          + "  cat <<'EOF' | bash %s %s %s -" % (os.environ.get("SELF", "agent-msg.sh"),
+                                                 os.environ.get("FROM", "<from>"),
+                                                 os.environ.get("TO", "<to>")))
+PYTRUNC
+fi
 [ -r "$TOKEN_FILE" ] || { echo "FAIL: no token file at $TOKEN_FILE"; exit 1; }
 TOKEN="$(cat "$TOKEN_FILE")"
 

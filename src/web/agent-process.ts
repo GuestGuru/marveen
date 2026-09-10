@@ -49,15 +49,17 @@ import {
 import { parseTelegramToken } from './telegram.js'
 import { getProvider, getProviderType, channelStateDir, readChannelToken, type ChannelProviderType } from '../channel-provider.js'
 import { CHANNEL_PROVIDER, MAIN_AGENT_ID, STORE_DIR, PROJECT_ROOT, SUBAGENT_INBOX_TEE, BOT_NAME, OWNER_NAME } from '../config.js'
+import { DASHBOARD_PUBLIC_URL, WEB_PORT, AGENT_API_ORIGIN } from '../config.js'
 import { getEffectiveSettingValue } from '../settings-store.js'
 import { readEnvFile } from '../env.js'
 import { loadProfileTemplate } from './profiles.js'
 import { resolveAgentSecurityProfile } from './agent-team.js'
-import { writeAgentSettingsFromProfile, ensureFleetRosterSection, ensureAutonomySection, ensureSkillsPathTrapSection, ensureSystemDirectiveAuthSection } from './agent-scaffold.js'
+import { writeAgentSettingsFromProfile, ensureFleetRosterSection, ensureAutonomySection, ensureSkillsPathTrapSection, ensureSystemDirectiveAuthSection, resolveDashboardOrigin } from './agent-scaffold.js'
 // GG fork: fleet-wide memory rules as a generated CLAUDE.md block.
 import { ensureMemoryRulesSection } from '../gg/memory-rules-section.js'
 // GG fork: fleet rules 7-8 as a MAINTAINED block, not a scaffold-time snapshot.
 import { ensureFleetRulesSection } from '../gg/fleet-rules-section.js'
+import { ensureSendReliabilitySection } from '../gg/send-reliability-section.js'
 import { schedulePluginUnlockAfterRespawn } from './channel-plugin-unlock.js'
 import { recordInjectedPrompt } from './injected-prompt-registry.js'
 import { getSecret } from './vault.js'
@@ -1432,6 +1434,14 @@ export async function startAgentProcess(name: string, opts: { fresh?: boolean } 
     ensureFleetRulesSection(
       agentDir(name),
       { botName: BOT_NAME, mainAgentId: MAIN_AGENT_ID, ownerName: OWNER_NAME, agentId: name, projectRoot: PROJECT_ROOT },
+      atomicWriteFileSync,
+    )
+    // GG fork 2026-09-10: the verify+retry rule lived only in the MAIN agent's
+    // template, so no sub-agent had it -- measured: six of six scored zero.
+    // See src/gg/send-reliability-section.ts.
+    ensureSendReliabilitySection(
+      agentDir(name),
+      { agentId: name, projectRoot: PROJECT_ROOT, dashboardOrigin: resolveDashboardOrigin(DASHBOARD_PUBLIC_URL, WEB_PORT, AGENT_API_ORIGIN), tokenPath: join(PROJECT_ROOT, 'store', '.dashboard-token') },
       atomicWriteFileSync,
     )
     // A sub-agent must load ONLY its own channel plugin. The user-scope
