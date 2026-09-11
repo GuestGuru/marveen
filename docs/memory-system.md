@@ -70,6 +70,13 @@ A dashboard memória-oldalán force-directed (HTML5 Canvas) gráf: zoom/pan, ker
 ```bash
 POST /api/memories                       # mentés (agent_id, content, tier, keywords)
 GET  /api/memories?agent=&q=&tier=        # keresés (kulcsszó)
+
+⚠️ **Ékezetes `q`-t URL-kódolva adj át.** Kódolatlanul a végpont **HTTP 400-at ad ÜRES
+törzzsel**, tehát a hívó nulla találatot lát, nem hibát. Mérve 2026-09-11: `q=ékezet`
+kódolatlanul 400 és nulla bájt; ugyanaz `curl -G --data-urlencode`-dal 31 találat; a
+kontroll (`q=kapu`, ékezet nélkül) kódolatlanul is 35 találatot ad, tehát a végpont
+működik, csak a nem-ASCII query-string esik el. Ez a hamis-nulla hibaosztály: magyar
+kulcsszóra csendben üres lesz az audit.
 GET  /api/memories/search?agent=&q=&hybrid=true   # hibrid (FTS5 + vektor)
 POST /api/daily-log                       # napi napló (append-only)
 POST /api/memories/backfill               # embedding backfill
