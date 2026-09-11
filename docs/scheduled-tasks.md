@@ -77,6 +77,22 @@ ugyanúgy, mintha te gépelted volna be a chat-be.
 | `description` | string | — | Opcionális leírás (ha nincs SKILL.md frontmatter) |
 | `targetSession` | string | — | Egyedi tmux session név override (alapból: `agent-<name>`) |
 
+⚠️ **A `description` KÉT helyen élhet, és a SKILL.md frontmatter NYER.** A loader
+`description || config.description` sorrendben olvas (`src/web/scheduled-tasks-io.ts`),
+tehát ha a SKILL.md frontmatterében van `description:`, a `task-config.json` mezője
+SOHA nem látszik az API-n. **Mérve 2026-09-11:** egy ágens a `task-config.json`
+leírásának ékezeteit javította atomikus fájl-írással, visszaolvasta a fájlból, és ott
+helyesen állt, a `GET /api/schedules` mégis a régi, ékezet nélküli szöveget adta.
+Nem cache és nem elavulás: a válasz a SKILL.md frontmatteréből jött, ami érintetlen
+maradt. **Eljárás:** ha kézzel szerkeszted a leírást, a SKILL.md frontmatter sorát
+írd át, vagy mindkettőt. A `PUT /api/schedules/<nev>` ezt magától megteszi, mert a
+`writeScheduledTask` a SKILL.md-t a `description` és a `prompt` mezőből ÚJRAÍRJA.
+
+⚠️ **Az `ephemeral` és az `ephemeral_reason` nem szerepel az API válaszában.** Ezek
+dokumentációs mezők a `task-config.json`-ban, a loader nem adja vissza őket, tehát
+a `GET` hiánya NEM azt jelenti, hogy nincsenek a fájlban. Aki a listázásból
+ellenőrizné őket, hamis nullát kap: a fájlt kell olvasni.
+
 `command` típusú feladatoknál extra mezők:
 
 | Mező | Típus | Alapértelmezett | Leírás |
