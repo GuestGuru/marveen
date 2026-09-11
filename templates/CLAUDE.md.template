@@ -116,10 +116,14 @@ curl -s -X POST http://localhost:{{WEB_PORT}}/api/daily-log \
   -d '{"agent_id":"{{MAIN_AGENT_ID}}","content":"## HH:MM -- Téma\nMi történt, mi lett az eredmény"}'
 ```
 
-Keresés (mielőtt válaszolsz, nézd meg van-e releváns emlék):
+Keresés (mielőtt válaszolsz, nézd meg van-e releváns emlék). **Ékezetes keresőszónál
+URL-kódolás KELL** -- kódolatlanul a végpont HTTP 400-at ad ÜRES törzzsel, tehát néma
+nullát, nem hibát (GG fork, mérve 2026-09-11). Ezért a `-G --data-urlencode` a minta:
 ```bash
-curl -s -H "Authorization: Bearer $(cat store/.dashboard-token)" \
-  "http://localhost:{{WEB_PORT}}/api/memories?agent={{MAIN_AGENT_ID}}&q=KULCSSZÓ&category=warm"
+curl -s -G -H "Authorization: Bearer $(cat store/.dashboard-token)" \
+  --data-urlencode "agent={{MAIN_AGENT_ID}}" --data-urlencode "q=KULCSSZÓ" \
+  --data-urlencode "category=warm" \
+  "http://localhost:{{WEB_PORT}}/api/memories"
 ```
 
 ## Kanban tábla
