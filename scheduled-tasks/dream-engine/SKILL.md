@@ -401,6 +401,18 @@ Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), tö
   van: GG-specifikusak, a privat repoba valok), a GLOBALIS verziozatlan skillt
   dontesre hagyja, es hitelesito-adat gyanujanal megall. Ha a `verziozatlan` sor
   nem nulla a `--adopt` UTAN, az a maradek valoban dontes.
+  🔴 **HARMADIK ESET, amit ez a mondat nem ir le: a FO AGENS sajat skilljei sem
+  adoptalodnak, es ez nem dontes, hanem res.** Merve 2026-09-11 02:15: a ket ma esti
+  sajat skillem (`meres-tervezes`, `gg-repo-olvasas-mcp-n`) a `--adopt` utan is
+  `verziozatlan` maradt, es a szkriptben megvan az ok. A fo agens
+  `.claude/skills/`-et a 287. sor `"agens"` hatokorrel adja at (prefix NELKUL), a
+  sub-agensek skilljei viszont `"agens:$owner"`-t kapnak (297. sor). A 244. sor
+  feltetele (`[ "${scope#agens:}" != "$scope" ]`) a `agens:` PREFIXRE szur, tehat a
+  bare `agens` ertek csendben kiesik. Vagyis nem ket eset van (adoptalhato agens-skill,
+  dontesre hagyott globalis), hanem HAROM, es a harmadik nem latszik a riportban.
+  **Amig nincs javitva:** a fo agens sajat skilljet kezzel kell a privat tukorbe
+  masolni, `git add`-elni es pusholni. Egysoros javitas lenne (`${scope#agens}`), de a
+  szemantika dontes: a fo agens skilljei automatikusan a PRIVAT repoba valok-e.
   ⚠️ **UJ skillnel a masolas MEG NEM eleg: a szam csak a PUSH-LANC utan megy nullara.**
   A szkript `git ls-files --error-unmatch`-csel a KOVETETT fajlt keresi, tehat egy
   frissen a tukorbe masolt, meg untracked fajl tovabbra is `verziozatlan`. Ez helyes
