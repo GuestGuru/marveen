@@ -1774,8 +1774,8 @@ cat <<'EOF' | CLAW_DIR=${PROJECT_ROOT} CLAW_BASE=${dashboardOrigin} python3 ${fl
 Mi történt, mi lett az eredmény
 EOF
 
-Keresés (mielőtt válaszolsz, nézd meg van-e releváns emlék):
-curl -s -H "Authorization: Bearer $(cat ${tokenPath})" "${dashboardOrigin}/api/memories?agent=AGENT_NAME&q=KULCSSZO&category=warm"
+Keresés (mielőtt válaszolsz, nézd meg van-e releváns emlék). GG fork, mérve 2026-09-11: ÉKEZETES keresőszónál URL-kódolás KELL, kódolatlanul a végpont HTTP 400-at ad ÜRES törzzsel, vagyis néma nullát, nem hibát. Ezért a -G --data-urlencode a minta, akkor is, ha a placeholder itt ékezet nélkül áll:
+curl -s -G -H "Authorization: Bearer $(cat ${tokenPath})" --data-urlencode "agent=AGENT_NAME" --data-urlencode "q=KULCSSZO" --data-urlencode "category=warm" "${dashboardOrigin}/api/memories"
 
 ## Ütemezett feladatok
 
