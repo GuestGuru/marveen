@@ -268,6 +268,22 @@ export function buildMemoryRulesBody(): string {
     '⚠️ **A `?agent=` listázás MÁS ágensek `shared` emlékeit is visszaadja**, gyakran',
     'többségben. „Benne van a listámban" tehát NEM azt jelenti, hogy „az enyém" -- a',
     'tulajdont az `agent_id` MEZŐBŐL olvasd ki, írás előtt.',
+    '',
+    '🔴 **KERESÉSNÉL AZ ÉKEZETES SZÓT URL-KÓDOLVA ADD ÁT, különben NÉMA NULLÁT kapsz.**',
+    'Mérve 2026-09-11 (bubi jelezte, én mértem ki a dashboardon): `q=ékezet` kódolatlanul',
+    '**HTTP 400-at ad ÜRES, nulla bájtos törzzsel**, tehát a hívó se adatot, se hibát nem',
+    'lát, és aki csak a kimenetre néz, „nincs ilyen emlék"-et olvas ki belőle. Ugyanaz a',
+    'szó `--data-urlencode`-dal 31 találatot adott; a kontroll (`q=kapu`, ékezet nélkül)',
+    'kódolatlanul is 35-öt, tehát a végpont jó, csak a nem-ASCII query-string esik el.',
+    '**A minta ezért mindig ez, ne a kézi beírás:**',
+    '```bash',
+    'curl -s -G -H "Authorization: Bearer $(cat <token-fajl>)" \\',
+    '  --data-urlencode "agent=<sajat-neved>" --data-urlencode "q=KERESETT SZÓ" \\',
+    '  "<dashboard>/api/memories"',
+    '```',
+    'Ez a blokk azért viszi a keresés-receptet is, mert a CLAUDE.md-d „## Memória rendszer"',
+    'szekciója a LÉTREHOZÁSODKOR készült, és induláskor NEM frissül: ott a régi, kódolatlan',
+    'példa állhat. Ha a kettő eltér, EZ a mérvadó.',
   ].join('\n')
 }
 
