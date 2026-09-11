@@ -121,3 +121,26 @@ describe('ensureMemoryRulesSection', () => {
     expect(out.slice(0, out.indexOf(MEMORY_RULES_BEGIN))).toContain('Kézi tartalom.')
   })
 })
+
+// GG fork, 2026-09-11. The search example in the scaffolded "## Memória rendszer"
+// section is written ONCE, at agent creation (generateClaudeMd), and startup only
+// refreshes the marker blocks -- bubi measured that his line 213 still carried the
+// unencoded form after a 03:00 start. So the corrected recipe has to live in a
+// MAINTAINED block to reach the six existing agents at all.
+describe('the maintained block carries the URL-encoded search recipe', () => {
+  it('teaches --data-urlencode, not the raw query string', () => {
+    const body = buildMemoryRulesBody()
+    expect(body).toContain('--data-urlencode "q=')
+    expect(body).not.toMatch(/api\/memories\?agent=/)
+  })
+
+  it('says WHY, because a silent zero is the failure mode', () => {
+    const body = buildMemoryRulesBody()
+    expect(body).toContain('HTTP 400')
+    expect(body).toContain('NÉMA NULLÁT')
+  })
+
+  it('tells the agent this block wins over its scaffold-time section', () => {
+    expect(buildMemoryRulesBody()).toContain('EZ a mérvadó')
+  })
+})
