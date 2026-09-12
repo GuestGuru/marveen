@@ -378,7 +378,7 @@ sed -n "/=== Reggeli napindító $(date '+%a %b %e')/,/AI hírek/p" store/mornin
 | grep -oiE '[[:alpha:]]+-[[:alpha:]-]{3,}' | sort -u | while read -r w; do
     echo "$w" | tr '-' '\n' | while read -r tag; do
       [ ${#tag} -ge 4 ] || continue
-      grep -qi -- "$(echo "$tag" | cut -c1-5)" DREAM.md \
+      grep -qi -- "${tag:0:5}" DREAM.md \
         || echo "  GYANUS TAG: $tag  (a szoban: $w)"
     done
 done
@@ -396,6 +396,25 @@ DREAM.md-ből jönnek, tehát ott a "nincs a forrásban" a normális; (3) a magy
 ragozást torzulásnak látta (`repo-oldali` vs a forrásbeli `repo-oldal`).
 **A javított alak tagonként, az első öt karakterre keres**, és így a fonetikus
 torzulást (`ledger` -> `ledép`) továbbra is elkapja, a ragozást viszont nem.
+
+⚠️ **NEGYEDIK hiba ugyanabban a mérőben, javítva 2026-09-12: a `cut -c1-5` BÁJTOT
+vág, nem karaktert.** `C.UTF-8` locale-ban a `formátum` első öt bájtja `form\xc3`,
+vagyis egy FÉLBEVÁGOTT multibyte szekvencia, amire a `grep` sosem illeszkedik. Így
+minden olyan magyar szó hamis pozitív lett, aminek az ötödik karakter-pozíciója
+ékezetes betűre esik: ma reggel a `napindító-formátum` bukott el, holott szó szerint
+ott áll a DREAM.md 58. sorában. A javítás a bash saját, karakter-tudatos
+részsztringje: `"${tag:0:5}"` a `"$(echo "$tag" | cut -c1-5)"` helyett. Mérve
+ugyanazon a reggelen: `formátum` -> `formá` -> TALÁLAT (a hamis pozitív eltűnt), a
+torzulás-kontroll `ledép` -> `ledép` -> NINCS TALÁLAT (tehát a valódi eset továbbra
+is fennakad).
+
+⚠️ **AMI EZZEL EGYÜTT SEM OLDÓDIK MEG, és szándékosan nem rövidítem a küszöböt:**
+a magyar TŐHANGZÓ-KIESÉS (`tükör` -> `tükre`, `bokor` -> `bokra`) a negyedik
+karakternél tér el, tehát prefix-illesztéssel nem kezelhető. Ma reggel a
+`skill-tükre` emiatt lett hamis pozitív. Három karakterre rövidítve megoldódna, DE
+akkor a `ledép` -> `led` illeszkedne a `ledger`-re, vagyis pont a VALÓDI torzulás
+csúszna át. Egy hamis pozitív olcsóbb, mint egy elmulasztott névtorzítás, ezért ez
+marad, és inkább itt van kiírva, hogy ne kelljen minden reggel újra végiggondolni.
 A tanulság ugyanaz, mint a kapu-tokenizálásnál: ha egy hamis pozitív minden reggel
 megjelenik, a MÉRŐT javítsd, ne írj mellé egy újabb bekezdést arról, hogy mit hagyj
 figyelmen kívül.
