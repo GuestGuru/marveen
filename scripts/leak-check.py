@@ -46,13 +46,32 @@ DEFAULT_MIN_LEN = 4
 _QUOTED = re.compile(r"""["']([^"'\n]{2,80})["']""")
 
 
+# Hungarian street-type abbreviations, folded to their long form. Measured 2026-09-13
+# (brokermarcsi): six spellings of one address, one term. The accent and separator folding
+# below caught four of them -- the accented form, the unaccented form, the underscore slug
+# and the hyphen slug -- but BOTH abbreviated spellings were missed, because "krt" and
+# "korut" stay two different needles. That same abbreviation axis had already dropped
+# "krt", "u." and "utja" out of the shape-based regexes three times the same morning, so
+# without this the two tools share ONE blind spot and double-checking gives false comfort.
+_ABBREV = (
+    (r'\bkrt\b', 'korut'),
+    (r'\bu\b', 'utca'),
+    (r'\bstny\b', 'setany'),
+    (r'\brkp\b', 'rakpart'),
+)
+
+
 def norm(s: str) -> str:
-    """NFD-fold accents away, lowercase, and reduce every separator run to one space."""
+    """NFD-fold accents away, lowercase, reduce separator runs to one space, expand
+    Hungarian street-type abbreviations so "Pelda krt 12" and "Pelda korut 12" match."""
     stripped = ''.join(
         c for c in unicodedata.normalize('NFD', s)
         if unicodedata.category(c) != 'Mn'
     ).lower()
-    return re.sub(r'[^a-z0-9]+', ' ', stripped).strip()
+    out = re.sub(r'[^a-z0-9]+', ' ', stripped).strip()
+    for pat, full in _ABBREV:
+        out = re.sub(pat, full, out)
+    return out
 
 
 def _walk_json(node):
