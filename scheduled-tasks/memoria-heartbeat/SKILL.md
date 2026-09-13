@@ -55,6 +55,33 @@ curl -s -X POST http://localhost:3420/api/memories \
 `category` lehet: `hot` (aktív), `warm` (preferencia/config), `cold` (tanulság), `shared` (más agent-nek is).
 Az `agent_id`-t a CLAUDE.md-ből vagy a munkamappa nevéből derítsd ki.
 
+
+⚠️ **AZ EMLÉK NEM PÓTOLJA A NAPI NAPLÓT, mérve 2026-09-13 02:2x-kor a saját napomon.**
+A `daily_logs` táblában 2026-09-12-re NULLA saját bejegyzésem van, pedig aznap négy skillt
+patcheltem, két PR-t vittem fel a push-láncon és újraírtam a DREAM.md-t. A 09-11-i naplóm
+is 13:30-kor szakad meg. **Ez nem néma írás-hiba:** a transzkript szerint a
+`fleet.py daily-log marveen` hívás 09-11-en kétszer futott le, 09-12-én egyszer sem.
+Vagyis nem elszállt a mentés, hanem el sem indult.
+
+**Miért nem vettem észre:** a 23:00-s automata összefoglaló EMLÉKBE ír (a 09-12-i a #864),
+nem a `daily_logs`-ba, tehát a memória felől a nap teljesnek látszik. A hiány ott üt vissza,
+ahol a napló a BEMENET: a dream-engine az aktivitást innen súlyozza, tehát a saját
+legaktívabb napom láthatatlan volt a saját éjszakai priorizálásomnak.
+
+**Ezért a naplóírás ettől kezdve ennek a körnek a része, nem külön reflex.** Ha az `OUTCOME`
+nem `silent`, a záró stamp ELŐTT egy soros napló is megy, MÉRT `HH:MM`-mel (a `date` külön
+lépés, ne a fogalmazás része):
+
+```bash
+D=$(date '+%H:%M'); cat <<EOF | python3 ~/.claude/skills/fleet-helper/scripts/fleet.py daily-log SAJAT_NEVED -
+## $D -- Téma
+Mi történt, mi lett az eredmény
+EOF
+```
+
+Csendes körnél NEM kell: ott nincs mit naplózni, és a `silent` stamp már bizonyítja,
+hogy a kör lefutott.
+
 ## 2. Skill reflexió (KÖTELEZŐ ha volt komplex munka)
 
 Először döntsd el az alábbi 3 kérdéssel:
