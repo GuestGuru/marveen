@@ -73,7 +73,7 @@ tail -30 store/morning.log | grep -n "$(date +'%a %b %e')"
 - 🔴 **A `chat_id: 0` NEM megy Telegramon.** 2026-08-12-en a `chat_id: "0"`-ra kuldott
   napindito `chat 0 is not allowlisted -- add via /telegram:access` hibaval elszallt.
   A torzs szovege (`chat_id: 0`) es a CLAUDE.md is ezt irja, de az elo, allowlistelt
-  DM-azonosito a **scheduler-fejlecben** all (`8681205206`) -- azzal ment el elsore.
+  DM-azonosito a **scheduler-fejlecben** all (`{{CHAT_ID}}`) -- azzal ment el elsore.
   Tehat: Telegramon a fejlec chat_id-jat hasznald, a `0`-t csak akkor, ha a fejlec
   nem ad masikat. A hiba NEM nema: a reply tool `error`-t ad vissza, tehat ha `0`-val
   probaltal, egyszeruen kuldd ujra a fejlec ID-javal, ne hagyd ki a napinditot.
@@ -88,7 +88,7 @@ tail -30 store/morning.log | grep -n "$(date +'%a %b %e')"
   `SELECT chat_id, MAX(created_at) FROM conversation_log GROUP BY chat_id ORDER BY 2 DESC`,
   a `discord:<id>` sorokbol, a prefix levagasaval. A napindito elejen egy sorban mondd meg,
   miert nem a szokott csatornan jott.
-- **A csatorna nem feltétlenül Telegram.** A task szövege Telegramra (chat_id 0 / 8681205206)
+- **A csatorna nem feltétlenül Telegram.** A task szövege Telegramra (chat_id 0 / {{CHAT_ID}})
   címez, de a Telegram plugin ki lehet kapcsolva az `enabledPlugins`-ben. Küldés előtt
   nézd meg, melyik csatorna él, és oda küldd. Discordra menve a MarkdownV2-escapelés
   NEM kell (sőt ront), ott sima Discord-markdown a helyes (`**bold**`, nem `*bold*`).
