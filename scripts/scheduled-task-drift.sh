@@ -35,6 +35,20 @@ except Exception:
 PY
 )"
 OWNER_NAME="${GG_OWNER_NAME:-GuestGuru}"
+# HETEDIK ALAK (2026-09-13): a gazda Telegram chat_id-ja. A sablonokban {{CHAT_ID}}
+# all (lasd templates/CLAUDE.md.template), az elo peldanyban a valodi szam. Normalizalas
+# nelkul minden ilyen sor hamis driftnek latszana -- es ennel rosszabb is tortent: a
+# reggeli-napindito repo-sablonjaban a VALODI szam allt, kovetve, a PUBLIKUS forkban.
+OWNER_CHAT_ID="${GG_OWNER_CHAT_ID:-$(python3 - <<'PY' 2>/dev/null || true
+import json, os
+try:
+    d = json.load(open(os.path.expanduser('~/.claude/channels/telegram/access.json')))
+    a = d.get('allowFrom') or []
+    print(a[0] if a else '')
+except Exception:
+    print('')
+PY
+)}"
 WEB_PORT="${WEB_PORT:-3420}"
 
 VERBOSE=0
@@ -71,6 +85,7 @@ normalize() {
     -e "s#\\b$OWNER_NAME#{{OWNER_NAME}}#g" \
     ${BOT_NAME:+-e "s#\\b$BOT_NAME#{{BOT_NAME}}#g"} \
     -e "s#\\b$AGENT_ID#{{MAIN_AGENT_ID}}#g" \
+    ${OWNER_CHAT_ID:+-e "s#\\b$OWNER_CHAT_ID\\b#{{CHAT_ID}}#g"} \
     "$1"
 }
 
