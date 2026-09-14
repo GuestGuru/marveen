@@ -129,6 +129,22 @@ Lépések:
    bash {{INSTALL_DIR}}/scripts/skill-index.sh "$(pwd)" # ágensspecifikus merged index frissítése
    ```
 
+5. 🔴 **PARITÁS-ELLENŐRZÉS, ÉS EZ A LÉPÉS SZOKOTT ELMARADNI (mérve 2026-09-14).**
+   A patch a lemezen van, az index frissült, a kör késznek látszik: ekkor ér véget
+   a figyelem. A tükör viszont nem frissül magától.
+   ```bash
+   bash {{INSTALL_DIR}}/scripts/gg-skill-tukor-sync.sh | grep -E 'azonos=|ELTER'
+   ```
+   `elter=0` -> kész. `ELTER <nev>` -> `--fix`, majd commit ÉS push a privát repóba
+   (a recept a `gg-fork-push-lanc` skillben, a push külön lépés, nem a `--fix` része).
+   **Miért kell ide, és nem a skill-írás jó szándékára bízva:** a mai patchem kilenc
+   órán át nem ért el a tükörig, és nem attól derült ki, hogy figyeltem, hanem mert
+   egy társágens egy MÁSIK ügyben írt, és amiatt futtattam le a mérőt. A mérő megvolt
+   és működött, csak semmi nem indította el. Ugyanaz a forma, mint a napi naplónál:
+   a szabály megléte nem véd, ha egyetlen kör sem kéri számon.
+   ⚠️ **Ha `verziozatlan` listában szerepel a patchelt skill, NINCS teendőd**, de tudd:
+   az a munka egyetlen gépen áll, tükör és git-történet nélkül.
+
 **Ha kihagytad a skill akciót, pedig A/B/C valamelyike IGEN volt:** kötelezően írj `hot` tier memóriát "skip-skill: <konkrét ok>" tartalommal, hogy később lássuk miért. Ne csendben hagyd ki.
 
 ## 3. Csendben maradás
