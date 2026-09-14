@@ -61,6 +61,25 @@ class TestClassify(unittest.TestCase):
         result = self._call("Read", {"file_path": path})
         self.assertEqual(result, ("fleet-helper", "skill_read"))
 
+    # GG fork: agent-scoped skills live in the WORKING directory, not under ~.
+    # Before 2026-09-14 the pattern was anchored on ~, so these Reads recorded
+    # nothing -- on a fleet install that is where most skills are.
+    def test_read_agent_scoped_skill_md_returns_skill_read(self):
+        path = "/home/gg/marveen/.claude/skills/meres-tervezes/SKILL.md"
+        result = self._call("Read", {"file_path": path})
+        self.assertEqual(result, ("meres-tervezes", "skill_read"))
+
+    def test_read_sub_agent_skill_md_returns_skill_read(self):
+        path = "/home/gg/marveen/agents/salesninja/.claude/skills/x-y/SKILL.md"
+        result = self._call("Read", {"file_path": path})
+        self.assertEqual(result, ("x-y", "skill_read"))
+
+    def test_read_non_skill_md_still_returns_none(self):
+        self.assertIsNone(self._call("Read", {"file_path": "/home/gg/marveen/README.md"}))
+        self.assertIsNone(
+            self._call("Read", {"file_path": "/home/gg/marveen/.claude/skills/x/NOTES.md"})
+        )
+
     def test_read_skill_md_extracts_skill_name(self):
         home = os.path.expanduser("~")
         path = f"{home}/.claude/skills/deep-research/SKILL.md"

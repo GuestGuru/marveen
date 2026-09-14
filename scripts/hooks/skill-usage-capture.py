@@ -67,10 +67,14 @@ def _dashboard_token() -> str:
 _agent_id_from_cwd = ledger_lib.agent_id_from_cwd
 
 
-# ~/.claude/skills/<name>/SKILL.md  (expand ~ for the running user)
-_SKILL_MD_RE = re.compile(
-    r"^" + re.escape(os.path.expanduser("~")) + r"/\.claude/skills/([^/]+)/SKILL\.md$"
-)
+# GG fork: any <root>/.claude/skills/<name>/SKILL.md, not only the home one.
+# The original pattern anchored on os.path.expanduser("~"), so it saw ONLY the
+# global skill directory. Agent-scoped skills live in the WORKING directory
+# (<agent>/.claude/skills/), and on a fleet install that is where most skills
+# are -- so skill_read never fired for them. Measured 2026-09-14 with a positive
+# control both ways: a Read of ~/.claude/skills/<n>/SKILL.md recorded a row, the
+# same Read of /home/gg/marveen/.claude/skills/<n>/SKILL.md recorded nothing.
+_SKILL_MD_RE = re.compile(r"(?:.*/)?\.claude/skills/([^/]+)/SKILL\.md$")
 
 
 def _classify(tool_name: str, tool_input: dict) -> tuple[str, str] | None:
