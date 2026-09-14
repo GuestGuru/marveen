@@ -362,6 +362,21 @@ fogja meg. Ehelyett a DREAM.md minden atvett leletenel tedd fel EGY kerdest:
 IRANY a lelet lenyege, nem a diszitese: forditva atadva nem tomoritettem, hanem mast
 allitottam. Ez donteshez er, tehat javito sor jar (msg 824).
 
+🔴 **UGYANEHHEZ A KÉRDÉSHEZ TARTOZIK EGY MÁSODIK FELE, és 2026-09-14-én ez volt az
+éles eset: a mai lelet JAVÍTHAT egy TEGNAP MÁR KIKÜLDÖTT számot, és ezt egyik
+ellenőrző sem fogja meg.** Mind a három mérő a MAI kiküldött szöveget méri a MAI
+DREAM.md-hez, tehát ha a két mai oldal egyezik, tiszta a kör. 09-14-én a név-szabály
+napi üteme 891 ment ki, 09-13-án viszont ~550-et mondtam ugyanarra; a kettőt semmi
+nem kötötte össze, pedig a különbség NEM romlás volt, hanem a tegnapi mérőszámom
+hibája (kumulált grepből vontam napi ütemet egy olyan naplón, aminek 6413 sora
+időbélyeg nélküli régi formátum, tehát napokra nem is bontható). **A gazda oldaláról
+a kettő együtt „egyre rosszabb lesz"-nek olvasódik**, holott az ütem végig ilyen volt.
+**A kérdés tehát kétágú:** (1) KI vagy MI volt a hibás, és a kiküldött mondat ugyanazt
+nevezi-e meg; (2) **javít-e ez a lelet egy KORÁBBAN kiküldött számot vagy állítást, és
+ha igen, kimondja-e a szöveg, hogy javításról van szó?** A második ágnak nincs és ne is
+legyen regexe: a változás iránya (romlás vagy korrekció) csak a két lelet ELOLVASÁSÁBÓL
+dől el. Ha javítás, egy sor elég, és az előző számot is nevezze meg (msg 864).
+
 🔴 **A `-p` session FONETIKUSAN ELRONTJA a technikai neveket, és a KAPU ezt nem fogja meg.**
 2026-09-03, msg 742: a DREAM.md-ben kétszer, helyesen `ledger-live-drain` állt (mérve:
 `grep -c` = 2, nulla torzult alak), a kiküldött napindítóban mégis `ledép- és őrhookok`
