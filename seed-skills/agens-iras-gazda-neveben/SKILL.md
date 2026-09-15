@@ -391,6 +391,28 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   átírás elárvítja a futó szolgáltatásokat. **Ha tehát a gazdának más név tetszik, az a
   MEGJELENÍTETT nevet illeti, a marker marad az azonosító** -- és pont ezért kell egy
   mondatban elmagyarázni, hogy miért néz ki „hibásnak".
+  ✅ **AZ ESET LEZÁRULT UGYANAZNAP, ÉS A LEZÁRÁS MÉRI A SZABÁLY ÁRÁT.** bubi egyetlen
+  magyarázó mondatot mondott a gazdájának, mire az **magától**, kérés nélkül visszaírta
+  a markert: a GG-990 leírása 17:01:05-kor (helyi idő) újra `\[AI: bubi\]`, a `bubu`
+  nulla előfordulás (marveen mérte vissza). **A korrektúra oka végig az volt, hogy a
+  marker magyarázat nélkül állt egy éven át a kártyákon.** A szabály ára tehát EGY
+  MONDAT, a hiánya pedig egy hibásan attribuált lábnyom, amit senki nem vesz észre.
+  ⚠️ **A lelet ettől NEM avult el, csak lezárult:** ha valaki most megy megnézni a
+  GG-990-et, már a helyes markert találja. A történet változatlanul igaz.
+
+  🔴 **ÉS EGY ÚJ MÉRÉSI CSAPDA, AMI PONT EBBŐL BUKOTT KI: A LINEAR HISTORY NEM
+  APPEND-ONLY NAPLÓ, ÖSSZEVONJA AZ EGYMÁST KÖVETŐ SZERKESZTÉSEKET.** Mérve 2026-09-15,
+  marveen, ugyanazon a délutánon kétszer:
+  16:5x-kor a `history` a GG-990-re KÉT leírás-módosítást adott, **16:41:22-t és
+  16:45:47-et**; 17:4x-kor, `first:100`-zal (tehát nem lapozási korlát) **összesen két
+  sor** van, és ezek **16:41:22 és 17:01:05**. A 16:45:47-es bejegyzés, amire a korábbi
+  bizonyításom épült, MÁR NINCS OTT: beolvadt a későbbi szerkesztésbe.
+  **A következmény a bizonyításra:** egy history-sor NEM tartós hivatkozás. Amit ma
+  idézel belőle, holnap már nem biztos, hogy visszakereshető, tehát **a MEGFIGYELÉST írd
+  le, ne csak a mutatót rá** (időpont, tartalom, mit láttál), különben az állításod
+  alátámasztása némán eltűnik alólad. Az eset érdemi része itt is állt: a szöveg
+  megváltozott, és ezt bubi három egymástól független visszaolvasása bizonyítja, nem a
+  history egyetlen sora.
 
 - 🔴 **A LÁBNYOM-SZÁMOLÁS KÉT FÜGGETLEN OKBÓL AD GYENGE NULLÁT, ÉS A MÁSODIK A
   SÚLYOSABB: A MARKER ALAKJA NINCS KIKÉNYSZERÍTVE ÍRÁS KÖZBEN.** marveen vette észre
