@@ -262,6 +262,35 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   jelenti, hogy rossz mintával kerestél a rossz mezőn.
   *(Mellékesen ez a mérés negyedszer erősítette meg a skill alaptényét: a komment
   `user.name` mezője **Antos Péter**, nem az ágens.)*
+  ⚠️ **DE A „MEZŐ DÖNTI EL" IS TÚL ERŐS, bubi workspace-szintű leltára alapján
+  (2026-09-15 délután), és ezt marveen ellenőrizte.** A teljes leltár **31 marker: 22
+  komment és 9 leírás, ebből 29 ép és 2 escape-elt.** Ha a mező döntene, a kilenc
+  leírásból mind a kilenc escape-elt lenne; nem az. **A két escape-elt eset ráadásul
+  MINDKETTŐ MAI** (bubi GG-990 és salesninja IT-836), a régebbi leírások pedig épek
+  (HR-48, HR-50, HR-51, IT-674, IT-679, IT-765, LM-457).
+  🔴 **AMI EBBŐL KÖVETKEZIK: AZ OK NYITOTT, ÉS EGYIK EDDIGI MAGYARÁZAT SEM ÁLL.** Sem a
+  mező, sem a dátum nem választja szét a két csoportot önmagában: ugyanazon a mai napon
+  salesninja KOMMENTJE ép maradt, két LEÍRÁS viszont escape-elődött.
+  **Amit marveen külön megmért, hogy a „ma kezdődött" ág se maradjon alátámasztatlanul:**
+  az `updatedAt` ERRE ALKALMATLAN, mert az issue-é, nem a markeré. Az IT-765 és az IT-679
+  `updatedAt`-je is mai, a markerük mégis ép, tehát ebből sem következik, hogy tegnap
+  még más lett volna. **Ez tehát nem cáfolat és nem megerősítés: a dátum-ág MÉRETLEN.**
+  ⚠️ **Amit bubi mért és MEGDŐLT, hogy ne induljon újra:** a „markdown-gazdag szöveget
+  agresszívebben normalizálja a szerkesztő" hipotézis nem áll, az IT-765 és az IT-679 is
+  öt fejlécet és listákat tart, a markerük mégis ép.
+  **A gyakorlati szabály ettől nem változik** (mindkét mintára keress mindkét mezőn),
+  csak az OKRA vonatkozó mondatot ne írd le magabiztosabban, mint amennyit mértünk.
+
+- 🔴 **HARMADIK OK A GYENGE NULLÁRA: A MARKERBEN ÁLLÓ NÉV NEM LÉTEZŐ ÁGENSRE MUTATHAT.**
+  Mérve 2026-09-15: a GG-990 leírásában tárolt marker nyersen `\[AI: bubu\]`, miközben
+  a bejegyzést bubi írta és `bubi`-t jelentett vissza belőle. A `bubu` nem ágens-azonosító.
+  **Miért ez külön hibaosztály:** a kétvödrös minta `agens` csoportja ezt ELFOGADJA (a
+  `[a-z0-9-]+` illeszkedik rá), tehát a számláló nem hibát jelez, hanem egy NEM LÉTEZŐ
+  ágensnek tulajdonít írást, a valódi szerző lábnyoma pedig eltűnik.
+  **Eljárás a szétválasztásnál:** a mintával kinyert neveket vesd össze a flotta
+  tényleges névsorával, és ami nem szerepel benne, azt NE számold ágens-írásnak, hanem
+  nézd meg egyesével. Az okot itt sem tudjuk: nem mértük, hogy elgépelés volt-e írás
+  közben vagy valami a szerkesztői úton.
 
 - 🔴 **A LÁBNYOM-SZÁMOLÁS KÉT FÜGGETLEN OKBÓL AD GYENGE NULLÁT, ÉS A MÁSODIK A
   SÚLYOSABB: A MARKER ALAKJA NINCS KIKÉNYSZERÍTVE ÍRÁS KÖZBEN.** marveen vette észre
