@@ -446,6 +446,112 @@ _LOCAL_RULES = os.environ.get(
 
 _GATE_LOG = os.path.join(os.path.dirname(_LOCAL_RULES), "outgoing-copy-gate.log")
 
+# GG fork 2026-09-15 (#836, brokermarcsi's idea). THE GATE'S OWN FALSE POSITIVES
+# WERE UNMEASURED. Measured case 2026-09-10: the gate blocked a correct text (a
+# foreign UI label inside Hungarian prose) and the colleague fixed the CONTENT to
+# get it through. That one class was closed (GATEUILABEL910), but the class of
+# "the gate is wrong and nobody finds out" stayed open, because nothing recorded
+# what happened AFTER a block.
+#
+# THE NAIVE SIGNAL WOULD BE NOISE, and that is worth saying out loud: the correct
+# response to a block is also a near-identical resend (whoever adds the missing
+# accents sends almost the same text). Similarity therefore does not separate the
+# good fix from the workaround, and such a signal would fire on every single
+# accent correction.
+#
+# THE DISCRIMINATING CONDITION: a good fix puts the ACCENTS ON the flagged word;
+# a workaround takes the WORD OUT. So the signal is that after the block the
+# flagged word is present in NEITHER form. And the meaning of that signal is
+# inverted from what it looks like: it is not evidence against the sender, it is
+# evidence against the GATE.
+#
+# TWO THINGS THIS LEDGER DOES ON PURPOSE (brokermarcsi, 2026-09-10 21:48):
+#   1. IT RECORDS THE DENOMINATOR. Every block is a row, not only the suspicious
+#      ones. "Five false positives" says nothing about a gate without the total
+#      it is five out of -- the same error as a number with no measurement window.
+#   2. IT RECORDS SUSPICION, NOT A VERDICT. A word can also disappear because
+#      someone legitimately rephrased. Whether the foreign-vs-Hungarian split
+#      separates the two is a HYPOTHESIS, not a measurement, so the row carries
+#      the fact (did the word look Hungarian) and never the conclusion.
+_FP_LEDGER = os.path.join(os.path.dirname(_LOCAL_RULES), "outgoing-copy-gate-fp.jsonl")
+_FP_PENDING = os.path.join(os.path.dirname(_LOCAL_RULES), "outgoing-copy-gate-pending.json")
+
+# Filled by audit(). A module global rather than a changed return type, to keep
+# the upstream call sites (three of them) untouched.
+LAST_FLAGGED: list = []
+
+
+def _fp_append(row: dict) -> None:
+    try:
+        from datetime import datetime
+        row["ts"] = datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
+        with open(_FP_LEDGER, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
+
+
+def _fp_pending_read() -> dict:
+    try:
+        with open(_FP_PENDING, encoding="utf-8") as fh:
+            data = json.load(fh)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def _fp_pending_write(data: dict) -> None:
+    try:
+        with open(_FP_PENDING, "w", encoding="utf-8") as fh:
+            json.dump(data, fh, ensure_ascii=False)
+    except OSError:
+        pass
+
+
+def fp_resolve(tool: str, text: str) -> None:
+    """Classify what followed this tool's previous block, then clear it.
+
+    Runs BEFORE the new audit, so a text that is blocked again resolves the
+    earlier block first and then opens a new one.
+    """
+    pending = _fp_pending_read()
+    entry = pending.pop(tool, None)
+    if not entry:
+        return
+    _fp_pending_write(pending)
+    low = text.lower()
+    outcome = {}
+    for word in entry.get("words", []):
+        accented = ACCENTLESS.get(word, "")
+        if accented and accented.lower() in low:
+            outcome[word] = "javitva"          # accents added: a real catch
+        elif word.lower() in low:
+            outcome[word] = "valtozatlan"      # still there, still bare
+        else:
+            outcome[word] = "eltunt"           # gone entirely: FP suspect
+    _fp_append({"esemeny": "feloldas", "tool": tool, "blokk_ts": entry.get("ts"),
+                "kimenet": outcome,
+                "magyarnak_latszott": entry.get("magyarnak_latszott", {})})
+
+
+def fp_record_block(tool: str, problems: list) -> None:
+    """One ledger row per block, plus the pending entry the next call resolves."""
+    words = list(LAST_FLAGGED)
+    _fp_append({"esemeny": "tiltas", "tool": tool, "szavak": words,
+                "problema_tipusok": [p.split(",")[0].split(" -- ")[0][:40] for p in problems]})
+    if not words:
+        return
+    pending = _fp_pending_read()
+    from datetime import datetime
+    pending[tool] = {
+        "ts": datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "words": words,
+        # The fact, not the conclusion: see point 2 above.
+        "magyarnak_latszott": {w: bool(_hungarian_signal(w)) for w in words},
+    }
+    _fp_pending_write(pending)
+
+
 
 def _gate_log(message: str) -> None:
     """Append one TIMESTAMPED line to the gate log.
@@ -870,6 +976,7 @@ def telegram_gate(tool_input: dict) -> None:
                 "kivuli prozat viszont teljesen (_*[]()~`>#+-=|{}.!).\n"
             )
             sys.exit(2)
+        fp_resolve("telegram", text)  # GG fork: what followed the last block
         problems = audit(text)
     except SystemExit:
         raise
@@ -879,6 +986,7 @@ def telegram_gate(tool_input: dict) -> None:
         _gate_log(warn)
         sys.exit(0)
     if problems:
+        fp_record_block("telegram", problems)  # GG fork
         sys.stderr.write(
             "KIMENO-SZOVEG KAPU (Telegram): TILTVA, az uzenet nem mehet ki igy.\n\n"
             + "\n".join(f"  - {p}" for p in problems)
@@ -945,6 +1053,9 @@ def audit(text: str):
         )
     tok_pos = accent_check_tokens(prose)
     words = [w for w, _ in tok_pos]
+    # GG fork: the false-positive ledger needs the flagged WORDS, not the prose.
+    global LAST_FLAGGED
+    LAST_FLAGGED = []
     if is_hungarian(plain) or accentless_evidence(words):
         hits = sorted({w for w in words if w in ACCENTLESS})
         # GATEUILABEL910: idegen szomszedsagu ambivalens szo nem talalat
@@ -965,6 +1076,7 @@ def audit(text: str):
             )
             more = f" (+{len(hits) - 12} tovabbi)" if len(hits) > 12 else ""
             problems.append(f"HIANYZO EKEZETEK, {len(hits)} szo: {shown}{more}")
+            LAST_FLAGGED = list(hits)  # GG fork: see _FP_LEDGER
         elif letters > 200 and ratio < 0.01:
             problems.append(
                 f"MAGYAR SZOVEG GYAKORLATILAG EKEZET NELKUL (ekezet-arany {ratio:.3%}, {letters} betun). "
@@ -1117,8 +1229,10 @@ def main():
         )
         sys.exit(2)
 
+    fp_resolve(tool, text)  # GG fork: what followed the last block on this tool
     problems = audit(text)
     if problems:
+        fp_record_block(tool, problems)  # GG fork
         sys.stderr.write(
             "KIMENO-SZOVEG KAPU: TILTVA, a levél nem mehet ki így.\n\n"
             + "\n".join(f"  - {p}" for p in problems)
