@@ -238,10 +238,23 @@ check_one() {
   # 0 -> 4 -> 8 -> 12 in four days while a "decision" was waiting that, once
   # measured, did not exist.
   #
-  # A GLOBAL unversioned skill is deliberately NOT adopted: that one really is a
-  # decision (seed-skills/ if machine-independent, private repo if GG-specific),
-  # and this script must not make it silently.
-  if [ "$ADOPT" = "1" ] && [ "${scope#agens:}" != "$scope" ]; then
+  # A GLOBAL unversioned skill used to be left alone here, on the grounds that its
+  # destination is a real decision (seed-skills/ if machine-independent, private
+  # repo if GG-specific). That decision was taken on 2026-09-15 and it is a
+  # STANDING one, so the script may act on it: Tamas, Telegram msg 869, "ha
+  # bizonytalan vagy, mindig mehet a privat repoba, ezen ne alljunk le". The
+  # private mirror is the safe default in both directions -- it never leaks, and
+  # moving a skill from there into the public seed-skills/ later stays a
+  # deliberate, reviewable step. Leaving it unversioned was the only option with
+  # no upside: #841 sat open for four days while the work stood on one machine.
+  #
+  # The scope match takes BOTH spellings on purpose. Sub-agent skills arrive as
+  # "agens:<owner>", the main agent's own as a bare "agens", and the original
+  # condition (${scope#agens:} != $scope) only matched the prefixed form -- so my
+  # own two agent skills were reported as unversioned round after round while
+  # --adopt silently skipped them. Measured 2026-09-15, it was the reason two of
+  # the four names in that list never moved.
+  if [ "$ADOPT" = "1" ]; then
     if ! adopt_one "$live" "$name" "$scope"; then
       unversioned=$((unversioned + 1))
       unversioned_list="$unversioned_list $name"
