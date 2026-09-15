@@ -67,6 +67,24 @@ PROXY="${GG_MCP_PROXY:-$(read_mcp_field proxy)}"
 [ -s "$TOKEN_FILE" ] || die "a token-fajl hianyzik vagy ures: $TOKEN_FILE (parositas kell, nem restart)"
 [ -n "$PROXY" ] && [ -f "$PROXY" ] || die "nincs meg a gg-mcp proxy: '${PROXY:-<ures>}'"
 
+# The pre-commit secret gate runs `npx --no-install tsx`, so it needs node_modules
+# in THIS tree. A fresh worktree has none, and the gate is fail-closed: the commit
+# dies with "npx canceled due to missing packages". Measured 2026-09-15 -- and the
+# trap is self-inflicted, because this very script refuses to commit on the main
+# checkout and points the caller at a worktree. The fix is one symlink, the same
+# one marveen-kod-teszteles-worktreeben prescribes; doing it here means the advice
+# and the precondition ship together.
+ensure_worktree_deps() {
+  [ -e node_modules ] && return 0
+  git rev-parse --git-common-dir >/dev/null 2>&1 || return 0
+  local main_tree
+  main_tree="$(dirname "$(git rev-parse --git-common-dir)")"
+  [ "$main_tree" = "$PWD" ] && return 0
+  [ -d "$main_tree/node_modules" ] || return 0
+  ln -sfn "$main_tree/node_modules" node_modules
+  echo "   node_modules symlink -> $main_tree/node_modules (a secret-gate enelkul fail-closed megall)"
+}
+
 # Run a command with the proxy's github credentials in its env.
 gh_exec() {
   GG_MCP_TOKEN_FILE="$TOKEN_FILE" GG_MCP_AGENT_LABEL="$AGENT_LABEL" \
@@ -121,6 +139,7 @@ if [ "$RESUME" = "0" ]; then
   fi
 
   if [ "$#" -gt 0 ]; then git add -- "$@"; fi
+  ensure_worktree_deps
   scan_secrets
 
   if git diff --cached --quiet; then
