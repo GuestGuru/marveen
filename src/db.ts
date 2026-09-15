@@ -1546,7 +1546,7 @@ export function getMemoryStats(): { total: number; byAgent: Record<string, numbe
 // passes its own agent id, the write only lands on a row it actually owns.
 // Optional and absent-by-default, so the dashboard UI and the `agentId`
 // reassign path below are untouched.
-export function updateMemory(id: number, content: string, category?: string, agentId?: string, keywords?: string, ownerGuard?: string): boolean {
+export function updateMemory(id: number, content?: string, category?: string, agentId?: string, keywords?: string, ownerGuard?: string): boolean {
   const now = Math.floor(Date.now() / 1000)
   // Read the row's CURRENT owner and category before writing. The agentId
   // parameter is optional and means "reassign to this agent", so it is absent
@@ -1554,8 +1554,18 @@ export function updateMemory(id: number, content: string, category?: string, age
   // stale. Only the row itself knows that.
   const before = db.prepare('SELECT agent_id, category FROM memories WHERE id = ?').get(id) as
     { agent_id: string | null; category: string | null } | undefined
-  const sets: string[] = ['content = ?', 'accessed_at = ?']
-  const params: unknown[] = [content, now]
+  // GG fork 2026-09-15: content is OPTIONAL. It used to be unconditional, so a
+  // tier-only edit (hot -> cold on a closed decision, the most common edit there
+  // is) bound `undefined` -- that is, NULL -- to the content column and SQLite
+  // raised "NOT NULL constraint failed: memories.content". The route answered
+  // HTTP 500 "Szerver hiba" and the row stayed where it was. The schema is what
+  // kept this loud rather than destructive, but nothing in the API said content
+  // was required, and re-sending the whole body just to move a row between tiers
+  // is how content gets mangled in transit. Note the owner guard hid the fault
+  // whenever it fired: a WHERE that matches nothing never reaches the constraint.
+  const sets: string[] = ['accessed_at = ?']
+  const params: unknown[] = [now]
+  if (content !== undefined) { sets.unshift('content = ?'); params.unshift(content) }
   if (category) { sets.push('category = ?'); params.push(category) }
   if (agentId) { sets.push('agent_id = ?'); params.push(agentId) }
   if (keywords !== undefined) { sets.push('keywords = ?'); params.push(keywords) }
