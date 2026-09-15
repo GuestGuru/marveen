@@ -38,6 +38,32 @@ Nézd át, mi történt **az előző memória-kör óta**. Két dolgot csinálj:
 > ```bash
 > sqlite3 {{INSTALL_DIR}}/store/claudeclaw.db "SELECT strftime('%H:%M',datetime(ts/1000,'unixepoch','localtime')), status FROM task_runs WHERE name='memoria-heartbeat' AND ts/1000 > strftime('%s','now')-21600 ORDER BY ts;"
 > ```
+> 🔴 **AZ ABLAK-LEKÉRDEZÉS EGYSÉGE TÁBLÁNKÉNT MÁS, ÉS EZ ENGEM EGY EGÉSZ ÉJSZAKÁN ÁT NÉMÍTOTT
+> (mérve 2026-09-15 08:15).** A fenti `task_runs` recept jogosan int a `/1000`-re, de azt a
+> szabályt ÁTVITTEM az `agent_messages`-re is, ahol nem igaz. A `created_at/1000 > <epoch>`
+> így minden körben hamisat adott, tehát az üzenet-ablak MINDIG üresnek látszott, és több
+> csendes kört úgy zártam le, hogy az egyik felét nem is mértem. Nem az adat hiányzott, a
+> mértékegység volt rossz: pont az a hibaforma, amit a `meres-tervezes` az átvett szám alatt
+> ír le, csak itt egy átvett MÉRTÉKEGYSÉG.
+>
+> **Mérve, hogy ne kelljen többé emlékezetből:** `task_runs.ts` az EGYETLEN ezredmásodperces
+> oszlop. Az `agent_messages.created_at`, a `memories.created_at`, a `daily_logs.created_at`
+> és a `kanban_cards.updated_at` MIND másodperc, tehát ezeknél a `/1000` a hiba.
+>
+> A kör ablak-lekérdezése ezért ez, másolhatóan:
+> ```bash
+> LAST=$(python3 -c "import json;print(json.load(open('/home/gg/marveen/store/memoria-heartbeat-state.json'))['last_run_at'])")
+> python3 -c "
+> import sqlite3,sys
+> db=sqlite3.connect('/home/gg/marveen/store/claudeclaw.db'); last=int(sys.argv[1])
+> print('uzenet:', db.execute('SELECT id,from_agent,to_agent FROM agent_messages WHERE created_at > ?',(last,)).fetchall())
+> print('emlek :', db.execute('SELECT id,agent_id,category FROM memories WHERE created_at > ?',(last,)).fetchall())
+> " "$LAST"
+> ```
+> **A kontroll egy sor, és futtasd is le, ha valaha gyanús a nulla:** egy ismert friss sor
+> időbélyegét másodpercként ÉS ezredmásodpercként is értelmezve nézd meg, melyik ad 2026-ot.
+> Az egyik 1970-et fog adni, és az mondja meg, melyik ágon tévedsz.
+>
 > **HA MÉGIS ÁTFEDÉST LÁTSZ:** a mérce nem az idő, hanem hogy *lezártad-e már*. Ha egy munkára már
 > írtál memóriát vagy patcheltél skillt az előző körben, az KÉSZ -- ne írd meg újra más szavakkal.
 
