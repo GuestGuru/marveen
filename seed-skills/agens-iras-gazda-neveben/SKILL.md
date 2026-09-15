@@ -289,8 +289,29 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   ágensnek tulajdonít írást, a valódi szerző lábnyoma pedig eltűnik.
   **Eljárás a szétválasztásnál:** a mintával kinyert neveket vesd össze a flotta
   tényleges névsorával, és ami nem szerepel benne, azt NE számold ágens-írásnak, hanem
-  nézd meg egyesével. Az okot itt sem tudjuk: nem mértük, hogy elgépelés volt-e írás
-  közben vagy valami a szerkesztői úton.
+  nézd meg egyesével.
+  🔴 **ÉS AZ OK KIDERÜLT, UGYANAZON A NAPON: A MARKER AZ ÍRÁS UTÁN SÉRÜLT, EGY KÉSŐBBI
+  SZERKESZTÉSBEN.** Először azt írtam ide, hogy elgépelés vagy a szerkesztői út lehetett.
+  Egyik sem. bubi három mérési pontot adott, és az issue-history alátámasztja (marveen
+  ellenőrizte a Linear API-n): a beküldött payload `[AI: bubi]` volt; a 14:41-es azonnali
+  VISSZAOLVASÁS `\[AI: bubi\]`-t adott, tehát escape-elve, de HELYES NÉVVEL landolt;
+  a mostani állapot `\[AI: bubu\]`. A leírás KÉTSZER módosult, 14:41:22-kor és
+  14:45:47-kor, négy perc különbséggel, és a másodikat nem az ágens írta.
+  ⚠️ **A szerzőség itt semmit nem dönt el, és ezt bubi maga mondta ki:** mindkét sor a
+  gazda nevén áll, mert a per-user broker az ÁGENS írását is az ő nevén rögzíti. Amit az
+  ágens bizonyítani tud, az a saját hívásainak listája, nem a másik szerkesztés hiánya.
+  **AMI EBBŐL A VALÓDI TANULSÁG, és erősebb, mint az elgépelés-változat:** a marker nem
+  egyszeri ellenőrzés kérdése. **A kiírás utáni visszaolvasás azt bizonyítja, hogy a
+  szöveg ODAÉRT, nem azt, hogy ott is MARAD.** Egy emberi szerkesztés alatta bármikor
+  elmozdíthatja, és erről az író soha nem szerez tudomást. Ugyanaz a forma, mint az
+  átvételi elismervénnyel: a kézbesítést igazolja, az állapotot nem.
+  **Ezért a névsor-ellenőrzés nem az ágens hibája ellen véd, hanem a szöveg SODRÓDÁSA
+  ellen** -- és ezért kell a lábnyom-számolásnál minden körben újra elvégezni, nem egyszer
+  az írás után.
+  ⚠️ **Amit ez NEM érint:** az escape-ág független. bubi 14:41-es visszaolvasása MÁR
+  escape-elt volt, tehát azt az API-írás hozta, nem a négy perccel későbbi szerkesztés.
+  **És a javítás itt NEM az ágens dolga:** a marker átírása ma már belenyúlás lenne a
+  gazda saját szerkesztésébe, nem a saját hibád javítása. Szólni kell neki, nem javítani.
 
 - 🔴 **A LÁBNYOM-SZÁMOLÁS KÉT FÜGGETLEN OKBÓL AD GYENGE NULLÁT, ÉS A MÁSODIK A
   SÚLYOSABB: A MARKER ALAKJA NINCS KIKÉNYSZERÍTVE ÍRÁS KÖZBEN.** marveen vette észre
