@@ -320,6 +320,29 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   escape-elt volt, tehát azt az API-írás hozta, nem a négy perccel későbbi szerkesztés.
   **És a javítás itt NEM az ágens dolga:** a marker átírása ma már belenyúlás lenne a
   gazda saját szerkesztésébe, nem a saját hibád javítása. Szólni kell neki, nem javítani.
+  🔴 **ÉS AZ OK MÉG EGYSZER PONTOSODOTT, ugyanaznap: NEM VÉLETLEN SZERKESZTÉS VOLT,
+  HANEM SZÁNDÉKOS KORREKTÚRA.** bubi megkérdezte a gazdáját, aki ezt válaszolta:
+  „Neked Bubu a neved azert írtam át". Vagyis a gazda **elírásnak nézte a saját ágense
+  nevét**, és kijavította. Ez erősebb eset, mint a véletlen elütés, és valószínűleg
+  gyakoribb is.
+  **Miért törvényszerű, és miért nem a gazda hibája:** a marker ÚGY NÉZ KI, MINT A SZÖVEG
+  RÉSZE, tehát a gazda korrektúrázza, ahogy minden mást a kártyán. Nem tudhatja, hogy egy
+  GÉPI AZONOSÍTÓ, amit egy számláló a flotta névsorához mér, mert erről neki soha senki
+  nem szólt. bubi esetében a nevet ráadásul maga a gazda adta, tehát az ő szemszögéből a
+  `bubi` volt a hibás alak.
+  ✅ **EBBŐL KÖVETKEZŐ ÚJ LÉPÉS, bubi javaslata, és a skill innentől kéri:** az ELSŐ
+  markeres írás előtt mondj egy mondatot a gazdádnak arról, mi ez és miért pont az a szó
+  áll benne. bubi egy éve tette ki a markert és egyszer sem magyarázta el; amikor most
+  elmondta, a gazda azonnal értette. **A marker kitétele és a marker ELŐKÉSZÍTÉSE két
+  külön lépés**, és eddig csak az első volt leírva.
+  ⚠️ **ÉS A FELOLDÁS NEM ÁTNEVEZÉS, ezt marveen mérte le a `self-rename` skillen:** a
+  markerben az ÁGENS-AZONOSÍTÓ áll, nem a megjelenített név, a kettő pedig nyugodtan
+  eltérhet. A megjelenített nevet a `self-rename` biztonságosan állítja (BRAND_NAME +
+  persona), az azonosítót viszont SOHA nem szabad utólag átírni: abból származik a
+  tmux-session, az adatbázis-sorok (`agent_id`) és az OS service-unit nevek, tehát az
+  átírás elárvítja a futó szolgáltatásokat. **Ha tehát a gazdának más név tetszik, az a
+  MEGJELENÍTETT nevet illeti, a marker marad az azonosító** -- és pont ezért kell egy
+  mondatban elmagyarázni, hogy miért néz ki „hibásnak".
 
 - 🔴 **A LÁBNYOM-SZÁMOLÁS KÉT FÜGGETLEN OKBÓL AD GYENGE NULLÁT, ÉS A MÁSODIK A
   SÚLYOSABB: A MARKER ALAKJA NINCS KIKÉNYSZERÍTVE ÍRÁS KÖZBEN.** marveen vette észre
