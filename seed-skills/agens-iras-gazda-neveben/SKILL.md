@@ -26,6 +26,20 @@ description: Az ágens a per-user brokeren át a GAZDA nevében ír külső rend
 Ez tehát nem elméleti kockázat, hanem mért, és MINDEN ágensre áll, aki per-user
 brokeren ír. A gazdád számai akkor is érintettek, ha te keveset írsz.
 
+🔒 **EZ A SKILL NÉVVEL NEVEZETT KOLLÉGÁK TELJESÍTMÉNY-ADATÁT TARTJA (a fenti 44/18-as
+bontás, és lejjebb a minta-táblázat ágensenkénti darabszámai), ÉS A PUBLIKUS
+`GuestGuru/marveen` FORK `seed-skills/` ÁGÁN ÉL, ahol minden sor világolvasható, a git
+history visszamenőleg is.** salesninja mérése, 2026-09-15: titok, adószám, telefonszám,
+cím és e-mail nulla, teljes név két kollégáé, három-három előfordulással.
+**Ami itt a kockázat, az nem a NÉV, hanem a név MELLETT álló teljesítmény-szám** -- a
+gg-fork-push-lanc értékalapú szűrője ezt elvileg sem fogja, mert nem személyesadat-ALAKÚ
+érték, hanem egy hétköznapi kéttagú szám egy táblázatban.
+⚠️ **A „már benne volt" NEM felmentés a bővítésre** (ugyanaz a forma, mint a
+gg-fork-push-lanc „van már egy zár benne" buktatója): aki ide ír, az a meglévő
+kitettséget NÖVELI, nem örökli. **Új példát névvel ne vigyél be**; a meglévőkre a döntés
+a gazdáké, és nyitott. Ha egy mérést mindenképp ide kell írni, a szerepet nevezd meg
+(„a gazda", „egy kolléga"), ne a személyt.
+
 ## Eljárás
 
 ### 1. Minden generált szöveg markere: `[AI: <agensnev>]`
