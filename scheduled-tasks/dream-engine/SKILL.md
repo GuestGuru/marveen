@@ -116,6 +116,23 @@ Pinned default (mindig védett): claude-video, frontend-design, docx, skill-crea
 
 Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), törlés vagy frissítés javasolt".
 
+**És ugyanebben a buckettben egy sor a KAPU sajat hamis pozitivjairol (#836, 2026-09-15).**
+A kimeno-szoveg kapu 2026-09-15 ota naplozza, mi tortent minden tiltas UTAN: a
+megjelolt szo ekezetet kapott (valodi talalat), vagy eltunt mindket alakban (hamis
+pozitiv GYANU). Ezt az osszesitot futtasd, es a kimenetet egy sorban vidd at:
+
+```bash
+python3 /home/gg/marveen/scripts/kapu-fp-audit.py --napok 7
+```
+
+**Miert ide kerult, es miert nem uj utemezett feladat:** a mero maga megvolt mar
+korabban is, csak semmi nem inditotta el -- ugyanaz a forma, mint a skill-tukor
+paritasnal. Egy kulon feladat ezt nem oldja meg, csak hosszabbitja a listat, amibol
+a CLAUDE.md kifejezetten rovidebbet ker. **A szam mindig a NEVEZOVEL egyutt megy at**
+(hany tiltasbol hany), mert a puszta gyanus darabszam ugyanaz a hiba, mint egy szam
+meresi ablak nelkul. Es a "gyanu, nem itelet" tagmondat a lelet SZETVALASZTHATATLAN
+resze: az eltunes lehet jogos atfogalmazas is.
+
 ## Output formátum (DREAM.md)
 
 ```markdown
