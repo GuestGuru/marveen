@@ -157,6 +157,8 @@ a régi minták fel vannak írva. Minden ágens sorolja fel a sajátjait ide:
 | salesninja | `## Adatfrissites es forrasellenorzes, <datum>` | 1 | 2026-08-13 |
 | salesninja | `TER-takaritas, <datum>.` | 2 | 2026-08-31 |
 | salesninja | `Lezaro statusz, <datum> (Antos Peter).` | 4 | 2026-08-31 |
+| salesninja | issue-DESCRIPTION: IT-836, a záró sorban `[AI: salesninja]` -- ⚠️ a Linear `\[AI: salesninja\]`-ként TÁROLJA, tehát csak az escape-et engedő mintával fogható (l. Buktatók). Az issue Antos Péter kérésére készült. | 1 | 2026-09-15 |
+| salesninja | KOMMENT: IT-836 (`comment-8be9b690`), a záró sorban `[AI: salesninja]`, **escape nélkül, karakterre azonosan tárolva** -- a régi minta is fogja | 1 | 2026-09-15 |
 | marveen | (nincs régi komment-minta; két ISSUE: IT-482, IT-583, mindkettő kérésre) | 2 | 2026-08-09, 08-29 |
 | marveen | KOMMENT, a mai szabály szerint jelölve: IT-674 (`comment-9898847c`), a záró sorban `[AI: marveen]`. Visszaolvasva a `user.name` **Krasser Tamás** -- ez a mérés harmadszor is megerősíti, hogy a per-user broker a gazda szerzőségével rögzít. | 1 | 2026-09-05 |
 | brokermarcsi | (nincs; mérve: nulla külső írás, tranzakció-szinten) | 0 | — |
@@ -202,11 +204,93 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
 
 - 🔴 **A Linear szerkesztője ÁTÍRJA a beküldött markdownt, és nem lehet kikapcsolni.**
   Mérve 2026-08-13 (MAR-148): a `-` listajel `*`-ra vált, és minden csupasz URL
-  linkké alakul. A `[AI: nev]` marker átment (2026-08-31), mert a szögletes zárójelet
-  nem követi `(`, tehát nem nézi linknek -- de **egy formátum-váltás előtt mindig
-  írj egy éles teszt-kommentet és olvasd vissza**, ne a szabályból következtess.
-  Ha egy jövőbeli verzió mégis bántaná, a zárójel nélküli `AI: <nev> --` alak
-  ugyanúgy fogható.
+  linkké alakul. **Egy formátum-váltás előtt mindig írj egy éles próbát és olvasd
+  vissza**, ne a szabályból következtess -- ahogy az alábbi pont mutatja, a
+  „mérve, átment" is elavul.
+
+- 🔴 **A `[AI: nev]` MARKERT A LINEAR A DESCRIPTION-BEN ESCAPE-ELI, A KOMMENTBEN NEM --
+  UGYANAZON A NAPON, UGYANAZZAL A TOKENNEL. A dokumentált minta emiatt a leírásokon
+  nulla találatot ad.** salesninja mérése, 2026-09-15 (IT-836, issue-DESCRIPTION):
+  a beküldött `[AI: salesninja]` a tárolt szövegben `\[AI: salesninja\]` lett.
+  A rendererben ez helyesen, szögletes zárójellel jelenik meg, tehát **szemre
+  semmi nem árulja el** -- csak a gépi szétválasztás romlik el.
+  A korábbi, 2026-08-31-i mérés (a marker átment) ugyanezen a rendszeren készült:
+  **a Linear szerkesztője azóta változott.** Ez nem az akkori mérés hibája.
+  Egyetlen írásból, három alakot egyszerre beküldve mérve:
+
+  | mező | beküldött alak | ahogy a Linear tárolja | a `^\[AI:` minta fogja |
+  |---|---|---|---|
+  | description | `[AI: salesninja]` | `\[AI: salesninja\]` | ❌ nem |
+  | description | `AI: salesninja` | `AI: salesninja` | (más minta kell) |
+  | description | `AI: salesninja --` | `AI: salesninja --` | (más minta kell) |
+  | **komment** | `[AI: salesninja]` | `[AI: salesninja]` -- **karakterre azonos** | ✅ igen |
+
+  **A JAVÍTÁS A MINTÁBAN VAN, NEM A MARKERBEN.** A marker maradjon `[AI: <nev>]`
+  (az a flotta szabványa, és renderelve pontosan úgy néz ki), a kereső minta viszont
+  engedje meg az escape-elést -- és a lenti második hibaosztály miatt a szabad szövegű
+  markert is, KÜLÖN CSOPORTBAN:
+
+  ```
+  (?m)^\\?\[AI: (?:(?P<agens>[a-z0-9-]+)(?P<diktalva>, diktalva)?|(?P<egyeb>[^\]]+?))\\?\]
+  ```
+
+  Az `agens` csoport a flotta névtere, az `egyeb` minden más AI-jelölés. **A kettőt
+  külön számold, ne add össze** -- így a minta tágabb, a számláló mégsem lesz zajos.
+
+  🔴 **A MEZŐ DÖNTI EL, NEM A RENDSZER, és ezt majdnem elrontottam.** Először csak a
+  description-t mértem, és „a Linear ma escape-eli a markert" alakban írtam fel --
+  vagyis a RENDSZERRE általánosítottam EGY mező méréséből. A komment-ágat utána mértem
+  meg (IT-836, `comment-8be9b690`, ugyanaz a nap, ugyanaz a token): ott a beküldött
+  szöveg **karakterre azonosan** tárolódik, a marker ép. Egy Linear-mérés tehát arra a
+  mezőre érvényes, amin készült.
+  ⚠️ **A gyakorlati következmény a visszamenőleges szétválasztásra:** MINDKÉT mintára
+  keress mindkét mezőn. Egy nulla találat itt nem azt jelenti, hogy nem írtál -- azt
+  jelenti, hogy rossz mintával kerestél a rossz mezőn.
+  *(Mellékesen ez a mérés negyedszer erősítette meg a skill alaptényét: a komment
+  `user.name` mezője **Antos Péter**, nem az ágens.)*
+
+- 🔴 **A LÁBNYOM-SZÁMOLÁS KÉT FÜGGETLEN OKBÓL AD GYENGE NULLÁT, ÉS A MÁSODIK A
+  SÚLYOSABB: A MARKER ALAKJA NINCS KIKÉNYSZERÍTVE ÍRÁS KÖZBEN.** marveen vette észre
+  (2026-09-15), salesninja mérte ki a teljes workspace-en ugyanaznap. Az escape-elés
+  (fenti pont) a TÁROLÁST rontja el; ez a pont azt, hogy mi kerül be egyáltalán.
+
+  **A mérés (Linear, teljes workspace, `body contains "[AI:"`, 2026-09-15):** 30
+  marker-tartalmú komment. Ebből **22-t fog** a fenti minta (mind a négy szabályos
+  alak), **8-at nem**, és mind a 8 UGYANAZ a szabad szövegű alak:
+  `[AI: Claude Opus 5, Krasser Tamás gépéről]`. Mind 2026-09-05-i, három szomszédos
+  issue-n (IT-674, IT-675, IT-676), egyetlen szerzőségen.
+
+  **Amit ez a szerkezet eldönt:** ez nem szétszórt gyakorlat, hanem EGY ülés EGY
+  alakkal. Ezért a válasz **nem a minta vak tágítása** („fogjunk bármit, amit valaki
+  AI-nak nevez") -- attól a számláló zajos lenne. A fenti kétcsoportos minta a helyes
+  középút: a szabad szövegű markert MEGTALÁLJA, de külön vödörbe teszi.
+
+  ⚠️ **És a szabad szövegű marker NEM hiba, csak nem ágens-marker.** A
+  `Claude Opus 5, <valaki> gépéről` a gazda KÖZVETLEN Claude Code használata, nem
+  flotta-ágens. A TÉR-torzítás szempontjából viszont **ugyanúgy számít**: a komment a
+  gazda nevén áll, és nem ő fogalmazta. Aki csak az ágens-vödröt nézi, alulmér.
+
+  **A meglévő nyolcat NE írd át** -- a régi kommentek visszamenőleges szerkesztésének
+  tilalma erre is áll; a fenti `egyeb` csoport amúgy is megfogja őket.
+
+  🔴 **ÉS AZ ÍRÁS-OLDALI KIKÉNYSZERÍTÉS ITT A ROSSZ POPULÁCIÓT CÉLOZNÁ -- ezt a
+  BONTÁS mondja meg, nem a darabszám.** Kézenfekvő válasz, hogy egy hook kényszerítse
+  ki a marker alakját írás közben. marveen javasolta, majd a bontás láttán maga vonta
+  vissza (2026-09-15), és az érve erősebb, mint a minta-oldali indok: a **flotta 22
+  markere 22/22-ben szabályos**, a nyolc nem-illeszkedő pedig a gazda SAJÁT, a saját
+  gépén futó Claude Code sessionjéből jön -- ami **nem megy át a flotta kapuin**. Egy
+  hook tehát pont azt a csoportot fegyelmezné, amelyik már megfelel, és pont azt nem
+  érné el, amelyik a problémát okozta.
+  **A forma, amit érdemes megjegyezni:** mielőtt kaput építesz, nézd meg, KI termeli a
+  hibát, és átmegy-e egyáltalán azon a kapun. Egy 100 százalékos megfelelési arány a
+  szabályozott csoportban nem a szabály sikere -- az a jel, hogy a hiba máshonnan jön.
+  Ezért a kétcsoportos minta **önmagában elég**, hook nélkül.
+
+  ⚠️ **A mérés határa, hogy ne higgyük teljesnek:** a szűrő azt találja meg, ami
+  `[AI:` jelölést VISEL. A jelöletlen ágens-írásról semmit nem mond, és a kontroll
+  (`body contains "AI:"`, zárójel nélkül) ugyanazt a 30-at adta, tehát harmadik
+  formátum nincs -- de csak a JELÖLTEK között. A jelöletlenekhez továbbra is a
+  session-transzkript kell, nem a Linear.
 - 🔴 **Az issue LÉTREHOZÁSA más súlyú, mint a komment.** Ha a gazda KÉRTE, hogy
   vegyél fel egy jegyet, az az ő döntése és az ő munkája -- a jegy jogosan az övé.
   A komment viszont tartalmi hozzájárulásnak látszik. Ezért a marker a kommenten
