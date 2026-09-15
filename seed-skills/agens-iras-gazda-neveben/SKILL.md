@@ -354,6 +354,38 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   visszaírás), a history viszont KETTŐT mutat, és a középső epizódnak semmi nyoma.
   **Aki ma nézi meg a kártyát, azt látja, hogy a leírás kétszer módosult, és hogy a
   `bubu`-ügy meg sem történt.**
+  🔴 **ÉS EGY RÉS A LEÍRÁS-DÁTUMOS MÓDSZERBEN, amit salesninja mért ki 2026-09-15-én:
+  EGY API-FRISSÍTÉS HISTORY-SOR NÉLKÜL IS MARADHAT.** Az IT-836 leírását a létrehozás
+  után még KÉTSZER írta át `issueUpdate`-tel, és az issue teljes history-jában
+  (`first:100`) **nulla** `updatedDescription` sor van. A szabály második fele -- „ahol
+  nincs ilyen sor, ott a leírás a létrehozáskor került be" -- tehát NEM mindig igaz:
+  itt véletlenül helyes dátumot ad (mindkettő 09-15), de máskor TÚL RÉGIT adna.
+  ⚠️ **És nem csak a FLAG hiányzik, hanem a NODE is** -- ezt a mezőnkénti lekérdezés
+  dönti el, nem a szűrő. Az IT-836 három history node-ja: 09:40:56 és 09:40:57 két
+  CÍMKÉZÉS a `GG Agent` automatizmustól, 10:54:34 pedig címke + felelős Krasser
+  Tamástól. A két `issueUpdate` (09:41:01 és 09:41:38, mindkettő KIZÁRÓLAG a
+  `description` mezőt írta -- a payloadokból ellenőrizve) **egyik node-nak sem felel
+  meg, és időben utánuk van.** Vagyis az írás tényleg nyomtalan, nem csak jelöletlen.
+  💡 **Egy hipotézis, amit ez megenged, de nem bizonyít:** a létrehozás utáni rövid
+  ablakban (itt ~1,5 perc) a leírás-módosítás beolvadhat a létrehozásba. Az IT-674-nél
+  a 3,6 perccel későbbi leírás-írás MÁR külön node. Ez a GG-990 késői összeolvadását
+  NEM magyarázza, tehát vagy két külön jelenség van, vagy egyik magyarázat sem jó.
+  **Kontroll ugyanabban a mérésben:** az IT-674-nél VAN ilyen sor (a létrehozás után
+  3,6 perccel), az IT-765-nél nincs egy sem. Vagyis nem arról van szó, hogy az
+  API-írás sosem hagy nyomot -- hanem hogy néha nem hagy, és nem tudjuk, mikor.
+  ⚠️ **Amit ez a fő állításból gyengít:** a hét „ép" leírás dátuma lehet a valóságosnál
+  RÉGEBBI, tehát elvileg lehet köztük olyan, amit 09-15-én frissítettek API-n. **Egy
+  ilyen eset PONTOSAN ellenpélda volna** (bubi pontosítása -- korábban az állt itt, hogy
+  „nem ellenpélda", és az hibás logika volt: egy ép, aznap írt leírás megdöntené a
+  szabályt). Amit helyesen mondhatunk: **nem tudjuk, van-e ilyen, mert a mérésünk vak rá.**
+  ✅ **De a rés nagy részét az `updatedAt` betömi, mert az a hiányzó flagtől függetlenül
+  frissül** (bubi mérése mind a kilencen): LM-457, IT-674 és HR-51 `updatedAt`-je
+  09-15-nél KORÁBBI, tehát a leírásuk bizonyosan nem aznap íródott. A maradék kettőnél
+  a mai `updatedAt` megmagyarázott: az IT-765-nél és az IT-679-nél egy-egy aznapi node
+  áll pontosan ott, és mindkettő FELELŐS-változás, nem leírás-írás.
+  **A mérleg tehát: ötnél kizárható, kettőnél megmagyarázott, a maradékra vak.** A
+  gyakorlati következtetés (mindkét mintára keress mindkét mezőn) ettől változatlan.
+
   ⚠️ **A pontos hatókör, hogy a saját módszerünket ne dobjuk el feleslegesen:** a
   leírás-dátumos mérés (a fenti kilences lista) ettől NEM dől meg, mert az a JELENLEGI
   szöveg korát méri, és arra a history jó. Amire NEM jó: a szerkesztések SZÁMA és egy
