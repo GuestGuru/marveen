@@ -294,12 +294,11 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   salesninja külön-külön ellenőrizte): 31 marker, 22 komment és 9 leírás, 29 ép, 2
   escape-elt.** A kilenc leírás a JELENLEGI szöveg írási ideje szerint (helyi idő):
   escape-elt: GG-990 09-15 17:01, IT-836 09-15 09:39.
-  *(A GG-990 leírása aznap KÉTSZER íródott, 16:41-kor és 17:01-kor, és mindkét alak
-  escape-elt volt: a 17:0x-kor mért `\[AI: bubu\]` és a mostani `\[AI: bubi\]` is.
-  A listában a „jelenlegi szöveg írási ideje" definíció miatt a 17:01 áll.)*
-  *(A GG-990 leírása aznap HÁROMSZOR íródott, nem kétszer, csak a history ma kettőt
-  mutat -- a részletek lentebb, a beolvadt history-sornál. Ide a JELENLEGI szöveg
-  kora kell, és arra a 17:01 a helyes; mindhárom aznapi írás escape-elt volt.)*
+  *(A GG-990 leírása aznap HÁROMSZOR íródott, de a history ma csak KETTŐT mutat
+  (16:41 és 17:01) -- a középső, 16:45-ös szerkesztés beolvadt; a részletek lentebb,
+  a beolvadt history-sornál. A listába a JELENLEGI szöveg kora kell, és arra a 17:01
+  a helyes. Mindhárom aznapi alak escape-elt volt: a 17:0x-kor mért `\[AI: bubu\]`
+  és a mostani `\[AI: bubi\]` is.)*
   ép: LM-457 09-14, IT-765 09-11, IT-679 09-05, IT-674 09-05, HR-48 / HR-50 / HR-51
   mind 09-01. A két aznapi KOMMENT (salesninja IT-836-os és jean GG-559-es) ép.
   *(A dátumok helyi időben; a Linear API UTC-ben ad vissza. Ugyanaz a pillanat két
@@ -359,8 +358,22 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   leírás-dátumos mérés (a fenti kilences lista) ettől NEM dől meg, mert az a JELENLEGI
   szöveg korát méri, és arra a history jó. Amire NEM jó: a szerkesztések SZÁMA és egy
   KÖZBENSŐ állapot időablaka.
-  ⚠️ **Mechanizmust nem állítunk:** az összevonás kézenfekvő magyarázat, de a két
-  szerkesztés között tizenöt perc telt el, ami ahhoz hosszú, és ez egyetlen mért eset.
+  ⚠️ **MECHANIZMUST NEM ÁLLÍTUNK, ÉS MOST MÁR JOBB INDOKKAL: nem azért, mert nincs
+  magyarázatunk, hanem mert KETTŐ van, és egy esetből nem tudunk köztük dönteni.**
+  **(1) IDŐABLAKOS összevonás -- MEGDŐLT, salesninja érve, és ez erősebb, mint a korábbi
+  „tizenöt perc ahhoz hosszú", mert nem küszöbre hivatkozik, hanem a SORRENDRE:** ha az
+  összevonás időablakos lenne, a 14:41:22 és a 14:45:47 olvadt volna össze, hiszen AZOK
+  vannak négy percre egymástól; a megmaradt pár viszont tizenöt percre van. A megfigyelés
+  tehát fordított irányú, mint amit egy időablak adna.
+  **(2) FELÜLETI ÜLÉS szerinti összevonás -- ILLESZKEDIK, bubi kiegészítése:** a három
+  szerkesztés nem egyforma eredetű. A 14:41:22 API-írás volt, a másik kettő a gazda két
+  szerkesztése a Linear FELÜLETÉN. Ha a Linear a felületen belüli egymást követő
+  szerkesztéseket kezeli egy egységként, pontosan ezt látjuk, és az időtáv közömbös.
+  **Vagyis salesninja érve az IDŐALAPÚ összevonást dönti meg, magát az összevonást nem.**
+  ✅ **A döntő mérés ismert, csak nem futtatjuk:** két API-írás ugyanarra a leírásra,
+  rövid időn belül. Ha az a kettő is összevonódik, a felületi magyarázat dől meg; ha nem,
+  az marad. **Éles kártyán, a gazda nevében ezt NEM próbáljuk ki** (ugyanaz az indok,
+  amiért a kontroll-komment is elmaradt). Teszt-workspace-ben egyetlen lekérdezés eldönti.
 
   **A `history` tehát NEM append-only napló:** egy sor, amire ma hivatkozol, holnap már
   nem biztos, hogy ott van. Ezért a MEGFIGYELÉST írd le (időpont, tartalom, mit láttál),
