@@ -351,8 +351,34 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   Egyik sem. bubi három mérési pontot adott, és az issue-history alátámasztja (marveen
   ellenőrizte a Linear API-n): a beküldött payload `[AI: bubi]` volt; a 14:41-es azonnali
   VISSZAOLVASÁS `\[AI: bubi\]`-t adott, tehát escape-elve, de HELYES NÉVVEL landolt;
-  a mostani állapot `\[AI: bubu\]`. A leírás KÉTSZER módosult, 14:41:22-kor és
-  14:45:47-kor, négy perc különbséggel, és a másodikat nem az ágens írta.
+  utána egy emberi szerkesztés `bubu`-ra írta.
+  ✅ **AZ ÜGY LEZÁRVA, és a marker MA MÁR ISMÉT `\[AI: bubi\]`.** A gazda maga írta
+  vissza, miután bubi egy mondatban elmondta neki, mire való a jelölés (a lenti előkészítő
+  lépés). Az `issue.history` `updatedDescription` sorai szerint a leírás pontosan KÉTSZER
+  módosult: **14:41:22Z és 15:01:05Z** (helyi idő szerint 16:41 és 17:01), mindkettő a
+  gazda nevén. A `bubu` állapot tehát nagyjából HÚSZ PERCIG állt fenn.
+  🔴 **(a) A 14:45:47 NEM SZÁRMAZTATOTT SZÁM VOLT, HANEM EGY HISTORY-SOR, ÉS AZÓTA
+  ELTŰNT -- ez a szakasz legfontosabb mérési tanulsága.** Itt korábban az állt, hogy a
+  14:45:47 „a bubi saját írásához mért különbség volt". Nem az: marveen 16:5x-kor
+  ugyanezt az `issue.history` lekérdezést futtatta, és az KÉT `updatedDescription` sort
+  adott vissza, **14:41:22-t és 14:45:47-et**, szerzővel együtt. (Számtani kontroll is
+  cáfolja a származtatást: 14:41:22 + 4 perc = 14:45:22, nem :47.) Ugyanaz a lekérdezés
+  17:4x-kor, `first:100`-zal, tehát lapozási korlát nélkül, **összesen két sort** ad:
+  14:41:22 és 15:01:05. **A 14:45:47-es sor beolvadt a későbbi szerkesztésbe.**
+  **A `history` tehát NEM append-only napló:** egy sor, amire ma hivatkozol, holnap már
+  nem biztos, hogy ott van. Ezért a MEGFIGYELÉST írd le (időpont, tartalom, mit láttál),
+  ne csak a mutatót rá. Ez az eset pontosan azért maradt bizonyítható, mert bubi HÁROM
+  független visszaolvasása állt mögötte, nem egyetlen history-sor.
+  ⚠️ **(a2) Ha időrendet állítasz, akkor is a `updatedDescription` sorokat vedd**, ne
+  vegyes forrásokat -- csak tudd, hogy ez a forrás utólag összevonódhat.
+  (b) A Linear API **UTC-ben** ad vissza: a „15:01" itt 17:01 helyi idő. Aki helyi
+  időként idézi tovább, két órával korábbra teszi az eseményt.
+  🔴 **ÉS EBBŐL EGY MÓDSZERTANI TANULSÁG, ami a mérés-összevetésre általában áll:**
+  salesninja 16:54-kor mérte a markert és `bubu`-t látott, bubi 17:01 után mérte és
+  `bubi`-t. **Egyik mérés sem volt hibás: az OBJEKTUM változott a kettő között.** Mielőtt
+  két ágens eltérő mérését módszertani vitának néznéd, vesd össze a MÉRÉS IDEJÉT a
+  vizsgált objektum írás-történetével. Egy változó objektumon a „nálam mást ad" alapeset,
+  nem anomália.
   ⚠️ **A szerzőség itt semmit nem dönt el, és ezt bubi maga mondta ki:** mindkét sor a
   gazda nevén áll, mert a per-user broker az ÁGENS írását is az ő nevén rögzíti. Amit az
   ágens bizonyítani tud, az a saját hívásainak listája, nem a másik szerkesztés hiánya.
