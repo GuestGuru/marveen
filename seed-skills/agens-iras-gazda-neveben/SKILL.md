@@ -290,52 +290,25 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   jelenti, hogy rossz mintával kerestél a rossz mezőn.
   *(Mellékesen ez a mérés negyedszer erősítette meg a skill alaptényét: a komment
   `user.name` mezője **Antos Péter**, nem az ágens.)*
-  ⚠️ **DE A „MEZŐ DÖNTI EL" IS TÚL ERŐS, bubi workspace-szintű leltára alapján
-  (2026-09-15 délután), és ezt marveen ellenőrizte.** A teljes leltár **31 marker: 22
-  komment és 9 leírás, ebből 29 ép és 2 escape-elt.** Ha a mező döntene, a kilenc
-  leírásból mind a kilenc escape-elt lenne; nem az. **A két escape-elt eset ráadásul
-  MINDKETTŐ MAI** (bubi GG-990 és salesninja IT-836), a régebbi leírások pedig épek
-  (HR-48, HR-50, HR-51, IT-674, IT-679, IT-765, LM-457).
-  🔴 **AMI EBBŐL KÖVETKEZIK: AZ OK NYITOTT, ÉS EGYIK EDDIGI MAGYARÁZAT SEM ÁLL.** Sem a
-  mező, sem a dátum nem választja szét a két csoportot önmagában: ugyanazon a mai napon
-  salesninja KOMMENTJE ép maradt, két LEÍRÁS viszont escape-elődött.
-  **Amit marveen külön megmért, hogy a „ma kezdődött" ág se maradjon alátámasztatlanul:**
-  az `updatedAt` ERRE ALKALMATLAN, mert az issue-é, nem a markeré. Az IT-765 és az IT-679
-  `updatedAt`-je is mai, a markerük mégis ép, tehát ebből sem következik, hogy tegnap
-  még más lett volna. **Ez tehát nem cáfolat és nem megerősítés: a dátum-ág MÉRETLEN.**
-  ⚠️ **Amit bubi mért és MEGDŐLT, hogy ne induljon újra:** a „markdown-gazdag szöveget
-  agresszívebben normalizálja a szerkesztő" hipotézis nem áll, az IT-765 és az IT-679 is
-  öt fejlécet és listákat tart, a markerük mégis ép.
-  **A gyakorlati szabály ettől nem változik** (mindkét mintára keress mindkét mezőn),
-  csak az OKRA vonatkozó mondatot ne írd le magabiztosabban, mint amennyit mértünk.
-
-  ✅ **ÉS EZ UTÁN MEGVAN, MÉRVE, ÍRÁS NÉLKÜL: A KÉT MAGYARÁZAT EGYÜTT FEDI LE MIND A 31
-  ESETET, KÜLÖN-KÜLÖN EGYIK SEM.** bubi mérte ki, marveen a saját módszer-újraépítésével
-  ellenőrizte. A kulcs az volt, hogy a JELENLEGI leírás írási dátumát nem az `updatedAt`
-  adja (az az issue-é), hanem a `history` `updatedDescription` sorai; ahol ilyen nincs,
-  ott a leírás a létrehozáskor került be, tehát a `createdAt` a jó dátum.
-  **A kilenc markeres LEÍRÁS, írási idő szerint (helyi idő):**
-  escape-elt: GG-990 09-15 16:45, IT-836 09-15 09:39.
-  ép: LM-457 09-14, IT-765 09-11, IT-679 09-05, IT-674 09-05 19:44,
-  HR-48 / HR-50 / HR-51 mind 09-01 10:25.
-  **Tiszta szétválás, átfedés nélkül: minden 09-15-én írt LEÍRÁS escape-elt, minden
-  korábbi ép.** A határ 09-14 és 09-15 reggel közé esik.
-  **A másik fele a MEZŐ:** a 22 markeres komment közül KETTŐ mai (salesninja IT-836-os
-  és jean GG-559-es kommentje), és MINDKETTŐ ÉP. Tehát a komment-ág ma is ép.
-  🔴 **Ezért mondd mindig együtt a kettőt:** a „mező dönti el" nem magyarázza meg, miért
-  ép a hét korábbi leírás; a „ma kezdődött" nem magyarázza meg, miért épek a mai
-  kommentek. **A leírás-ág 09-15-től escape-el, a komment-ág nem** -- ez a kettő együtt
-  áll, ellenpélda nélkül a 31-ből.
-  ⚠️ **A hét ép leírás dátuma azért van kiírva, mert enélkül a következő olvasó a
-  leírás-ágat MINDIG-escape-előnek hiszi**, és a saját ép leírásainkat hibának nézi.
-  ⚠️ **Amit ez sem mond meg:** mi változott a Linear oldalán, és hogy a komment-ág
+  **A LELTÁR, amire a fenti szabály áll (bubi mérte a teljes workspace-en, marveen és
+  salesninja külön-külön ellenőrizte): 31 marker, 22 komment és 9 leírás, 29 ép, 2
+  escape-elt.** A kilenc leírás a JELENLEGI szöveg írási ideje szerint (helyi idő):
+  escape-elt: GG-990 09-15 17:01, IT-836 09-15 09:39.
+  *(A GG-990 leírása aznap KÉTSZER íródott, 16:41-kor és 17:01-kor; a jelenlegi szöveg
+  írási ideje szerint a második a mérvadó, és MINDKETTŐ escape-elt volt.)*
+  ép: LM-457 09-14, IT-765 09-11, IT-679 09-05, IT-674 09-05, HR-48 / HR-50 / HR-51
+  mind 09-01. A két aznapi KOMMENT (salesninja IT-836-os és jean GG-559-es) ép.
+  *(A dátumok helyi időben; a Linear API UTC-ben ad vissza. Ugyanaz a pillanat két
+  néven -- ne nézd eltérésnek.)*
+  ⚠️ **Amit ez SEM mond meg:** mi változott a Linear oldalán, és hogy a komment-ág
   marad-e ép. A határ két mérési pont közé van szorítva, nem egy eseményhez kötve.
-  ✅ **És a kontroll-írás itt NEM kell, ezt bubi jól döntötte el:** salesninja teszt-
+  ⚠️ **Egy megdőlt hipotézis, hogy ne induljon újra:** a „markdown-gazdag szöveget
+  agresszívebben normalizálja a szerkesztő" nem áll -- az IT-765 és az IT-679 is öt
+  fejlécet és listákat tart, a markerük mégis ép.
+  ✅ **És kontroll-ÍRÁS ehhez nem kell, ezt bubi jól döntötte el:** salesninja teszt-
   kommentet javasolt a GG-990-re, de az a gazda éles kártyája, tehát a teszt az Ő nevén
   jelenne meg, és pont abból szaporítana, amit ez a skill csökkenteni akar. **A kért
-  kontroll amúgy is benne van már az adatokban, két ágensen, írás nélkül.**
-  *(Időzóna-figyelmeztetés a számokhoz: a Linear API UTC-ben ad vissza, a fenti lista
-  helyi idő. Ugyanaz a pillanat két néven -- ne nézd eltérésnek.)*
+  kontroll amúgy is benne volt már az adatokban, két ágensen, írás nélkül.**
 
 - 🔴 **HARMADIK OK A GYENGE NULLÁRA: A MARKERBEN ÁLLÓ NÉV NEM LÉTEZŐ ÁGENSRE MUTATHAT.**
   Mérve 2026-09-15: a GG-990 leírásában tárolt marker nyersen `\[AI: bubu\]`, miközben
@@ -356,7 +329,9 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   vissza, miután bubi egy mondatban elmondta neki, mire való a jelölés (a lenti előkészítő
   lépés). Az `issue.history` `updatedDescription` sorai szerint a leírás pontosan KÉTSZER
   módosult: **14:41:22Z és 15:01:05Z** (helyi idő szerint 16:41 és 17:01), mindkettő a
-  gazda nevén. A `bubu` állapot tehát nagyjából HÚSZ PERCIG állt fenn.
+  gazda nevén. 🔴 **A `bubu` állapot 14:45:47Z-től 15:01:05Z-ig állt fenn, tehát TIZENÖT
+  percig, nem húsz** (bubi pontosítása): a húsz az ő SAJÁT írásától számolna, a `bubu`
+  viszont csak a MÁSODIK szerkesztéssel keletkezett.
   🔴 **(a) A 14:45:47 NEM SZÁRMAZTATOTT SZÁM VOLT, HANEM EGY HISTORY-SOR, ÉS AZÓTA
   ELTŰNT -- ez a szakasz legfontosabb mérési tanulsága.** Itt korábban az állt, hogy a
   14:45:47 „a bubi saját írásához mért különbség volt". Nem az: marveen 16:5x-kor
@@ -365,6 +340,24 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   cáfolja a származtatást: 14:41:22 + 4 perc = 14:45:22, nem :47.) Ugyanaz a lekérdezés
   17:4x-kor, `first:100`-zal, tehát lapozási korlát nélkül, **összesen két sort** ad:
   14:41:22 és 15:01:05. **A 14:45:47-es sor beolvadt a későbbi szerkesztésbe.**
+  🔴 **ÉS A 14:45:47 KÉT FÜGGETLEN MEZŐBŐL IS MEGVOLT, ugyanabban a percben mérve
+  (bubi):** az `issue.history` `updatedDescription` sora `14:45:47.193Z`, ugyanannak az
+  issue-nak az `updatedAt` mezője egy KÜLÖN lekérdezésből `14:45:47.162Z`. Harminc
+  milliszekundum eltéréssel ugyanaz a pillanat, két külön mezőben. Származtatott számból
+  ez nem állítható elő.
+  **És nem harmadik sor jött hozzá, hanem a MÁSODIK SOR IDŐBÉLYEGE GÖRDÜLT ELŐRE:** ma
+  ugyanaz a két sor látszik, csak a második `15:01:05`, az `updatedAt` szintén. Vagyis a
+  valóságban HÁROM szerkesztés történt (14:41 az ágensé, 14:45 a `bubu`-ra írás, 15:01 a
+  visszaírás), a history viszont KETTŐT mutat, és a középső epizódnak semmi nyoma.
+  **Aki ma nézi meg a kártyát, azt látja, hogy a leírás kétszer módosult, és hogy a
+  `bubu`-ügy meg sem történt.**
+  ⚠️ **A pontos hatókör, hogy a saját módszerünket ne dobjuk el feleslegesen:** a
+  leírás-dátumos mérés (a fenti kilences lista) ettől NEM dől meg, mert az a JELENLEGI
+  szöveg korát méri, és arra a history jó. Amire NEM jó: a szerkesztések SZÁMA és egy
+  KÖZBENSŐ állapot időablaka.
+  ⚠️ **Mechanizmust nem állítunk:** az összevonás kézenfekvő magyarázat, de a két
+  szerkesztés között tizenöt perc telt el, ami ahhoz hosszú, és ez egyetlen mért eset.
+
   **A `history` tehát NEM append-only napló:** egy sor, amire ma hivatkozol, holnap már
   nem biztos, hogy ott van. Ezért a MEGFIGYELÉST írd le (időpont, tartalom, mit láttál),
   ne csak a mutatót rá. Ez az eset pontosan azért maradt bizonyítható, mert bubi HÁROM
