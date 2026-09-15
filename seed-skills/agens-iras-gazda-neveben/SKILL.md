@@ -294,8 +294,12 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   salesninja külön-külön ellenőrizte): 31 marker, 22 komment és 9 leírás, 29 ép, 2
   escape-elt.** A kilenc leírás a JELENLEGI szöveg írási ideje szerint (helyi idő):
   escape-elt: GG-990 09-15 17:01, IT-836 09-15 09:39.
-  *(A GG-990 leírása aznap KÉTSZER íródott, 16:41-kor és 17:01-kor; a jelenlegi szöveg
-  írási ideje szerint a második a mérvadó, és MINDKETTŐ escape-elt volt.)*
+  *(A GG-990 leírása aznap KÉTSZER íródott, 16:41-kor és 17:01-kor, és mindkét alak
+  escape-elt volt: a 17:0x-kor mért `\[AI: bubu\]` és a mostani `\[AI: bubi\]` is.
+  A listában a „jelenlegi szöveg írási ideje" definíció miatt a 17:01 áll.)*
+  *(A GG-990 leírása aznap HÁROMSZOR íródott, nem kétszer, csak a history ma kettőt
+  mutat -- a részletek lentebb, a beolvadt history-sornál. Ide a JELENLEGI szöveg
+  kora kell, és arra a 17:01 a helyes; mindhárom aznapi írás escape-elt volt.)*
   ép: LM-457 09-14, IT-765 09-11, IT-679 09-05, IT-674 09-05, HR-48 / HR-50 / HR-51
   mind 09-01. A két aznapi KOMMENT (salesninja IT-836-os és jean GG-559-es) ép.
   *(A dátumok helyi időben; a Linear API UTC-ben ad vissza. Ugyanaz a pillanat két
