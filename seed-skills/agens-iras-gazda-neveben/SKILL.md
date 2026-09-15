@@ -232,12 +232,13 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   **a Linear szerkesztője azóta változott.** Ez nem az akkori mérés hibája.
   Egyetlen írásból, három alakot egyszerre beküldve mérve:
 
-  | mező | beküldött alak | ahogy a Linear tárolja | a `^\[AI:` minta fogja |
-  |---|---|---|---|
-  | description | `[AI: salesninja]` | `\[AI: salesninja\]` | ❌ nem |
-  | description | `AI: salesninja` | `AI: salesninja` | (más minta kell) |
-  | description | `AI: salesninja --` | `AI: salesninja --` | (más minta kell) |
-  | **komment** | `[AI: salesninja]` | `[AI: salesninja]` -- **karakterre azonos** | ✅ igen |
+  | mező | mikor írták | beküldött alak | ahogy a Linear tárolja | a `^\[AI:` minta fogja |
+  |---|---|---|---|---|
+  | description | **2026-09-15-től** | `[AI: salesninja]` | `\[AI: salesninja\]` | ❌ nem |
+  | description | 09-14-ig | `[AI: peppa]` stb. | változatlanul | ✅ igen (7 eset) |
+  | description | 09-15 | `AI: salesninja` | `AI: salesninja` | (más minta kell) |
+  | description | 09-15 | `AI: salesninja --` | `AI: salesninja --` | (más minta kell) |
+  | **komment** | 09-15 | `[AI: salesninja]` | `[AI: salesninja]` -- **karakterre azonos** | ✅ igen |
 
   **A JAVÍTÁS A MINTÁBAN VAN, NEM A MARKERBEN.** A marker maradjon `[AI: <nev>]`
   (az a flotta szabványa, és renderelve pontosan úgy néz ki), a kereső minta viszont
@@ -259,12 +260,31 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   a GG-990-en, 2026-09-15 -- az ő description-je is escape-elt ugyanezen az úton, tehát
   a jelenség nem egy ágens sajátja.)
 
-  🔴 **A MEZŐ DÖNTI EL, NEM A RENDSZER, és ezt majdnem elrontottam.** Először csak a
-  description-t mértem, és „a Linear ma escape-eli a markert" alakban írtam fel --
-  vagyis a RENDSZERRE általánosítottam EGY mező méréséből. A komment-ágat utána mértem
-  meg (IT-836, `comment-8be9b690`, ugyanaz a nap, ugyanaz a token): ott a beküldött
-  szöveg **karakterre azonosan** tárolódik, a marker ép. Egy Linear-mérés tehát arra a
-  mezőre érvényes, amin készült.
+  🔴 **A MEZŐ ÉS A DÁTUM EGYÜTT MAGYARÁZ, EGYIK SEM ÖNMAGÁBAN -- és ezt KÉTSZER
+  rontottam el, ugyanabban a formában.** Először csak a description-t mértem, és „a
+  Linear ma escape-eli a markert" alakban írtam fel: a RENDSZERRE általánosítottam EGY
+  mező méréséből. A komment-ág (IT-836, `comment-8be9b690`, ugyanaz a nap, ugyanaz a
+  token) ezt cáfolta -- ott a szöveg karakterre azonosan tárolódik. Ekkor „a mező dönti
+  el"-re szűkítettem, csakhogy **az is túl tág volt: EGY NAP mintájából jött.**
+  bubi mérése ugyanaznap, a teljes workspace 9 marker-tartalmú leírásán: **hétből hét
+  korábbi leírás ÉP**, és csak a két 09-15-i escape-elt. Ha a mező döntene, mind a
+  kilenc escape-elt lenne.
+
+  **A tényleges szabály, ellenpélda nélkül, mind a 31 esetre:** a **leírás-ág
+  2026-09-15-től escape-el** (a határ 09-14 09:40 és 09-15 07:39 közé esik), a
+  **komment-ág nem** -- két aznapi komment, két ágenstől, mindkettő ép. A mező a MAI
+  eseteket választja szét, a dátum a LEÍRÁSOKAT; külön egyik sem fedi le a halmazt.
+  ⚠️ **A gyakorlati következmény, ami nélkül a következő olvasó hibát jelentene:** a hét
+  korábbi ép leírás NEM hiba és nem javítandó. A Linear szerkesztője változott meg
+  alattuk; ők a régi tárolási alakot őrzik, amíg valaki újra nem írja őket.
+
+  🔴 **MÓDSZERTAN, ami engem majdnem félrevitt: az issue `updatedAt` mezője NEM a leírás
+  írásának ideje.** Az issue BÁRMELY változására frissül (státusz, cím, hozzárendelés).
+  A saját `updatedAt`-es lekérdezésem az IT-765-öt és az IT-679-et 09-15-inek mutatta,
+  holott a `history` szerint **mindkettő leírása a létrehozás óta változatlan** (09-11,
+  illetve 09-05) -- vagyis két hamis ellenpéldát gyártott volna a fenti szabály ellen.
+  A helyes forrás a `history` `updatedDescription` sorai (bubi módszere), és ha ott
+  nincs ilyen sor, a létrehozás ideje.
   ⚠️ **A gyakorlati következmény a visszamenőleges szétválasztásra:** MINDKÉT mintára
   keress mindkét mezőn. Egy nulla találat itt nem azt jelenti, hogy nem írtál -- azt
   jelenti, hogy rossz mintával kerestél a rossz mezőn.
