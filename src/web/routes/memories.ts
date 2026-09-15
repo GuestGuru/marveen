@@ -269,9 +269,16 @@ Respond ONLY with JSON, nothing else:
     // the same one that would forget an optional field, so an opt-in guard would
     // miss the case it exists for. Writing another agent's row stays possible, but
     // has to be said out loud with `any_owner: true`.
-    const { content, category, tier, agent_id, keywords, owner, any_owner } = JSON.parse(body.toString()) as { content: string; category?: string; tier?: string; agent_id?: string; keywords?: string; owner?: string; any_owner?: boolean }
+    const { content, category, tier, agent_id, keywords, owner, any_owner } = JSON.parse(body.toString()) as { content?: string; category?: string; tier?: string; agent_id?: string; keywords?: string; owner?: string; any_owner?: boolean }
     if (!owner && !any_owner) {
       json(res, { error: 'Pass "owner": "<your agent id>" so a mistyped id cannot rewrite another agent\'s memory, or "any_owner": true if you mean to write a row you do not own.' }, 400)
+      return true
+    }
+    // GG fork 2026-09-15: a body with neither content nor any other field would
+    // only bump accessed_at, which is not an edit anyone asked for. Say so instead
+    // of answering ok.
+    if (content === undefined && !tier && !category && agent_id === undefined && keywords === undefined) {
+      json(res, { error: 'Nothing to update: pass at least one of content, tier/category, agent_id, keywords.' }, 400)
       return true
     }
     if (updateMemory(id, content, tier || category, agent_id, keywords, owner)) { json(res, { ok: true }); return true }

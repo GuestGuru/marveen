@@ -54,3 +54,35 @@ describe('updateMemory owner guard', () => {
     expect(getAgentMemories('guard-receiver', 50).find(m => m.id === id)?.content).toBe('Handover note')
   })
 })
+
+// GG fork 2026-09-15. updateMemory used to write `content = ?` unconditionally,
+// so the most ordinary edit there is -- moving a closed decision from hot to cold
+// -- bound `undefined` to a NOT NULL-ish column and the driver threw. From the
+// caller's side that was an HTTP 500 with the row unchanged, and the workaround
+// (re-send the entire content just to change one word) is exactly how content
+// gets mangled in transit.
+describe('updateMemory without content', () => {
+  it('moves the tier and leaves the content untouched', () => {
+    const { id } = saveAgentMemory('tier-mover', 'Closed decision, full text', 'hot', 'k')
+    expect(updateMemory(id, undefined, 'cold', undefined, undefined, 'tier-mover')).toBe(true)
+    const row = getAgentMemories('tier-mover', 50).find(m => m.id === id)
+    expect(row?.content).toBe('Closed decision, full text')
+    expect(row?.category).toBe('cold')
+  })
+
+  it('still rewrites the content when one is given', () => {
+    const { id } = saveAgentMemory('tier-mover', 'Before', 'hot', 'k')
+    expect(updateMemory(id, 'After', 'cold', undefined, undefined, 'tier-mover')).toBe(true)
+    const row = getAgentMemories('tier-mover', 50).find(m => m.id === id)
+    expect(row?.content).toBe('After')
+    expect(row?.category).toBe('cold')
+  })
+
+  it('keeps honouring the owner guard on a tier-only edit', () => {
+    const { id } = saveAgentMemory('tier-victim', 'Victim content', 'hot', 'k')
+    expect(updateMemory(id, undefined, 'cold', undefined, undefined, 'tier-typist')).toBe(false)
+    const row = getAgentMemories('tier-victim', 50).find(m => m.id === id)
+    expect(row?.content).toBe('Victim content')
+    expect(row?.category).toBe('hot')
+  })
+})
