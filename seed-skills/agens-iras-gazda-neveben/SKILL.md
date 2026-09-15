@@ -289,6 +289,34 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   **A gyakorlati szabály ettől nem változik** (mindkét mintára keress mindkét mezőn),
   csak az OKRA vonatkozó mondatot ne írd le magabiztosabban, mint amennyit mértünk.
 
+  ✅ **ÉS EZ UTÁN MEGVAN, MÉRVE, ÍRÁS NÉLKÜL: A KÉT MAGYARÁZAT EGYÜTT FEDI LE MIND A 31
+  ESETET, KÜLÖN-KÜLÖN EGYIK SEM.** bubi mérte ki, marveen a saját módszer-újraépítésével
+  ellenőrizte. A kulcs az volt, hogy a JELENLEGI leírás írási dátumát nem az `updatedAt`
+  adja (az az issue-é), hanem a `history` `updatedDescription` sorai; ahol ilyen nincs,
+  ott a leírás a létrehozáskor került be, tehát a `createdAt` a jó dátum.
+  **A kilenc markeres LEÍRÁS, írási idő szerint (helyi idő):**
+  escape-elt: GG-990 09-15 16:45, IT-836 09-15 09:39.
+  ép: LM-457 09-14, IT-765 09-11, IT-679 09-05, IT-674 09-05 19:44,
+  HR-48 / HR-50 / HR-51 mind 09-01 10:25.
+  **Tiszta szétválás, átfedés nélkül: minden 09-15-én írt LEÍRÁS escape-elt, minden
+  korábbi ép.** A határ 09-14 és 09-15 reggel közé esik.
+  **A másik fele a MEZŐ:** a 22 markeres komment közül KETTŐ mai (salesninja IT-836-os
+  és jean GG-559-es kommentje), és MINDKETTŐ ÉP. Tehát a komment-ág ma is ép.
+  🔴 **Ezért mondd mindig együtt a kettőt:** a „mező dönti el" nem magyarázza meg, miért
+  ép a hét korábbi leírás; a „ma kezdődött" nem magyarázza meg, miért épek a mai
+  kommentek. **A leírás-ág 09-15-től escape-el, a komment-ág nem** -- ez a kettő együtt
+  áll, ellenpélda nélkül a 31-ből.
+  ⚠️ **A hét ép leírás dátuma azért van kiírva, mert enélkül a következő olvasó a
+  leírás-ágat MINDIG-escape-előnek hiszi**, és a saját ép leírásainkat hibának nézi.
+  ⚠️ **Amit ez sem mond meg:** mi változott a Linear oldalán, és hogy a komment-ág
+  marad-e ép. A határ két mérési pont közé van szorítva, nem egy eseményhez kötve.
+  ✅ **És a kontroll-írás itt NEM kell, ezt bubi jól döntötte el:** salesninja teszt-
+  kommentet javasolt a GG-990-re, de az a gazda éles kártyája, tehát a teszt az Ő nevén
+  jelenne meg, és pont abból szaporítana, amit ez a skill csökkenteni akar. **A kért
+  kontroll amúgy is benne van már az adatokban, két ágensen, írás nélkül.**
+  *(Időzóna-figyelmeztetés a számokhoz: a Linear API UTC-ben ad vissza, a fenti lista
+  helyi idő. Ugyanaz a pillanat két néven -- ne nézd eltérésnek.)*
+
 - 🔴 **HARMADIK OK A GYENGE NULLÁRA: A MARKERBEN ÁLLÓ NÉV NEM LÉTEZŐ ÁGENSRE MUTATHAT.**
   Mérve 2026-09-15: a GG-990 leírásában tárolt marker nyersen `\[AI: bubu\]`, miközben
   a bejegyzést bubi írta és `bubi`-t jelentett vissza belőle. A `bubu` nem ágens-azonosító.
