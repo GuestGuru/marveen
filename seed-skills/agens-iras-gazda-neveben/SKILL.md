@@ -26,6 +26,19 @@ description: Az ágens a per-user brokeren át a GAZDA nevében ír külső rend
 Ez tehát nem elméleti kockázat, hanem mért, és MINDEN ágensre áll, aki per-user
 brokeren ír. A gazdád számai akkor is érintettek, ha te keveset írsz.
 
+🔴 **ÉS A RENDSZERBEN NINCS OLYAN REJTETT JEL, AMIBŐL EGY KÉSŐBBI AUDIT MAGÁTÓL
+SZÉTVÁLASZTANÁ A KETTŐT -- EZÉRT A MARKER NEM KÉNYELMI JELÖLÉS, HANEM AZ EGYETLEN JEL.**
+Kézenfekvő remény, hogy a megjelenített néven túl van valahol egy technikai megkülönböztető
+(bot-jelölés, integráció-azonosító), és akkor a marker pótolható volna belőle. Nincs:
+salesninja mérése 2026-09-15-én a Linear `issue.history` `botActor` mezőjén, két kártya
+ÖT node-ján -- **mindegyiken üres**, a broker-írásokon és a felületi írásokon egyaránt.
+bubi fogalmazta meg, mi ebből a következtetés: a gazda nevében végzett írásunk a Linear
+FELŐL NÉZVE is teljesen emberi, nem csak a névben.
+**A skill alaptételét ez két független oldalról támasztja alá:** a TORZÍTÁS felől (a
+`user.name` a gazdáé, négyszer mérve) és a SZÉTVÁLASZTHATÓSÁG felől (nincs mire
+támaszkodni, ha a marker hiányzik). Aki a markert elhagyja, nem egy kényelmes címkét hagy
+el, hanem az egyetlen visszamenőleges bizonyítékot.
+
 🔒 **EZ A SKILL NÉVVEL NEVEZETT KOLLÉGÁK TELJESÍTMÉNY-ADATÁT TARTJA (a fenti 44/18-as
 bontás, és lejjebb a minta-táblázat ágensenkénti darabszámai), ÉS A PUBLIKUS
 `GuestGuru/marveen` FORK `seed-skills/` ÁGÁN ÉL, ahol minden sor világolvasható, a git
