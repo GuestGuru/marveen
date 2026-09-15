@@ -158,6 +158,20 @@ tail -30 store/morning.log | grep -n "$(date +'%a %b %e')"
   egyik sem. Ha nem fér bele, inkább a lelet legyen rövidebb, ne a megszorítás
   hiányozzon: „X nem fut, de a gyakori eset így is védve" rövidebb, mint a
   felnagyított változat, és igaz is.
+  🔴 **A „mindig riasztóbb" fele MEGDŐLT, mérve 2026-09-15: a veszteség MINDKÉT
+  irányba mehet, és a megnyugtató irány a veszélyesebb.** A DREAM.md a név-szabálynál
+  (#860) két dátumozott számot adott, 09-13-án 891 és 09-14-én 814 figyelmeztetést,
+  és kimondta, hogy **a két nap között nincs érdemi különbség**. A kiküldött
+  napindítóból a megszorítás maradt ki, a 814 pedig egyedül állt ott, miközben előző
+  reggel a 891 ment ki ugyanerre. A gazda oldaláról ez csökkenésnek olvasódik, tehát
+  egy hatodik napja nyitott döntés látszik magától megoldódni.
+  **Amit ez a szabályon változtat:** nem a „drámaibb tagmondat" a kockázat, hanem az,
+  hogy a megszorítás az ÖSSZEHASONLÍTÁST viszi magával. Egy szám, ami tegnap is
+  kiment, sosem áll egyedül: vagy a tegnapi mellett megy ki, vagy a „nincs érdemi
+  különbség" tagmondattal. Harmadik alak nincs.
+  **Ez nem ért el javító üzenetig**, mert a 09-14-i korrekció (msg 864) a teljes
+  dátumozott sort már kiküldte (09-11: 939, 09-12: 591, 09-13: 891), tehát a gazda
+  látja, hogy a sor ingadozik. Ha az a sor nem ment volna ki, ez javító sort ért volna.
 
 - A DREAM.md `## ⚠️ Hibák` szekcióját nem kell szó szerint bemásolni, de a benne lévő
   gépi akadályokat érdemes egy rövid záró bekezdésben összefoglalni.
