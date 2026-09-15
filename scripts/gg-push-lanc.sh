@@ -74,6 +74,24 @@ PROXY="${GG_MCP_PROXY:-$(read_mcp_field proxy)}"
 # checkout and points the caller at a worktree. The fix is one symlink, the same
 # one marveen-kod-teszteles-worktreeben prescribes; doing it here means the advice
 # and the precondition ship together.
+# Refuse BEFORE touching the branch, not at commit time. The pre-commit prod-tree
+# guard blocks the commit, but by then step 1 has already switched the running
+# checkout onto the topic branch and staged the files -- so the guard cannot
+# auto-restore (the tree is dirty) and the post-checkout watchdog fires an alert
+# about a state this script created. Measured 2026-09-15: that is exactly what
+# happened, and the cleanup was manual. Same condition as the hook, read early.
+refuse_on_prod_tree() {
+  local prod_root toplevel
+  prod_root="${MARVEEN_PROD_ROOT:-$(dirname "$(cd "$(git rev-parse --git-common-dir)" && pwd)")}"
+  toplevel="$(git rev-parse --show-toplevel 2>/dev/null || echo)"
+  [ "$toplevel" = "$prod_root" ] || return 0
+  [ "${MARVEEN_PROD_COMMIT_OK:-0}" = "1" ] && return 0
+  die "ez a futo fo checkout ($prod_root) -- itt a commitot a prod-tree guard blokkolja.
+  Dolgozz worktree-ben, MIELOTT agat valtanal:
+    git worktree add ../$(basename "$prod_root")-wt-<tema> -b <ag> origin/develop
+  Szandekos felulbiralas: MARVEEN_PROD_COMMIT_OK=1"
+}
+
 ensure_worktree_deps() {
   [ -e node_modules ] && return 0
   git rev-parse --git-common-dir >/dev/null 2>&1 || return 0
@@ -131,6 +149,7 @@ scan_secrets() {
 # --- 1. branch + commit ------------------------------------------------------
 if [ "$RESUME" = "0" ]; then
   step "1. ag es commit: $BRANCH"
+  refuse_on_prod_tree
   if [ "$DRY_RUN" = "1" ]; then
     echo "   [DRY_RUN] ag letrehozas/valtas kihagyva (jelenlegi: $(git symbolic-ref --short HEAD))"
   else
