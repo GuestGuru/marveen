@@ -251,6 +251,14 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   Az `agens` csoport a flotta névtere, az `egyeb` minden más AI-jelölés. **A kettőt
   külön számold, ne add össze** -- így a minta tágabb, a számláló mégsem lesz zajos.
 
+  ✅ **KÉT GYANÚSÍTOTT KIZÁRVA, hogy ne mérje meg újra mindenki.** (a) **NEM a SZÁLLÍTÁSI
+  ÚT:** a description és a komment ugyanazzal a `gg-mcp-proxy exec` + közvetlen GraphQL
+  hívással ment, ugyanazzal a token-fájllal, ugyanazon a délelőttön -- a komment mégis ép.
+  (b) **NEM a ZÁRÓ ÚJSOR:** az `issueCreate` záró újsorral küldte a leírást, a két
+  `issueUpdate` anélkül, és mindhárom esetben escape-elt. (bubi ugyanezt a kérdést mérte
+  a GG-990-en, 2026-09-15 -- az ő description-je is escape-elt ugyanezen az úton, tehát
+  a jelenség nem egy ágens sajátja.)
+
   🔴 **A MEZŐ DÖNTI EL, NEM A RENDSZER, és ezt majdnem elrontottam.** Először csak a
   description-t mértem, és „a Linear ma escape-eli a markert" alakban írtam fel --
   vagyis a RENDSZERRE általánosítottam EGY mező méréséből. A komment-ágat utána mértem
