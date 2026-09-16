@@ -305,6 +305,115 @@ _no_token = [r["agent"] for r in _live["findings"] if r["status"] == "NO_TOKEN"]
 check("live fleet: probe still runs and sees agents", _live["agents_checked"] > 0, True)
 check(f"live fleet: no false NO_TOKEN (got {_no_token})", _no_token, [])
 
+# --- upstream_url_for -------------------------------------------------------
+# The env form is what all seven agents on this box use, and it is exactly the
+# shape remote_target() cannot see, which is why the probe was blind.
+check("upstream_url_for: env form",
+      ggmcp.upstream_url_for({"command": "node", "env": {"GG_MCP_UPSTREAM_URL": "http://127.0.0.1:3450"}}),
+      "http://127.0.0.1:3450")
+check("upstream_url_for: url form wins",
+      ggmcp.upstream_url_for({"url": "https://h:8443", "env": {"GG_MCP_UPSTREAM_URL": "http://x"}}),
+      "https://h:8443")
+check("upstream_url_for: no upstream declared", ggmcp.upstream_url_for({"command": "node"}), None)
+check("upstream_url_for: not a dict", ggmcp.upstream_url_for(None), None)
+
+# --- upstream_health: against real sockets ----------------------------------
+# The green path proves nothing on its own -- this probe reported green for the
+# whole of the 2026-09-16 outage. What has to be tested is that each broken
+# shape comes back as a fault.
+import http.server
+import socket
+import threading
+
+
+def _serve(handler_body, status=200, content_type="application/json"):
+    """Start a throwaway HTTP server on loopback; returns (url, stop)."""
+    class H(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            payload = handler_body.encode()
+            self.send_response(status)
+            self.send_header("content-type", content_type)
+            self.send_header("content-length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+
+        def log_message(self, *a):
+            pass
+
+    srv = http.server.HTTPServer(("127.0.0.1", 0), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return f"http://127.0.0.1:{srv.server_address[1]}", srv.shutdown
+
+
+_url, _stop = _serve('{"ok": true, "transport": "streamable-http"}')
+check("health: 200 + ok:true -> ok", ggmcp.upstream_health(_url)["state"], "ok")
+_stop()
+
+_url, _stop = _serve('{"ok": true}', status=500)
+check("health: HTTP 500 -> fault", ggmcp.upstream_health(_url)["state"], "fault")
+_stop()
+
+# /health is the one route that must never need a token. A 401 there means the
+# gate changed shape, which is a fault even though the service is answering.
+_url, _stop = _serve('nope', status=401)
+check("health: HTTP 401 -> fault", ggmcp.upstream_health(_url)["state"], "fault")
+_stop()
+
+_url, _stop = _serve('<html>nem JSON</html>', content_type="text/html")
+check("health: 200 but not JSON -> fault", ggmcp.upstream_health(_url)["state"], "fault")
+_stop()
+
+_url, _stop = _serve('{"ok": false}')
+check("health: 200 but ok:false -> fault", ggmcp.upstream_health(_url)["state"], "fault")
+_stop()
+
+# THE OUTAGE SHAPE. jean measured HTTP 000 on 127.0.0.1:3450 at 14:05 on
+# 2026-09-16 while every proxy child stayed alive. A closed loopback port is
+# that same refusal, and it must be a fault, not a shrug.
+_dead = socket.socket()
+_dead.bind(("127.0.0.1", 0))
+_dead_port = _dead.getsockname()[1]
+_dead.close()
+_r = ggmcp.upstream_health(f"http://127.0.0.1:{_dead_port}")
+check("health: refused loopback -> fault", _r["state"], "fault")
+check("health: refused loopback -> says why", "kapcsolodasi" in _r["detail"], True)
+
+# A loopback forwarder that accepts and then never answers. There is no network
+# between here and 127.0.0.1, so this is a fault and not a blind spot.
+_hang = socket.socket()
+_hang.bind(("127.0.0.1", 0))
+_hang.listen(1)
+_saved_timeout = ggmcp.UPSTREAM_PROBE_TIMEOUT_S
+ggmcp.UPSTREAM_PROBE_TIMEOUT_S = 0.5
+try:
+    check("health: hanging loopback -> fault",
+          ggmcp.upstream_health(f"http://127.0.0.1:{_hang.getsockname()[1]}")["state"], "fault")
+    # ... but the same silence from across the tailnet is NOT an alarm: the
+    # cause may be this box's own network. Same rule as remote_reachable().
+    check("health: unresolvable remote name -> unknown, not fault",
+          ggmcp.upstream_health("https://nincs-ilyen-nev.invalid:8443")["state"], "unknown")
+finally:
+    ggmcp.UPSTREAM_PROBE_TIMEOUT_S = _saved_timeout
+    _hang.close()
+
+# --- the wiring, which is what actually failed ------------------------------
+# A correct upstream_health() that nothing counts would have left the probe
+# green through the outage exactly as before. The check is that a fault reaches
+# `problems`.
+_real_health = ggmcp.upstream_health
+try:
+    ggmcp.upstream_health = lambda url: {"state": "fault", "detail": "teszt"}
+    _red = ggmcp.probe()
+    ggmcp.upstream_health = lambda url: {"state": "ok", "detail": "teszt"}
+    _green = ggmcp.probe()
+finally:
+    ggmcp.upstream_health = _real_health
+check("wiring: a faulty upstream raises problems", _red["problems"] > _green["problems"], True)
+check("wiring: upstreams are reported", len(_red.get("upstreams", [])) > 0, True)
+# One forwarder shared by seven agents must count once, not seven times.
+check("wiring: one fault per upstream, not per agent",
+      _red["problems"] - _green["problems"], len(_red["upstreams"]))
+
 if failures:
     print(f"FAIL ({len(failures)}):")
     for f in failures:
