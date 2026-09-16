@@ -100,9 +100,17 @@ Gépi szétválasztás egyetlen mintával, minden ágensre és mindhárom helyen
 (?m)^\[AI: ([a-z0-9-]+)\]
 ```
 
-**Mérve 2026-08-31:** a Linear szerkesztője a szögletes zárójelet NEM bántja
-(oda-vissza olvasva karakterre azonos, a regex fog). Ez nem magától értetődő, lásd
-a Buktatókat.
+🔴 **MEGHALADVA, ÉS EZ A MINTA ÍGY MÁR NEM ELÉG. Olvasd el a Buktatókat, MIELŐTT
+ráfuttatod bármire.** A 2026-08-31-i mérés (a Linear szerkesztője a szögletes zárójelet
+NEM bántja, oda-vissza olvasva karakterre azonos) **KOMMENTEN készült, és a komment-ágon
+ma is áll.** A DESCRIPTION-ágon viszont a Linear 2026-09-15-től `\[AI: nev\]` alakban
+tárolja, tehát a fenti minta ott NULLA találatot ad, és abból „nem írt ágens" olvasódik ki.
+Háromszor mérve, három ágenssel, három külön issue-n (salesninja IT-836 és bubi GG-990
+2026-09-15, peppa TUL-1110 2026-09-16). **A renderelt nézetben mindhárom hibátlan**, ezért
+magától soha nem derülne ki.
+**Description-ön tehát az escape-et is engedő alakot használd** (`\\?\[AI: `), vagy fejtsd
+vissza a backslash-escape-et illesztés előtt. A részletek, a dátumhatár és a kilenc
+leírásos mérés a Buktatók között.
 
 ### 1/b. A DIKTÁLT szöveg külön jelölést kap: `[AI: <agensnev>, diktalva]`
 
