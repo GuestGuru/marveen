@@ -219,6 +219,144 @@ def remote_reachable(target: tuple[str, int] | None) -> bool | None:
         return None
 
 
+# ---------------------------------------------------------------------------
+# Service-level check: does the gg-mcp SERVICE answer at all?
+#
+# Why this exists (2026-09-16). At 14:00 the gg-mcp key issuance went down for
+# the whole fleet: every `proxy.js exec` and every MCP-path tool call died with
+# "fetch failed". This probe had run five minutes earlier and reported
+# `problems: 0`, and it would have kept reporting 0 for the entire outage.
+# Nothing it looks at had changed: all seven proxy.js children were alive (a
+# stdio child does not exit when its upstream dies), every token file was in
+# place, and the build was untouched.
+#
+# The gap is structural, not a missed case. Everything above this line is about
+# the CLIENT side -- is there a process, is it current, does it have an
+# identity. None of it touches the service that client talks to.
+# `remote_reachable` is the closest thing and it never runs for this fleet: it
+# only fires for an entry with a `url` (or type http|sse), while all seven
+# agents here are stdio entries that carry their upstream in
+# `env.GG_MCP_UPSTREAM_URL`. Measured 2026-09-16: zero of seven classified as
+# remote, so that TCP check was dead code on this machine.
+#
+# What is checked instead: GET /health on each distinct upstream that a live
+# agent actually declares. That route is the ONE unauthenticated route on the
+# gg-mcp HTTP gate (src/http.ts; src/http-oauth.ts states the exemption
+# explicitly) -- everything else sits behind Bearer. So this check needs no
+# token, issues no credential, writes no audit entry and cannot leak an
+# identity, which is what makes it safe to run fleet-wide from one place on a
+# 2-hourly timer.
+#
+# WHAT IT STILL CANNOT SEE, stated rather than papered over: /health is a
+# static handler. A service that is up but whose key issuance is broken answers
+# 200, and this check goes green. It catches the failure mode we actually had
+# -- the HTTP gate unreachable, which jean measured as HTTP 000 on
+# 127.0.0.1:3450 at 14:05 while a healthy gate answers 200 there -- not every
+# possible one. The honest check for issuance itself would be a real
+# `exec --alias`, and that issues a live credential into a child process env on
+# every single run. That price is not worth paying on a timer.
+UPSTREAM_HEALTH_PATH = "/health"
+# Longer than REMOTE_PROBE_TIMEOUT_S: that one only completes a TCP handshake,
+# this one waits for the service to answer through the local forwarder.
+UPSTREAM_PROBE_TIMEOUT_S = 4.0
+
+
+def upstream_url_for(entry: dict | None) -> str | None:
+    """The gg-mcp service URL this agent talks to, or None if it cannot be read.
+
+    Two shapes, because the fleet has both: a remote entry states its `url`
+    outright, and a stdio proxy entry carries the service URL in
+    `env.GG_MCP_UPSTREAM_URL`. The env form is the one every agent here uses,
+    and it is invisible to `remote_target` by design -- that function answers
+    "is this entry remote", which a proxy entry is not.
+    """
+    if not isinstance(entry, dict):
+        return None
+    url = entry.get("url")
+    if isinstance(url, str) and url:
+        return url
+    env = entry.get("env")
+    if isinstance(env, dict):
+        value = env.get("GG_MCP_UPSTREAM_URL")
+        if isinstance(value, str) and value:
+            return value
+    return None
+
+
+def _is_loopback(host: str) -> bool:
+    return host in ("localhost", "::1", "[::1]") or host.startswith("127.")
+
+
+def upstream_health(url: str) -> dict:
+    """GET <url>/health -> {"state": "ok"|"fault"|"unknown", "detail": str}.
+
+    ok      -- HTTP 200 with a JSON body whose `ok` is true.
+    fault   -- the service answered wrong (any other status, or a body that is
+               not `ok`), refused or reset the connection, or is a LOOPBACK
+               upstream that did not answer within the timeout.
+    unknown -- a NON-loopback upstream timed out or failed to resolve.
+
+    The loopback/remote split is the one place this deliberately differs from
+    `remote_reachable` above. That function refuses to call a timeout a fault
+    because the cause may be this box's own network, and a monitor that turns
+    its own blind spot into an alarm is worse than one that admits it cannot
+    see. That reasoning holds for a host across the tailnet. It does not hold
+    for 127.0.0.1: there is no network in between, so a local forwarder that
+    cannot answer in four seconds IS the fault being looked for, and calling it
+    "cannot tell" would reintroduce exactly the silence this check was added to
+    end.
+    """
+    import socket
+    import urllib.error
+    import urllib.request
+    from urllib.parse import urlsplit, urlunsplit
+
+    parts = urlsplit(url)
+    host = parts.hostname or ""
+    target = urlunsplit((parts.scheme, parts.netloc, UPSTREAM_HEALTH_PATH, "", ""))
+    loopback = _is_loopback(host)
+    try:
+        with urllib.request.urlopen(target, timeout=UPSTREAM_PROBE_TIMEOUT_S) as resp:
+            status = resp.status
+            body = resp.read(4096).decode("utf-8", "replace")
+    except urllib.error.HTTPError as exc:
+        # The service DID answer, with the wrong thing. /health is the one route
+        # that must never need a token, so a 401 here is as much a fault as a 500.
+        return {"state": "fault", "detail": f"/health HTTP {exc.code}"}
+    except urllib.error.URLError as exc:
+        reason = exc.reason
+        if isinstance(reason, socket.gaierror):
+            # A name that does not resolve is a configuration fault wherever it
+            # points, but only the caller can judge intent, so it is reported
+            # with the reason attached and left out of the alarm for a remote
+            # host, exactly as a timeout is.
+            detail = f"a nev nem oldhato fel ({host})"
+            return {"state": "fault" if loopback else "unknown", "detail": detail}
+        if isinstance(reason, socket.timeout) or isinstance(exc, TimeoutError):
+            return {
+                "state": "fault" if loopback else "unknown",
+                "detail": f"nincs valasz {UPSTREAM_PROBE_TIMEOUT_S:g}s alatt",
+            }
+        return {"state": "fault", "detail": f"kapcsolodasi hiba: {reason}"}
+    except (TimeoutError, socket.timeout):
+        return {
+            "state": "fault" if loopback else "unknown",
+            "detail": f"nincs valasz {UPSTREAM_PROBE_TIMEOUT_S:g}s alatt",
+        }
+    except OSError as exc:
+        return {"state": "fault", "detail": f"kapcsolodasi hiba: {exc}"}
+
+    if status != 200:
+        return {"state": "fault", "detail": f"/health HTTP {status}"}
+    try:
+        payload = json.loads(body)
+    except ValueError:
+        return {"state": "fault", "detail": "/health valasza nem JSON"}
+    if not (isinstance(payload, dict) and payload.get("ok") is True):
+        return {"state": "fault", "detail": f"/health nem ok: {body[:120]}"}
+    return {"state": "ok", "detail": f"HTTP 200, transport={payload.get('transport')}"}
+
+
 def config_mtime_after(cwd: str, session_start_ts: float) -> bool:
     """Was .mcp.json last written AFTER this session started?
 
@@ -346,6 +484,10 @@ def probe() -> dict:
         children.setdefault(info["ppid"], []).append(pid)
 
     findings = []
+    # upstream URL -> the live agents that declare it. Collected here rather
+    # than by walking agents/ so the report covers what is RUNNING, not what a
+    # stale directory still contains.
+    upstreams: dict[str, list[str]] = {}
     for pid, info in procs.items():
         cmd = info["cmdline"]
         # A fleet session is a `claude` process launched by the fleet launcher.
@@ -365,6 +507,10 @@ def probe() -> dict:
         declared, server_path = declares_gg_access(cwd)
         if not declared:
             continue  # agent legitimately has no gg-access -- not a fault
+
+        upstream = upstream_url_for(entry)
+        if upstream:
+            upstreams.setdefault(upstream, []).append(name)
 
         alive = [c for c in children.get(pid, []) if server_needle_in(procs[c]["cmdline"])]
         built = build_mtime(server_path)
@@ -389,6 +535,8 @@ def probe() -> dict:
             "server_path": server_path,
             "status": status,
         }
+        if upstream:
+            row["upstream"] = upstream
         if is_remote and target:
             row["remote_endpoint"] = f"{target[0]}:{target[1]}"
         if alive:
@@ -418,6 +566,21 @@ def probe() -> dict:
         "problems": len(bad),
         "findings": findings,
     }
+
+    # Service-level, once per distinct upstream: seven agents sharing one
+    # forwarder must not produce seven copies of one service fault.
+    if upstreams:
+        rows = []
+        for url in sorted(upstreams):
+            health = upstream_health(url)
+            rows.append({
+                "url": url,
+                "agents": sorted(upstreams[url]),
+                "state": health["state"],
+                "detail": health["detail"],
+            })
+        result["upstreams"] = rows
+        result["problems"] += sum(1 for r in rows if r["state"] == "fault")
 
     trap = ambient_token_trap()
     if trap:
