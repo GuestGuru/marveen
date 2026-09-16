@@ -258,6 +258,27 @@ két HAVONTA, tartósan futó elszámolási feladat is ezt kapta: a közös benn
 a különbséget nem tudja megállapítani -- csak a szerző. (Mérve ugyanaznap: `sablon nelkul`
 5 -> 3, `efemer` 2 -> 4, egyetlen mezővel, sablon-írás nélkül.)
 
+⚠️ **Az `ephemeral_reason` MAGYAR PRÓZA, tehát ékezettel kell írni, és pont itt a
+legkönnyebb elrontani.** Ez nem stílus-kérdés: az indoklás tartós, megosztott
+artefaktum, amit hónapok múlva egy másik szerző olvas vissza döntés-alapként.
+**A hiba nem az írás ÚTJÁN keletkezik, hanem a MUNKAANYAG REGISZTERÉBEN:** a mezőt
+JSON-kulcsok, útvonalak és angol mezőnevek közé írod, és a szöveg ékezet nélkül
+SZÜLETIK meg. Kétszer mérve, két külön ágensnél, ugyanazzal a formával
+(2026-09-13 `kommunikator-havi-elszamolas`, 2026-09-16 négy feladat egyszerre), és
+mindkétszer a visszaolvasás fogta meg, nem az írás.
+**Miért nem véd semmi:** a kimenő üzenetre és a memóriára van gépi ékezet-kapu, erre
+a mezőre nincs. Ezért a visszaolvasás KÖTELEZŐ része az ékezet-számolás is:
+```bash
+python3 -c "
+import json,re,sys
+r=json.load(open(sys.argv[1])).get('ephemeral_reason','')
+a=len(re.findall('[áéíóöőúüűÁÉÍÓÖŐÚÜŰ]', r))
+print(len(r),'kar,',a,'ekezet =', round(a*100/max(len(r),1),1),'/100')
+" ~/.claude/scheduled-tasks/<nev>/task-config.json
+```
+A mért sávok azonosak a többi kapuéval: a romlott szöveg 0,00 és 0,13 között van, az
+ép 6,0 és 11,4 között, tehát nincs átfedés. 2,0 alatt írd újra.
+
 **Visszaigazolás:** a `{"ok":true}` nem bizonyíték. Olvasd vissza a promptot a lementett
 `~/.claude/scheduled-tasks/<nev>/SKILL.md`-ből (hossz + a kritikus mondatok), és nézd meg,
 hogy a runner listázza-e a feladatot -- csak ezt jelentsd késznek.
