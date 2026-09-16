@@ -414,6 +414,43 @@ check("wiring: upstreams are reported", len(_red.get("upstreams", [])) > 0, True
 check("wiring: one fault per upstream, not per agent",
       _red["problems"] - _green["problems"], len(_red["upstreams"]))
 
+# --- live_upstream: config vs. the running child ----------------------------
+# Read from a REAL process, not a fixture: the point of this function is that
+# /proc tells the truth about what is running, and a fixture would only prove
+# the parser works.
+_probe = ggmcp.probe()
+_with_pid = [r for r in _probe["findings"] if r.get("mcp_pid")]
+check("live_upstream: the fleet has children to read", len(_with_pid) > 0, True)
+if _with_pid:
+    _row = _with_pid[0]
+    check(f"live_upstream: reads {_row['agent']}'s real env",
+          ggmcp.live_upstream(_row["mcp_pid"]), _row.get("upstream"))
+# A pid that cannot exist must come back as "cannot tell", never as a crash.
+check("live_upstream: missing process -> None", ggmcp.live_upstream(2**22), None)
+
+# The divergence branch itself. It cannot be staged from a healthy fleet (it
+# needs someone to edit .mcp.json under a live session), so the reading is
+# forced and the CONSEQUENCES are checked: the row states the fact, and the
+# live URL is probed as well, because that is what the agent uses right now.
+_real_live = ggmcp.live_upstream
+_real_health = ggmcp.upstream_health
+try:
+    ggmcp.live_upstream = lambda pid: "http://127.0.0.1:59999"
+    ggmcp.upstream_health = lambda url: {"state": "ok", "detail": "teszt"}
+    _div = ggmcp.probe()
+finally:
+    ggmcp.live_upstream = _real_live
+    ggmcp.upstream_health = _real_health
+_flagged = [r for r in _div["findings"] if r.get("upstream_differs_from_config")]
+check("divergence: the row says so", len(_flagged) > 0, True)
+check("divergence: the row names the live value",
+      all(r.get("upstream_live") == "http://127.0.0.1:59999" for r in _flagged), True)
+check("divergence: the live upstream is probed too",
+      "http://127.0.0.1:59999" in [u["url"] for u in _div.get("upstreams", [])], True)
+# Stated, never alarmed: a config repaired and awaiting a restart looks exactly
+# like one just broken, and the process table cannot tell them apart.
+check("divergence: is NOT a fault on its own", _div["problems"], 0)
+
 if failures:
     print(f"FAIL ({len(failures)}):")
     for f in failures:
