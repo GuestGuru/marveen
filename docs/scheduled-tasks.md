@@ -73,9 +73,9 @@ ugyanúgy, mintha te gépelted volna be a chat-be.
 | `type` | string | `"task"` | Lásd Feladattípusok |
 | `skipIfBusy` | boolean | `false` | Ha `true` és a session foglalt, elveti a tickt |
 | `forceSend` | boolean | `false` | Ha `true`, átugorja a busy-ellenőrzést, mindig kézbesít |
-| `createdAt` | number | — | Unix timestamp (másodperc), automatikusan töltődik |
-| `description` | string | — | Opcionális leírás (ha nincs SKILL.md frontmatter) |
-| `targetSession` | string | — | Egyedi tmux session név override (alapból: `agent-<name>`) |
+| `createdAt` | number | - | Unix timestamp (másodperc), automatikusan töltődik |
+| `description` | string | - | Opcionális leírás (ha nincs SKILL.md frontmatter) |
+| `targetSession` | string | - | Egyedi tmux session név override (alapból: `agent-<name>`) |
 
 ⚠️ **A `description` KÉT helyen élhet, és a SKILL.md frontmatter NYER.** A loader
 `description || config.description` sorrendben olvas (`src/web/scheduled-tasks-io.ts`),
@@ -97,7 +97,7 @@ ellenőrizné őket, hamis nullát kap: a fájlt kell olvasni.
 
 | Mező | Típus | Alapértelmezett | Leírás |
 |------|-------|-----------------|--------|
-| `command` | string | — | Raw shell parancs (`bash -lc` alatt fut) |
+| `command` | string | - | Raw shell parancs (`bash -lc` alatt fut) |
 | `timeoutMs` | number | `10000` | Timeout milliszekundumban |
 | `failThreshold` | number | `2` | Ennyi egymást követő hiba után küld Telegram alertet |
 
@@ -367,6 +367,41 @@ A runner cron-alapú, `run_at` vagy „egyszer" opció **nincs**. Egy konkrét n
    `fromtimestamp(r[1])` osztás nélkül 2026 helyett a távoli jövőbe mutat. A séma
    ellenőrzése (`PRAGMA table_info(task_runs)`) olcsóbb, mint a találgatás.
    A `status` `fired` értéke azt jelenti, hogy a prompt kiment az ágenshez.
+
+🔴 **A SUB-ÁGENS A FELVÉTELT SEM TUDJA ELVÉGEZNI, nem csak a törlést, tehát az EGÉSZ
+egyszeri ébresztő a fő-ágensnél köt ki.** Mérve 2026-09-16: peppa a `/api/schedules`
+POST-ját is elutasítva kapta ugyanattól a self-pace kaputól, ami lejjebb a `DELETE`-nél
+szerepel. Ez logikus, mert a `HTTP_WRITE_RX` a `POST`-ot is felsorolja, de a fenti
+recept eddig csak a takarítást hárította a fő-ágensre, a létrehozást nem. **A működő
+munkamegosztás:** a sub-ágens összerakja a teljes payloadot és inter-agent üzenetben
+átadja, a fő-ágens felveszi, és a `hot` memória a törlés-teendőről MINDKETTŐJÜKNÉL
+megszületik.
+
+🔴 **A FELVÉTEL UTÁN MÉRD LE, MI KERÜLT BE. A HTTP 200 nem bizonyítja a tartalmat.**
+Ez a lépés eddig nem volt a receptben, és három olyan dolgot fed le, amit a válasz nem:
+a cron tényleg arra a napra szól-e, a dátumos KAPU bent van-e a promptban, és a prompt
+nem vesztette-e el az ékezeteit (a `CLAUDE.md` külön kimondja, hogy egy ékezet nélküli
+prompt ékezet nélküli kimenő üzenetet szül a címzett ágensnél). Egy sor:
+```bash
+python3 - <<'EOF'
+import json, urllib.request
+token = open("store/.dashboard-token").read().strip()
+req = urllib.request.Request("http://localhost:3420/api/schedules",
+    headers={"Authorization": f"Bearer {token}"})
+d = json.load(urllib.request.urlopen(req))
+for r in (d if isinstance(d, list) else d.get("schedules", [])):
+    if r.get("name") == "<a feladat neve>":
+        pr = r.get("prompt", "")
+        acc = sum(c in "áéíóöőúüűÁÉÍÓÖŐÚÜŰ" for c in pr)
+        print(r.get("schedule"), r.get("agent"), r.get("type"),
+              "| ekezet/100:", round(acc / len(pr) * 100, 2),
+              "| kapu:", "<a varhato datum>" in pr)
+EOF
+```
+A `2,0 ékezet / 100 karakter` alatti érték romlott szöveget jelent (ugyanaz a mért
+küszöb, mint a memória- és üzenet-kapunál). A lemezt is érdemes megnézni: a
+`~/.claude/scheduled-tasks/<nev>/` alatt ott kell lennie a `SKILL.md`-nek és a
+`task-config.json`-nak.
 
 A törlés maga a lenti `DELETE`.
 
