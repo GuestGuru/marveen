@@ -276,8 +276,18 @@ a=len(re.findall('[áéíóöőúüűÁÉÍÓÖŐÚÜŰ]', r))
 print(len(r),'kar,',a,'ekezet =', round(a*100/max(len(r),1),1),'/100')
 " ~/.claude/scheduled-tasks/<nev>/task-config.json
 ```
-A mért sávok azonosak a többi kapuéval: a romlott szöveg 0,00 és 0,13 között van, az
-ép 6,0 és 11,4 között, tehát nincs átfedés. 2,0 alatt írd újra.
+**A küszöb 2,0 ékezet per 100 karakter: ez alatt írd újra.** A szám a kimenő-üzenet és
+a memória-kapu MÉRT küszöbe (n=1064 üzenet, kilenc küldő, 2026-09-10): ott a romlott
+szövegek 0,00 és 0,13 között, az épek 5,66 és 11,36 között vannak, tehát a két csoport
+nem ér össze.
+⚠️ **Az `ephemeral_reason` mezőre ez a küszöb ÁTVETT, nem újramért.** Ami erre a mezőre
+külön mérve van, az mindössze NÉGY indoklás (2026-09-16, brokermarcsi), és azok 6,0 és
+11,0 közé estek. Négy ép darab a küszöböt nem hitelesíti, csak azt mutatja, hogy az ép
+szöveg itt is a felső sávban ül. A két mérést ezért ne olvasd egy tartományként:
+5,8-at mérve NEM vagy a romlott sávban.
+(Ez a bekezdés maga is javítás: az első változat a két mérés alsó és felső határát
+egyetlen „6,0-11,4" tartománnyá vonta össze, és azonosnak nevezte őket. brokermarcsi
+szúrta ki aznap. Pont az az átvett-szám hibaforma, ami ellen a `meres-tervezes` szól.)
 
 **Visszaigazolás:** a `{"ok":true}` nem bizonyíték. Olvasd vissza a promptot a lementett
 `~/.claude/scheduled-tasks/<nev>/SKILL.md`-ből (hossz + a kritikus mondatok), és nézd meg,
