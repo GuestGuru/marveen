@@ -357,6 +357,34 @@ def upstream_health(url: str) -> dict:
     return {"state": "ok", "detail": f"HTTP 200, transport={payload.get('transport')}"}
 
 
+def live_upstream(mcp_pid: int) -> str | None:
+    """The upstream URL the RUNNING server child actually carries, or None.
+
+    Why this is not the same question as reading .mcp.json (measured
+    2026-09-16). An MCP server child is spawned once, at session start, with the
+    env the config file held AT THAT MOMENT. Edit the file afterwards and the
+    two part ways silently: the process keeps working on the old value, the file
+    describes a future that has not happened yet, and every check that reads
+    only one of them is right about a different machine.
+
+    That is not hypothetical. This agent's own .mcp.json was repointed at
+    08:30 to a hostname that does not resolve on this box (Tailscale DNS is
+    off), while the child spawned at 03:01 kept using the working loopback
+    address. GG access therefore hung on a stale in-memory value for nine and a
+    half hours, and would have died at the next session start or /mcp
+    reconnect. Nothing reported it: `config_mtime_after` sees the edit, but
+    probe() only consults it when there is no live child to observe, which is
+    exactly the case where the divergence is real.
+
+    The mtime is the weaker signal anyway -- it says the file was written, not
+    that anything changed. This reads what the process is actually using.
+    """
+    for line in _read(f"/proc/{mcp_pid}/environ").split("\0"):
+        if line.startswith("GG_MCP_UPSTREAM_URL="):
+            return line.split("=", 1)[1] or None
+    return None
+
+
 def config_mtime_after(cwd: str, session_start_ts: float) -> bool:
     """Was .mcp.json last written AFTER this session started?
 
@@ -537,6 +565,20 @@ def probe() -> dict:
         }
         if upstream:
             row["upstream"] = upstream
+        # The file says one thing, the running child may carry another. Stated as
+        # a fact, never as a fault: both readings are legitimate (a config just
+        # repaired and awaiting a restart looks identical to one just broken),
+        # and the process table cannot separate them. What it must not do is stay
+        # silent, because the two only diverge when something edited the file
+        # under a live session.
+        if alive:
+            live = live_upstream(alive[0])
+            if live and live != upstream:
+                row["upstream_live"] = live
+                row["upstream_differs_from_config"] = True
+                # Probe the live one too: it is what this agent uses RIGHT NOW,
+                # while the config value is what it will use after a restart.
+                upstreams.setdefault(live, []).append(name)
         if is_remote and target:
             row["remote_endpoint"] = f"{target[0]}:{target[1]}"
         if alive:
