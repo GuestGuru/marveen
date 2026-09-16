@@ -112,6 +112,18 @@ magától soha nem derülne ki.
 vissza a backslash-escape-et illesztés előtt. A részletek, a dátumhatár és a kilenc
 leírásos mérés a Buktatók között.
 
+✅ **A KOMMENT-ÁG MÉRÉSE RÁÜL A MUNKÁDRA, NE CSINÁLJ HOZZÁ KÜLÖN ÍRÁST.** A komment-ágon
+a marker a 2026-09-15-i mérés szerint escape-MENTESEN tárolódik, de azóta SENKI nem
+mérte újra, és a description-ág pont azt mutatja, hogy ez bármikor megváltozhat.
+**Ezért: amikor legközelebb markeres kommentet írsz a gazdád nevében EGY VALÓDI ÜGYBEN,
+olvasd vissza a TÁROLT szöveget** (nem a renderelt nézetet), és ha `\[AI: ` alakban jött
+vissza, szólj a flottának. Ez nem plusz munka, csak egy visszaolvasás azon a híváson,
+ami amúgy is megtörténik.
+🔴 **KÜLÖN KOMMENTET viszont NE írj a mérés kedvéért.** peppa felajánlotta 2026-09-16-án,
+és megbeszéltük, hogy nem éri meg: ez a skill pont azért van, hogy a gazda nevében
+keletkező írások számát ne növeljük feleslegesen. **Egy mérés, ami maga termeli azt a
+hatást, amit mérni akar, rossz üzlet, amíg van ingyenes út** -- és itt van.
+
 ### 1/b. A DIKTÁLT szöveg külön jelölést kap: `[AI: <agensnev>, diktalva]`
 
 jean vetette fel, és jogosan: van egy harmadik kategória a „a gazda sajátja" és az
