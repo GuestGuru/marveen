@@ -1,6 +1,6 @@
 ---
 name: gg-mcp-health
-description: Flotta gg-mcp liveness es staleness ellenorzes (csendes MCP-halal detektalas)
+description: Flotta gg-mcp liveness és staleness ellenőrzés (csendes MCP-halál detektálás)
 ---
 
 Futtasd le a flotta gg-mcp egészségellenőrzését:
@@ -8,12 +8,12 @@ Futtasd le a flotta gg-mcp egészségellenőrzését:
 python3 scripts/gg-mcp-health.py
 
 ⚠️ **A kimenet JSON, és a döntő mezők a GYÖKÉRBEN vannak** (`problems`,
-`ambient_token_trap`), nem a `findings` sorok végén. Ezért ne `tail`-lel nézd:
+`ambient_token_trap`, `upstreams`), nem a `findings` sorok végén. Ezért ne `tail`-lel nézd:
 2026-09-07-én a `| tail -40` csak az utolsó ágens-sorokat mutatta, és egy plusz
 kört vitt el, amíg a `problems`-hez jutottam. Egy sorral kiolvasható:
 
 ```bash
-python3 scripts/gg-mcp-health.py | python3 -c "import json,sys; d=json.load(sys.stdin); print('problems:', d.get('problems'), '| ambient:', d.get('ambient_token_trap')); [print(f['agent'], f['status']) for f in d.get('findings',[])]"
+python3 scripts/gg-mcp-health.py | python3 -c "import json,sys; d=json.load(sys.stdin); print('problems:', d.get('problems'), '| ambient:', d.get('ambient_token_trap')); [print('UPSTREAM', u['state'], u['url'], u['detail']) for u in d.get('upstreams',[])]; [print(f['agent'], f['status']) for f in d.get('findings',[])]"
 ```
 
 A script minden futó ágenst megnéz, aki a .mcp.json-jában deklarál gg-access szervert, és az alábbi állapotokat adja:
@@ -22,11 +22,11 @@ A script minden futó ágenst megnéz, aki a .mcp.json-jában deklarál gg-acces
 - "starting": friss session, még nem indult el az MCP gyereke. NEM hiba, hagyd békén.
 - "DEAD": deklarál gg-access-t, de nincs élő szerver-gyerekprocessze. Az ágens ilyenkor egyetlen gg_* toolt sem tud hívni, és erről ő maga nem tud. Ez a 2026-08-08-i salesninja-eset.
 - "STALE": él a szerver, de a session régebbi a gg-mcp buildnél, tehát felülírt kódot futtat. Csak session-restart javítja, az MCP önmagában nem újraindítható.
-- "NO_TOKEN" (2026-08-15 óta): él a proxy, de nincs identitása -- a `GG_MCP_TOKEN_FILE`
+- "NO_TOKEN" (2026-08-15 óta): él a proxy, de nincs identitása: a `GG_MCP_TOKEN_FILE`
   nincs deklarálva, vagy a fájl hiányzik/üres. Az ágens ilyenkor login-módban fut:
   a login toolon kívül MINDEN gg_* hívása elszáll, és ő ezt nem hibaüzenetként
   látja, hanem egy megkurtított tool-listaként. **A javítás párosítás, nem restart.**
-  Miért került be: 08-14-én 14:00-kor a szonda `ok`-ot írt brokermarcsira, miközben
+  Miért került be: 08-14-én 14:00-kor a szonda „ok" állapotot írt brokermarcsira, miközben
   az ágens saját memóriája szerint egyetlen GG-rendszert sem ért el (13:51-kor indult,
   a token-fájlja 13:59-kor jött létre). Élő gyerekprocessz = processz, nem jogosultság.
 
@@ -34,9 +34,27 @@ A script minden futó ágenst megnéz, aki a .mcp.json-jában deklarál gg-acces
 vagy visszavont token ugyanígy `ok`. Ha egy ágens azt jelzi, hogy 401-et kap, a zöld
 szonda nem cáfolja őt.
 
+🔴 **`upstream_differs_from_config` (2026-09-16 óta): a sor .mcp.json-ja MÁST mond,
+mint amit a futó szerver-gyerek env-je visz.** A `row["upstream"]` a FÁJL értéke, a
+`row["upstream_live"]` az, amit az ágens MOST használ. Ez sem hiba önmagában, mert a
+két olvasat egyformán legitim: egy frissen MEGJAVÍTOTT, restartra váró konfig pontosan
+úgy néz ki, mint egy frissen ELROMLOTT. A szonda ezért kimondja a tényt és nem tippel,
+de nem hallgat, mert a kettő csak akkor tér el, ha valaki élő session alatt írta át a
+fájlt. **Ilyenkor mindkét upstream lemérésre kerül**, mert a fájlé az, amit a következő
+indulás után fog használni.
+
+⚠️ **Amit ez a mező MEGFOGOTT volna, és ami miatt bekerült.** 2026-09-16 08:30-kor a
+főágens .mcp.json-ja át lett írva egy olyan hostnévre, ami ezen a gépen nem oldható fel
+(a Tailscale DNS ki van kapcsolva), miközben a 03:01-kor indult gyerek a működő loopback
+címen dolgozott tovább. A GG-hozzáférés kilenc és fél órán át egy elavult memóriabeli
+értéken állt, és a következő session-indulásnál vagy `/mcp` reconnectnél elszállt volna.
+A `config_mtime_after` látja az átírást, de a `probe()` csak akkor kérdezi meg, ha NINCS
+élő gyerek, vagyis pont abban az esetben nem, amikor az eltérés valódi. **Teendő:**
+nézd meg, melyik a helyes, és szólj a gazdának. NE írd át magadtól más ágens konfigját.
+
 Két tájékoztató mező a sorokban, ezek NEM hibák: `token_file` (melyik fájl adja az
 identitást) és `token_written_after_session_start` (a token a session indulása UTÁN
-íródott). Az utóbbi kétféleképp olvasható -- vagy maga a session párosított be
+íródott). Az utóbbi kétféleképp olvasható. Vagy maga a session párosított be
 (normál onboarding, rendben van), vagy valaki kívülről írta a fájlt, és akkor ez a
 session sosem töltötte be. A processztáblából a kettő nem különböztethető meg, ezért
 a szonda kimondja a tényt és nem tippel.
@@ -55,20 +73,55 @@ gyökerében, ÉS megnöveli a "problems"-et:
   **Ilyenkor NE ágenst keress** (a `findings` mind lehet `ok`): írj Tamásnak,
   hogy megjelent a fájl, mikor (`stat`), és hogy amíg ott van, minden shell-úti
   hívásnak explicit saját tokent kell adnia. A fájlt NE töröld magadtól, mert
-  nem tudod, ki hozta létre és mire kell -- ez `data_delete`, Tamás döntése.
+  nem tudod, ki hozta létre és mire kell: ez `data_delete`, Tamás döntése.
+
+- **`upstreams`** (2026-09-16 óta): a szolgáltatás oldala. Minden külön upstream
+  URL-re, amit egy FUTÓ ágens deklarál, egy sor: `url`, `agents` (kik használják),
+  `state` és `detail`. A `state: "fault"` mindegyike megnöveli a `problems`-et,
+  upstreamenként EGYSZER (egy közös átjáró hét ágensnek egy hiba, nem hét).
+
+  **Miért került be.** 2026-09-16 14:00-kor a gg-mcp kulcs-kiadása az egész
+  flottának leállt, és a szonda öt perccel korábban `problems: 0`-t írt, sőt a
+  kiesés alatt VÉGIG zöldet adott volna. Semmi nem változott abból, amit nézett:
+  mind a hét `proxy.js` gyerek élt (egy stdio gyerek nem lép ki attól, hogy az
+  upstreamje meghalt), minden token-fájl a helyén volt, a build sem mozdult.
+  A vak folt szerkezeti volt: a szonda minden korábbi ellenőrzése a KLIENS
+  oldaláról szólt, a szolgáltatásról egyik sem.
+
+  **Mit mér.** `GET <upstream>/health`. Ez az EGYETLEN hitelesítés nélküli útvonal
+  a gg-mcp HTTP-kapuján, tehát a szonda nem kér tokent, nem ad ki kulcsot, nem ír
+  audit-sort és nem tud identitást szivárogtatni.
+
+  **Mit NEM mér, és ezt ki kell mondani.** A `/health` statikus válasz. Ha a
+  szolgáltatás fut, de a KULCS-KIADÁSA romlott el, ez a mező zöld marad. A ma
+  történt hibaformát fogja meg (a kapu elérhetetlen: jean 14:05-kor HTTP 000-t
+  mért a 127.0.0.1:3450-en, egészségesen 200 jön), nem az összeset. Ha valaki
+  „fetch failed"-et vagy „A kulcs lekérése nem sikerült"-et jelez, a zöld
+  `upstreams` NEM cáfolja őt.
+
+  **`state: "unknown"`** csak NEM-loopback upstreamnél fordulhat elő (időtúllépés
+  vagy névfeloldási hiba), és szándékosan NEM hiba: az ok lehet ennek a gépnek a
+  hálózata. Loopbacknál viszont nincs mire fogni, ott ugyanez `fault`.
+
+  **Teendő `fault`-nál:** ez SZOLGÁLTATÁS-hiba, nem ágens-hiba. NE ágenst keress,
+  NE javasolj restartot (egy halott szolgáltatást a kliens újraindítása nem
+  hozza vissza), és ne írj hét üzenetet hét ágensről. Írj Tamásnak EGYSZER:
+  melyik upstream, mi a `detail`, hány ágenst érint, és hogy addig egyetlen
+  külső rendszer (Linear, Drive, Gmail, sales, GG3, Slack, GitHub) sem érhető el
+  a flottából. A második azonos körnél ne írj újra.
 
 Ha van NO_TOKEN: ne restartot javasolj, hanem párosítást. Írd meg Tamásnak, melyik
 ágens az, mióta fut identitás nélkül, és hogy addig egyetlen GG-rendszert sem ér el.
 Ha az ágensnek van tulajdonosa (agent-config.json -> owner), a párosítást ő tudja
-elvégezni a saját belépésével -- a restart ezen nem segít, mert nem a processz hiányzik.
+elvégezni a saját belépésével. A restart ezen nem segít, mert nem a processz hiányzik.
 
 Ha van DEAD vagy STALE:
 0. 🔴 **STALE-nél ELŐSZÖR mérd meg, MI változott a buildben. Ne írd azt, hogy nem tudod.**
    2026-09-06 10:00: 7/7 STALE után azt jelentettem Tamásnak, hogy „a telepített mappa nem
-   git-checkout, tehát nem tudom megmondani, mi változott" -- holott a
+   git-checkout, tehát nem tudom megmondani, mi változott", holott a
    `gg-mcp-verzio-ellenorzes` skill 2. és 3. pontja pontosan erre való, és a skill MAGA
    mondja ki, hogy nincs `.git`. Külön üzenetben kellett pontosítanom. Ez ugyanaz a
-   hibaosztály, mint egy megírt dologról „ez hiányzik"-ot állítani: munkát és bizalmat
+   hibaosztály, mint egy megírt dologra azt mondani, hogy hiányzik: munkát és bizalmat
    is visz, mert a gazda egy megválaszolható kérdést lát megválaszolatlanul.
    **A lokális mérés két sor, és a legtöbb esetben ELÉG** (a build a lokális forrásból
    készül, tehát ami változott, annak az mtime-ja a build ideje):
@@ -88,19 +141,19 @@ Ha van DEAD vagy STALE:
 3. Javasold a javítást: POST /api/agents/<nev>/restart {"fresh": true}. A fresh azért kell, mert a --channels plugin csak friss induláskor töltődik be megbízhatóan, continue-nál néma maradhat a bot.
 4. Ha az ágensnek van tulajdonosa (agent-config.json -> owner), írd oda, hogy az ő munkáját érinti.
 5. Restart előtt az érintett ágenst inter-agent üzenetben kérd meg, hogy mentse a memóriáját és írjon taskstate-et, mert fresh indulásnál a taskstate-replay hook nem fut.
-   ✅ **És ez nem formaság: a mentés-kérés AZ A PILLANAT, amikor az ágens felfedezi, mit felejtett el rögzíteni.** 2026-09-01, brokermarcsi kérésre indított mentése két olyan állapotot pótolt, ami sehol nem volt felírva -- köztük egy „ezt még fel kell vetnem a gazdámnál" bejegyzést, amit MÁR felvetett. Fresh indulás után a friss példány másodszor is megkérdezte volna ugyanazt a gazdától.
-   **Kérd konkrétan**, ne általánosságban: (a) a nyitott ügyeit, (b) amit a mai körben megtudott, és (c) azt, ami épp a te köröd miatt változott meg (új szabály, új skill, aktuális rendszerállapot) -- ezt ő nem tudja kitalálni, és fresh indulás után nem lesz meg neki.
-   **Várd meg a visszajelzését**, de adj határidőt, és ha letelik, indítsd -- a késleltetés is kár.
+   ✅ **És ez nem formaság: a mentés-kérés AZ A PILLANAT, amikor az ágens felfedezi, mit felejtett el rögzíteni.** 2026-09-01, brokermarcsi kérésre indított mentése két olyan állapotot pótolt, ami sehol nem volt felírva, köztük egy „ezt még fel kell vetnem a gazdámnál" bejegyzést, amit MÁR felvetett. Fresh indulás után a friss példány másodszor is megkérdezte volna ugyanazt a gazdától.
+   **Kérd konkrétan**, ne általánosságban: (a) a nyitott ügyeit, (b) amit a mai körben megtudott, és (c) azt, ami épp a te köröd miatt változott meg (új szabály, új skill, aktuális rendszerállapot). Ezt ő nem tudja kitalálni, és fresh indulás után nem lesz meg neki.
+   **Várd meg a visszajelzését**, de adj határidőt, és ha letelik, indítsd: a késleltetés is kár.
 6. Írd fel kanban kártyára, ha a probléma két egymást követő futáson át fennáll.
    ⚠️ **KIVÉTEL, ha az ügy MÁR EL VAN DÖNTVE és a megoldás automatikus.**
    2026-08-24: a 15:13-as gg-mcp deploy után a 16:00 ÉS a 18:00 szonda is 7/7 STALE-t
    adott, tehát a fenti szabály kártyát írt volna elő. Nem vettem fel, mert 16:05-kor
    már megkérdeztem Tamást, ő a várakozást választotta („ráér, nem is tudnak a kollégák
    az új toolokról"), a hajnali 3-as auto-restart pedig magától megoldja. Egy kártya,
-   ami éjjel magától lezáródik, csak hosszabbítja a listát -- a CLAUDE.md kifejezetten
+   ami éjjel magától lezáródik, csak hosszabbítja a listát, a CLAUDE.md pedig kifejezetten
    rövidebb listát kér.
    **A kártya akkor kell, ha fennáll a FELEJTÉS kockázata:** nincs döntés, vagy a
    megoldás emberi lépést igényel (párosítás, jogosultság, külső rendszer). Ha a
    javítás magától lefut egy ismert időpontban, elég egy `warm` memória a teendővel.
-   És ugyanígy: a MÁSODIK azonos jelzésnél NE írj újra Telegramra -- a jelzési
+   És ugyanígy: a MÁSODIK azonos jelzésnél NE írj újra Telegramra: a jelzési
    kötelezettséget az első kör teljesítette, a folytatás nem új esemény.
