@@ -150,8 +150,16 @@ describe('generateClaudeMd prompt: no hardcoded localhost:3420', () => {
     expect(fnBody).toContain('${dashboardOrigin}/api/schedules')
   })
 
-  it('references dashboardOrigin in the inter-agent messages API curl example', () => {
-    expect(fnBody).toContain('${dashboardOrigin}/api/messages')
+  // Until 2026-09-17 this asserted that the SEND example is a curl built on
+  // ${dashboardOrigin}. That example is gone: it discarded the response, so the
+  // endpoint's accentWarning never reached the sender, and it carried the text in
+  // a double-quoted shell argument, where a quote or a $ rewrites the message
+  // while the send still reports success. The helper resolves the origin itself,
+  // so the no-hardcoded-host guarantee now comes from there. The guard the test
+  // exists for is kept, and inverted to match the daily-log rule above.
+  it('sends inter-agent messages through the helper, not raw curl', () => {
+    expect(fnBody).toContain('${msgHelper}')
+    expect(fnBody).not.toMatch(/curl[^\n]*-X POST[^\n]*\/api\/messages/)
   })
 
   it('defines dashboardOrigin using resolveDashboardOrigin, passing AGENT_API_ORIGIN', () => {
