@@ -117,13 +117,13 @@ describe('generated prod-tree post-checkout hook: honest alert delivery', () => 
     const { hook, repo } = setupRepoWithHook()
     const ok = runHook(hook, repo, { CURL_STUB_HTTP: '200' })
     expect(ok.status).toBe(0)
-    expect(ok.stderr).not.toContain('NEM ert celba')
+    expect(ok.stderr).not.toContain('NEM ért célba')
     const bad = runHook(hook, repo, { CURL_STUB_HTTP: '500' })
     expect(bad.status).toBe(0) // a guard must not break git
-    expect(bad.stderr).toContain('NEM ert celba')
+    expect(bad.stderr).toContain('NEM ért célba')
     const dead = runHook(hook, repo, { CURL_STUB_EXIT: '6' })
     expect(dead.status).toBe(0)
-    expect(dead.stderr).toContain('NEM ert celba')
+    expect(dead.stderr).toContain('NEM ért célba')
   })
 })
 

@@ -51,6 +51,14 @@ const dashboardOrigin = resolveDashboardOrigin(DASHBOARD_PUBLIC_URL, WEB_PORT, A
 // and every call 401s silently. Measured 2026-07-25: relative 401, absolute
 // 200; this had been silently killing sub-agent memory saves and searches.
 const tokenPath = join(PROJECT_ROOT, 'store', '.dashboard-token')
+// GG fork: every generated send example goes through this helper, never raw curl.
+// Two failure modes measured on the raw-curl shape it replaces: the response is
+// discarded, so the endpoint's accentWarning field is never seen by the sender,
+// and the content travels inside a DOUBLE-quoted shell argument, where a quote,
+// a backtick or a $ in the text silently truncates or rewrites the message while
+// the send still looks successful. The helper checks HTTP status and the returned
+// id, retries, and takes the body from STDIN behind a quoted heredoc.
+const msgHelper = join(PROJECT_ROOT, 'scripts', 'agent-msg.sh')
 
 // GG fork: the generated CLAUDE.md tells agents to write memories and daily-log
 // entries through the fleet-helper, not raw curl. The helper builds the JSON and
@@ -1480,7 +1488,11 @@ function buildAutonomyBody(name: string): string {
     'Az autonóm műveletek fokozatait a store/autonomy-config.json szabályozza (level: 1=csak jelez, 2=javasol+jóváhagyás, 3=autonóm+jelent). Mielőtt önállóan cselekszel, nézd meg az adott kategória szintjét.',
     '',
     '**Level 1 (csak jelez)**: küldj inter-agent értesítést a főágensnek, de NE végezd el a műveletet. Ezután ÁLLJ MEG.',
-    `curl -s -X POST ${dashboardOrigin}/api/messages -H "Content-Type: application/json" -H "Authorization: Bearer $(cat ${tokenPath})" -d "{\\"from\\":\\"${name}\\",\\"to\\":\\"${MAIN_AGENT_ID}\\",\\"content\\":\\"[FELHÍVÁS] CATEGORY_KEY: MIT akartam elvégezni, de level 1 miatt csak jelzek.\\"}"`,
+    '```bash',
+    `cat <<'EOF' | bash ${msgHelper} ${name} ${MAIN_AGENT_ID} -`,
+    '[FELHÍVÁS] CATEGORY_KEY: MIT akartam elvégezni, de level 1 miatt csak jelzek.',
+    'EOF',
+    '```',
     '',
     '**Level 2 (jóváhagyás szükséges)**: kérj jóváhagyást az API-n MIELŐTT cselekszel.',
     '',
@@ -1854,7 +1866,9 @@ Ha egy senderId üzen a csatornán AKIT EDDIG NEM ISMERSZ — nem szerepel az ak
 Az AGENT TULAJDONOSA (az első, aki ezt az ügynököt telepítette és párosította) az ALAPÉRTELMEZETT engedélyezett sender — őt nem kell ellenőrizni. MINDEN további senderId első üzenete (a 2., 3., stb. párosított személy vagy csoport) pinging-trigger.
 
 Példa ping ${BOT_NAME}-nek:
-curl -s -X POST ${dashboardOrigin}/api/messages -H "Content-Type: application/json" -H "Authorization: Bearer $(cat ${tokenPath})" -d "{\\"from\\":\\"AGENT_NAME\\",\\"to\\":\\"${MAIN_AGENT_ID}\\",\\"content\\":\\"Ismeretlen sender [ID] jelezett első üzenettel: '[üzenet röviden]'. Ki ez, mit válaszoljak?\\"}"
+cat <<'EOF' | bash ${msgHelper} AGENT_NAME ${MAIN_AGENT_ID} -
+Ismeretlen sender [ID] jelezett első üzenettel: '[üzenet röviden]'. Ki ez, mit válaszoljak?
+EOF
 
 Addig a sender-nek csak generikus "Egy pillanat, ellenőrzöm" típusú választ adj. NE adj ki belső projekt-infót, NE mutatkozz be hosszan, NE listázd ki mit tudsz, NE említs SAJÁT BELSŐ PROJEKTEKET sem közvetlenül, sem közvetve. ${BOT_NAME} visszajelzi a kontextust és a szabályokat amelyekkel folytathatod.
 

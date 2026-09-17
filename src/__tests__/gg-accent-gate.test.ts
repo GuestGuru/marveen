@@ -82,6 +82,37 @@ describe('accent gate', () => {
     expect(hungarianRatio(text).ratio).not.toBeNull()
   })
 
+  // marveen, 2026-09-17, bubi's finding: a machine-written Hungarian alert carries
+  // few function words, so the 2-hint rule read it as non-Hungarian and stayed
+  // silent on a 335 character text with zero accents. The corpus measurement behind
+  // the drop to one hint is in accent-gate.ts; this is its regression guard.
+  it('fires on terse Hungarian that carries only ONE hint word', () => {
+    const text =
+      '[PROD-FA ORSEG, post-checkout hook] Fa: /home/gg/marveen, agat valtott a(z) ' +
+      'docs/napindito-nev-ellenorzo-utf8 agra. (Ha ez az utvonal nem a telepites fo faja, ' +
+      'ez PROBA, nem eles riasztas.) AUTO-VISSZAALLITAS: nem (a fa piszkos volt). ' +
+      'Commitot a pre-commit hook blokkol; szandekos valtashoz MARVEEN_PROD_CHECKOUT_OK=1.'
+    const low = ' ' + text.toLowerCase().split(/\s+/).join(' ') + ' '
+    const hints = [' hogy ', ' nem ', ' egy ', ' meg ', ' volt ', ' ami ', ' mint ',
+      ' csak ', ' ezert ', ' ez a ', ' az a ', ' lett ', ' tehat '].filter((h) => low.includes(h))
+    expect(hints.length).toBe(1) // the precondition: this is what used to silence the gate
+    expect(text.length).toBeGreaterThan(200)
+    expect(accentGateNote(text)).toContain('ékezet-gyanú')
+  })
+
+  // The control for the line above: one hint must not be enough to call ENGLISH
+  // text Hungarian. None of the hint words is an English word, and this is what
+  // makes the lowered threshold safe rather than merely cheap.
+  it('still stays silent on English prose that happens to contain a hint string', () => {
+    const text =
+      'The deploy notes mention a Hungarian branch name, docs/nem-valtozott, in the middle ' +
+      'of an otherwise English paragraph about the release, and that single fragment must ' +
+      'not turn the whole text into a suspected Hungarian message with its accents stripped ' +
+      'off, because the rest of it is ordinary English technical prose written on purpose.'
+    expect(text.length).toBeGreaterThan(200)
+    expect(accentGateNote(text)).toBeNull()
+  })
+
   it('never throws on junk input', () => {
     for (const bad of ['', ' ', '...', 'a'.repeat(5000)]) {
       expect(() => accentGateNote(bad)).not.toThrow()
