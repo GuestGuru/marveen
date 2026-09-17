@@ -126,6 +126,18 @@ describe('withOwnGgIdentity — remote (HTTP/SSE) gg-access', () => {
     expect(JSON.stringify(out)).not.toContain('ggp_')
   })
 
+  // IT-492: the rebuilt entry must LITERALLY be the proxy. The test below
+  // asserts against the `GG_MCP_STDIO_ENTRY` constant, so it would accept any
+  // value -- including the old direct server entry. This one asserts the
+  // measured fact: the direct entry would run under the CALLER's OS user.
+  it('rebuilds a remote entry onto the PROXY, never the direct server entry', () => {
+    const out = withOwnGgIdentity(HTTP_COPY, 'bubi') as {
+      mcpServers: Record<string, Record<string, unknown>>
+    }
+    expect(out.mcpServers['gg-access'].args).toEqual(['/home/gg/gg-mcp/dist/proxy.js'])
+    expect(JSON.stringify(out)).not.toContain('gg-mcp/dist/index.js')
+  })
+
   it('normalises the remote entry to the canonical stdio shape', () => {
     const out = withOwnGgIdentity(HTTP_COPY, 'bubi') as {
       mcpServers: Record<string, Record<string, unknown>>

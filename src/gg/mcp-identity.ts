@@ -55,8 +55,21 @@ export function ggTokenPathFor(agentName: string, tokensDir = '/home/gg/gg-mcp/t
   return `${tokensDir}/${agentName}.token`
 }
 
-/** The stdio entrypoint of the local gg-mcp server, by convention. */
-export const GG_MCP_STDIO_ENTRY = '/home/gg/gg-mcp/dist/index.js'
+/**
+ * The stdio entrypoint a scaffolded agent must use, by convention.
+ *
+ * IT-492 (2026-09-16): this is the PROXY, not `dist/index.js`. The direct
+ * server entry runs the server in-process, as a child of the caller and
+ * therefore under the CALLER's OS user; the deployment relies on the server
+ * running under its own account instead. Pointing a scaffolded agent at the
+ * direct entry would quietly undo that, and nothing would fail to show it.
+ *
+ * The proxy keeps both properties this function relies on: it carries the
+ * per-agent identity in `GG_MCP_TOKEN_FILE` and participates in the pairing
+ * flow. `GG_MCP_UPSTREAM_URL` is deliberately not set -- the proxy falls back
+ * to its built-in upstream, which resolves from every machine in the fleet.
+ */
+export const GG_MCP_STDIO_ENTRY = '/home/gg/gg-mcp/dist/proxy.js'
 
 /**
  * True when a gg-access entry speaks to a remote endpoint (Streamable HTTP or

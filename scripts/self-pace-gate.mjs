@@ -124,9 +124,21 @@ const SCHEDULER_READ_RX = new RegExp(String.raw`(^|${SCHED_BOUNDARY}\s*)${SCHED_
 const SCHEDULE_STORE_RX = /scheduled_tasks\.json/i
 // Write-intent shell tokens (redirect / tee / in-place edit / dd / copy-move).
 const WRITE_INTENT_RX = /(>>?|\btee\b|\bsed\b[\s\S]*\s-i|\bdd\b|\bcp\b|\bmv\b)/i
-// Dashboard schedule API. A WRITE method (POST/PUT/PATCH/DELETE) creates/edits a
+// Dashboard schedule API. A CREATE/EDIT method (POST/PUT/PATCH) makes a
 // self-paced cron; a GET (list / pending / agents) is legit diagnostics -> allowed.
+//
+// DELETE is allowed since 2026-09-17, and the reason is the direction of the
+// operation, not a softening of the rule. This gate exists so a sub-agent does
+// not schedule itself a future turn. A DELETE does the opposite: it removes one
+// that already exists. Blocking it produced a one-way street -- jean's one-off
+// check ran, tried to delete itself as its own prompt instructed, was refused,
+// and would have fired again the next day. The owner's decision is that agents
+// SHOULD be able to schedule and clean up after themselves; the self-pace risk
+// lives in creation and repetition, not in removal.
+// Scope note: an explicit -X DELETE is what opens this lane. A -d payload with
+// no method is a POST as far as curl is concerned, so it stays denied.
 const SCHEDULE_API_RX = /\/api\/schedules\b/i
+const SCHEDULE_DELETE_RX = /(-X\s*DELETE|--request\s+DELETE)/i
 const HTTP_WRITE_RX = /(-X\s*(POST|PUT|PATCH|DELETE)|--request\s+(POST|PUT|PATCH|DELETE)|(^|\s)(--data\b|--data-\w+\b|-d\b))/i
 
 // Split a compound command into individual simple commands, so a token in one
@@ -381,7 +393,7 @@ export function gateDecision(toolName, toolInput) {
       // self-schedule store: block WRITE only (a read/grep is legit diagnostics)
       if (SCHEDULE_STORE_RX.test(seg) && WRITE_INTENT_RX.test(seg)) return { deny: true }
       // dashboard schedule API: block WRITE methods only (GET list/pending is legit)
-      if (SCHEDULE_API_RX.test(seg) && HTTP_WRITE_RX.test(seg)) return { deny: true }
+      if (SCHEDULE_API_RX.test(seg) && HTTP_WRITE_RX.test(seg) && !SCHEDULE_DELETE_RX.test(seg)) return { deny: true }
     }
     // The scheduler check is the ANCHORED one -- it fires on what sits at a
     // segment START -- so it is the one a fake segment boundary can mislead, and
