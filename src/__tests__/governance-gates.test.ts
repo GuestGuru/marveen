@@ -83,8 +83,20 @@ describe('self-pace-gate gateDecision', () => {
     expect(selfPaceDecision('Bash', { command: 'cat ~/.claude/scheduled_tasks.json' }).deny).toBe(false)
     expect(selfPaceDecision('Bash', { command: 'grep poll ~/.claude/scheduled_tasks.json' }).deny).toBe(false)
   })
-  it('denies a WRITE method to the dashboard schedule API', () => {
+  it('denies a CREATE/EDIT method to the dashboard schedule API', () => {
     expect(selfPaceDecision('Bash', { command: 'curl -X POST http://localhost:3420/api/schedules -d @x.json' }).deny).toBe(true)
+    expect(selfPaceDecision('Bash', { command: 'curl -X PUT http://localhost:3420/api/schedules/x -d @x.json' }).deny).toBe(true)
+    // No method but a data payload: curl sends POST, so this stays denied.
+    expect(selfPaceDecision('Bash', { command: 'curl http://localhost:3420/api/schedules -d @x.json' }).deny).toBe(true)
+  })
+
+  // 2026-09-17: a one-off task ran, tried to delete itself as its own prompt
+  // instructed, and was refused -- so it would have fired again the next day.
+  // This gate is about not scheduling yourself a future turn; a DELETE removes
+  // one, which is the same direction, not the opposite. Owner's decision.
+  it('ALLOWS an explicit DELETE of a schedule (cleanup is not self-pacing)', () => {
+    expect(selfPaceDecision('Bash', { command: 'curl -s -X DELETE http://localhost:3420/api/schedules/egyszeri-ellenorzes -H "Authorization: Bearer t"' }).deny).toBe(false)
+    expect(selfPaceDecision('Bash', { command: 'curl --request DELETE http://localhost:3420/api/schedules/x' }).deny).toBe(false)
   })
   it('ALLOWS a GET read of the schedule API (F2 -- diagnostics, not self-pace)', () => {
     expect(selfPaceDecision('Bash', { command: 'curl http://localhost:3420/api/schedules' }).deny).toBe(false)
