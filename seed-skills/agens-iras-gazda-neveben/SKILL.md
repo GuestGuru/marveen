@@ -18,7 +18,8 @@ description: Az ágens a per-user brokeren át a GAZDA nevében ír külső rend
 szállítódik (`seed-skills/`), tehát nem tartalmazhat kollégákat név szerint, és főleg nem
 egy megnevezett ember munka-statisztikáját. Ahol a szöveg korábban nevet mondott, most a
 szerepe áll (`a gazda`, `egy kolléga`). **A visszamenőleges kereséshez szükséges SZÓ
-SZERINTI minták (amikben a gazda neve is szerepel) a privát jegyzetekbe valók, nem ide.**
+SZERINTI minták (amikben a gazda neve is szerepel) a privát jegyzetekbe valók, nem ide:
+a flotta memóriájában a 952-es shared emlék tartja őket.**
 Ha ide nevet írnál, állj meg.
 
 **A per-user broker a te írásodat a GAZDA szerzőségével rögzíti.** Nem „az ágens
@@ -83,6 +84,19 @@ Több bekezdésnél az UTOLSÓ bekezdés után jön, ugyanígy üres sorral elv�
 | project update | külön sorban, a végén |
 | wiki-oldal | külön sorban, a végén |
 | Google-dokumentum (Drive/Docs/Sheets) | külön sorban, a végén |
+
+🔴 **A TÁBLÁZAT FELSOROLÁS, A SZABÁLY VISZONT NEM A RENDSZERTŐL FÜGG: attól, hogy a
+rendszer rögzít-e BÁRMILYEN szerző-nyomot.** salesninja fogalmazta meg 2026-09-17-én, a
+saját mulasztása után, és ez a pontosabb alak. A Linearban a szerző mező, a Drive-on a
+revízió-napló, a wikin a szerkesztési előzmény: MINDHÁROM a gazdát fogja mutatni, mert az
+ágens a gazda tokenjével ír. **Ha egy rendszer nincs a táblázatban, ne azt vond le, hogy a
+szabály nem áll rá, hanem azt kérdezd meg, van-e benne szerző-nyom.** Ha van, a marker kell.
+
+MÉRVE UGYANAZNAP: két aznap készült Google-dokumentumon nem volt semmilyen jelölés, a Drive
+revízió-naplója mindháromnál a gazdát mutatta, és az ágens saját olvasata az volt, hogy „a
+marker-szabály a Linear-írásokra vonatkozik". A táblázat viszont a Google-dokumentumot MÁR
+tartalmazta. **Vagyis a szabály megvolt és mégis kimaradt, mert listaként olvasva a hiányzó
+sor tűnik szabálynak, nem a jelenlévő elv.**
 
 **Miért egységes, és miért alul (Tamás döntése, 2026-09-01, Telegram msg 691):**
 „Ez az `[AI: ágensnév]` nekem kicsit zavaró -- ha marad is, inkább a
@@ -201,6 +215,12 @@ rendszerre. (salesninja pontosítása, és igaza volt: a saját korábbi formát
 dátumot vittek.)
 
 ### 3. Ami MÁR kiment, azt a mintájával kell dokumentálni
+
+🔴 **DE EGY MÁR KIKÜLDÖTT, KIFELÉ MENŐ ANYAGRA A VISSZAMENŐLEGES JELÖLÉS A GAZDA DÖNTÉSE,
+NEM A TIÉD** (salesninja határa, 2026-09-17, és helyes). A belső nyilvántartásba magadtól
+írd oda, hogy az anyagot az ágens állította össze a gazda fiókjával, és hogy a revízió-napló
+ezért mutatja őt. Egy PARTNERHEZ már kiment briefbe viszont utólag belső audit-jelölést tenni
+KIFELÉ HATÓ döntés: vidd a gazdához, ne intézd el.
 
 A marker bevezetése előtti kommentek visszamenőleg csak akkor választhatók le, ha
 a régi minták fel vannak írva. Minden ágens sorolja fel a sajátjait ide:
