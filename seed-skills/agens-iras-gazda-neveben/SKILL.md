@@ -14,12 +14,19 @@ description: Az ágens a per-user brokeren át a GAZDA nevében ír külső rend
 
 ## A tény, amiből minden következik
 
+⚠️ **EBBEN A FÁJLBAN NINCS SZEMÉLYNÉV, ÉS EZ SZÁNDÉKOS.** Ez a skill a PUBLIKUS forkba
+szállítódik (`seed-skills/`), tehát nem tartalmazhat kollégákat név szerint, és főleg nem
+egy megnevezett ember munka-statisztikáját. Ahol a szöveg korábban nevet mondott, most a
+szerepe áll (`a gazda`, `egy kolléga`). **A visszamenőleges kereséshez szükséges SZÓ
+SZERINTI minták (amikben a gazda neve is szerepel) a privát jegyzetekbe valók, nem ide.**
+Ha ide nevet írnál, állj meg.
+
 **A per-user broker a te írásodat a GAZDA szerzőségével rögzíti.** Nem „az ágens
 írta a gazda helyett" -- a rendszer szerint a gazda írta. Ez mérve van:
 
 - Linear `commentCreate` a marveen tokenjével -> a komment `user.name` mezője
-  `Krasser Tamás` (2026-08-31, IT-583).
-- salesninja mérése ugyanaznap: Antos Péter augusztusi **44 Linear-kommentjéből 18
+  a GAZDA teljes neve (2026-08-31, IT-583).
+- salesninja mérése ugyanaznap: EGY KOLLÉGA augusztusi **44 Linear-kommentjéből 18
   az ágensé volt**. A nyers szám **69%-kal felfelé torzított** volna a TÉR-ben.
   Május-július tiszta -- a torzítás pontosan akkor jelent meg, amikor a flotta beindult.
 
@@ -203,11 +210,11 @@ a régi minták fel vannak írva. Minden ágens sorolja fel a sajátjait ide:
 | salesninja | `TER-statusz, rogzitve <datum>-an a GG Tracker adatai alapjan.` | 11 | 2026-08-06 |
 | salesninja | `## Adatfrissites es forrasellenorzes, <datum>` | 1 | 2026-08-13 |
 | salesninja | `TER-takaritas, <datum>.` | 2 | 2026-08-31 |
-| salesninja | `Lezaro statusz, <datum> (Antos Peter).` | 4 | 2026-08-31 |
-| salesninja | issue-DESCRIPTION: IT-836, a záró sorban `[AI: salesninja]` -- ⚠️ a Linear `\[AI: salesninja\]`-ként TÁROLJA, tehát csak az escape-et engedő mintával fogható (l. Buktatók). Az issue Antos Péter kérésére készült. | 1 | 2026-09-15 |
+| salesninja | `Lezaro statusz, <datum> (<a gazda neve>).` | 4 | 2026-08-31 |
+| salesninja | issue-DESCRIPTION: IT-836, a záró sorban `[AI: salesninja]` -- ⚠️ a Linear `\[AI: salesninja\]`-ként TÁROLJA, tehát csak az escape-et engedő mintával fogható (l. Buktatók). Az issue a gazda kérésére készült. | 1 | 2026-09-15 |
 | salesninja | KOMMENT: IT-836 (`comment-8be9b690`), a záró sorban `[AI: salesninja]`, **escape nélkül, karakterre azonosan tárolva** -- a régi minta is fogja | 1 | 2026-09-15 |
 | marveen | (nincs régi komment-minta; két ISSUE: IT-482, IT-583, mindkettő kérésre) | 2 | 2026-08-09, 08-29 |
-| marveen | KOMMENT, a mai szabály szerint jelölve: IT-674 (`comment-9898847c`), a záró sorban `[AI: marveen]`. Visszaolvasva a `user.name` **Krasser Tamás** -- ez a mérés harmadszor is megerősíti, hogy a per-user broker a gazda szerzőségével rögzít. | 1 | 2026-09-05 |
+| marveen | KOMMENT, a mai szabály szerint jelölve: IT-674 (`comment-9898847c`), a záró sorban `[AI: marveen]`. Visszaolvasva a `user.name` **a gazda neve** -- ez a mérés harmadszor is megerősíti, hogy a per-user broker a gazda szerzőségével rögzít. | 1 | 2026-09-05 |
 | brokermarcsi | (nincs; mérve: nulla külső írás, tranzakció-szinten) | 0 | — |
 | marlenka | (nincs; mérve: nulla külső írás, 22 transzkript tool_use-szinten) | 0 | — |
 | peppa | komment: nincs (mind a 17 augusztusi Réka-komment átolvasva, egyik sem az övé) | 0 | — |
@@ -322,7 +329,7 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   keress mindkét mezőn. Egy nulla találat itt nem azt jelenti, hogy nem írtál -- azt
   jelenti, hogy rossz mintával kerestél a rossz mezőn.
   *(Mellékesen ez a mérés negyedszer erősítette meg a skill alaptényét: a komment
-  `user.name` mezője **Antos Péter**, nem az ágens.)*
+  `user.name` mezője **a gazda neve**, nem az ágens.)*
   **A LELTÁR, amire a fenti szabály áll (bubi mérte a teljes workspace-en, marveen és
   salesninja külön-külön ellenőrizte): 31 marker, 22 komment és 9 leírás, 29 ép, 2
   escape-elt.** A kilenc leírás a JELENLEGI szöveg írási ideje szerint (helyi idő):
@@ -523,7 +530,7 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   **A mérés (Linear, teljes workspace, `body contains "[AI:"`, 2026-09-15):** 30
   marker-tartalmú komment. Ebből **22-t fog** a fenti minta (mind a négy szabályos
   alak), **8-at nem**, és mind a 8 UGYANAZ a szabad szövegű alak:
-  `[AI: Claude Opus 5, Krasser Tamás gépéről]`. Mind 2026-09-05-i, három szomszédos
+  `[AI: Claude Opus 5, <a gazda> gépéről]`. Mind 2026-09-05-i, három szomszédos
   issue-n (IT-674, IT-675, IT-676), egyetlen szerzőségen.
 
   **Amit ez a szerkezet eldönt:** ez nem szétszórt gyakorlat, hanem EGY ülés EGY
