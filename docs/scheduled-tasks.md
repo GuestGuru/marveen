@@ -403,6 +403,21 @@ küszöb, mint a memória- és üzenet-kapunál). A lemezt is érdemes megnézni
 `~/.claude/scheduled-tasks/<nev>/` alatt ott kell lennie a `SKILL.md`-nek és a
 `task-config.json`-nak.
 
+🔴 **AZ EGYSZERI FELADAT `ephemeral: true` JELÖLÉST IS KÉR, KÜLÖNBEN A DRIFT-MÉRŐBEN
+JELÖLETLENKÉNT ÁLL.** Ez a lépés a fenti ötből hiányzott, és ugyanaznap éjjel meg is
+bosszulta magát: a 2026-09-16 21:39-kor felvett egyszeri emlékeztető a 02:07-es
+dream-engine körben `sablon nelkul=1`-ként jelent meg, vagyis pontosan abba a sorba
+került, amit két héten át takarítottunk. **Az indok nem az élettartam**, hanem hogy
+mit hordoz: egy emlékeztető jellemzően egy nevesített kolléga személyes chat_id-ját
+viszi, a fork pedig PUBLIKUS, tehát sablont írni hozzá adatszivárgás lenne. A jelölés
+a `task-config.json`-be megy, két mezővel:
+```json
+"ephemeral": true,
+"ephemeral_reason": "MIÉRT nincs sablonja, KI jelölte és MIKOR"
+```
+Az `ephemeral_reason`-t teljes ékezettel írd: a drift-mérő szó szerint kiírja a
+riportban, tehát olvasott szöveg, nem belső mező.
+
 A törlés maga a lenti `DELETE`.
 
 ⚠️ **SUB-ÁGENSNÉL az 5. lépés NEM a `DELETE`, hanem egy törlés-kérés a fő-ágenshez, és
