@@ -171,10 +171,10 @@ GUARD_HTTP="$(curl -s -m 5 -X POST "$ORIGIN/api/messages" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $(cat "$TOKEN_FILE")" \
   -o /dev/null -w '%{http_code}' \
-  -d "{\"from\":\"marveen\",\"to\":\"$ALERT_TO\",\"content\":\"[PROD-FA ORSEG, post-checkout hook] Fa: $TOPLEVEL -- agat valtott a(z) $BRANCH agra. (Ha ez az utvonal nem a telepites fo faja, ez PROBA, nem eles riasztas.) AUTO-VISSZAALLITAS: $REVERTED. Commitot a pre-commit hook blokkol; szandekos valtashoz MARVEEN_PROD_CHECKOUT_OK=1.\"}" 2>/dev/null)" || GUARD_HTTP="000"
+  -d "{\"from\":\"marveen\",\"to\":\"$ALERT_TO\",\"content\":\"[PROD-FA ŐRSÉG, post-checkout hook] Fa: $TOPLEVEL, ágat váltott a(z) $BRANCH ágra. (Ha ez az útvonal nem a telepítés fő fája, ez PRÓBA, nem éles riasztás.) AUTO-VISSZAÁLLÍTÁS: $REVERTED. Commitot a pre-commit hook blokkol; szándékos váltáshoz MARVEEN_PROD_CHECKOUT_OK=1.\"}" 2>/dev/null)" || GUARD_HTTP="000"
 case "$GUARD_HTTP" in
   2*) : ;;
-  *) echo "[prod-tree-guard] FIGYELEM: a branch-valtas riasztas NEM ert celba (HTTP ${GUARD_HTTP:-000}) -- a koordinator nem tud a valtasrol" >&2 ;;
+  *) echo "[prod-tree-guard] FIGYELEM: a branch-váltás riasztás NEM ért célba (HTTP ${GUARD_HTTP:-000}), a koordinátor nem tud a váltásról" >&2 ;;
 esac
 exit 0
 EOF
