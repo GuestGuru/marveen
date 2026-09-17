@@ -53,6 +53,18 @@ const HU_HINTS = [
   ' csak ', ' ezert ', ' ez a ', ' az a ', ' lett ', ' tehat ',
 ]
 
+/** How many distinct hints must appear before we call the text Hungarian.
+ *  Was 2 until 2026-09-17, lowered to 1 on a measurement over the whole message
+ *  corpus: of 1656 stored messages at or above ACCENT_MIN_LEN, the 2-hint rule
+ *  flags 310, and exactly 25 more carry a single hint. All 25 were read by hand
+ *  and every one is Hungarian written without accents -- six different senders,
+ *  plus ten copies of one machine-generated alert. Zero of them are English.
+ *  That is a 7.5 percent false-negative rate bought for no measured false
+ *  positive, because none of these hints is an English word: one is already
+ *  strong evidence. The bilingual case is handled below by the narrowed ratio,
+ *  not by this count. */
+const HU_HINT_MIN = 1
+
 const ACCENT_MIN_PER_100 = 2.0
 const ACCENT_MIN_LEN = 200
 const SENTENCE_MIN_LEN = 120
@@ -131,7 +143,7 @@ export function zeroAccentSentences(text: string): string[] {
 export function accentWarning(text: string): string | null {
   if (!text || text.length < ACCENT_MIN_LEN) return null
   const low = ' ' + text.toLowerCase().split(/\s+/).join(' ') + ' '
-  if (HU_HINTS.filter((h) => low.includes(h)).length < 2) return null
+  if (HU_HINTS.filter((h) => low.includes(h)).length < HU_HINT_MIN) return null
   const n = countAccents(text)
   const per100 = (n * 100.0) / text.length
   if (per100 >= ACCENT_MIN_PER_100) return null

@@ -122,8 +122,9 @@ describe('ensureAutonomySection', () => {
     const level2Idx = result.indexOf('Level 2')
     const level1Block = result.slice(level1Idx, level2Idx)
     expect(level1Block).not.toContain('/api/approvals')
-    // Level 1 must have inter-agent message and MEGÁLL
-    expect(level1Block).toContain('/api/messages')
+    // Level 1 must have inter-agent message and MEGÁLL. The send goes through
+    // agent-msg.sh since 2026-09-17, not raw curl, so assert on the helper.
+    expect(level1Block).toContain('agent-msg.sh')
     expect(level1Block).toContain('ÁLLJ MEG')
   })
 

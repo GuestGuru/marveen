@@ -207,11 +207,14 @@ Az ágensek közvetlenül tudnak egymásnak üzenni egy közös SQLite üzenetso
 Ha delegálni akarsz egy feladatot másik ágensnek, használd az API-t:
 
 ```bash
-curl -s -X POST http://localhost:{{WEB_PORT}}/api/messages \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $(cat store/.dashboard-token)" \
-  -d '{"from": "{{MAIN_AGENT_ID}}", "to": "TARGET_AGENT", "content": "Feladat leírása."}'
+cat <<'EOF' | bash scripts/agent-msg.sh {{MAIN_AGENT_ID}} TARGET_AGENT -
+Feladat leírása.
+EOF
 ```
+A helper ellenőrzi a HTTP-státuszt ÉS a visszakapott `id`-t, és újraküld. A tartalom
+STDIN-ről jön egy IDÉZŐJELES heredocban, tehát a szövegben lévő idézőjel, backtick vagy
+`$VALTOZO` sértetlen marad. Nyers curl-lel mindkettő a hívó dolga, és a hiba NÉMA: a
+küldés akkor is sikeresnek látszik, ha a shell átírta a szöveget.
 
 **MEGBÍZHATÓ KÜLDÉS (verify + retry) — KÖTELEZŐ:** a gyakori `curl -s ... >/dev/null && echo sent` minta VESZÉLYES: a curl `0`-val tér vissza akkor is, ha a szerver ELUTASÍTOTTA a kérést (401/400/5xx), így NÉMA küldés-hiba keletkezik — a címzett sosem kapja meg az üzenetet, és két ágens végtelenül várhat egymásra. Egy üzenet CSAK akkor számít elküldöttnek, ha a válaszban visszajött egy `id` (`{"id":<n>,"status":"pending",...}` HTTP 200-zal). Vagy használd a `scripts/agent-msg.sh` helpert (HTTP-státusz + `id` ellenőrzés + 3x újraküldés + hiba-napló), vagy nyers curl-nél KÖTELEZŐ ellenőrizni a HTTP-kódot ÉS az `id`-t, és újraküldeni ha nincs:
 
