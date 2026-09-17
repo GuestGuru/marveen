@@ -316,7 +316,14 @@ const BLOCK_MESSAGE =
   'vehető fel: séma, port, útvonal és joker nélkül (jó: "telex.hu"; rossz: ' +
   '"https://telex.hu/", "*.telex.hu"). Az aldomainek automatikusan beleértendők, tehát a ' +
   '"guest.guru" felvétele az "app.guest.guru"-t is megnyitja. A felvétel AZONNAL él: a ' +
-  'WebFetch hívás rögtön megismételhető, újraindítás nem kell.'
+  'WebFetch hívás rögtön megismételhető, újraindítás nem kell.\n' +
+  'ÉS A FELVÉTEL UTÁN PRÓBÁLD IS KI, UGYANABBAN A KÖRBEN. Ha a hoszt nem válaszol ' +
+  '(timeout, ECONNRESET, TLS-hiba), VEDD KI a bejegyzést, ne hagyd ott. Egy elérhetetlen ' +
+  'hosztra mutató engedély nem nyit meg semmit, viszont a következő olvasónak azt ' +
+  'mondja, hogy az a hoszt használható, és ő ezt már nem fogja megmérni. ' +
+  '(Mérve 2026-09-17: a developer.helpscout.net így állt bent fél napig, miközben ' +
+  'WebFetch-csel ECONNRESET, curl-lel TLS-hiba, más kliensből 10 másodperces timeout ' +
+  'volt rajta; a kontroll ugyanabban a percben a docs.github.com-on 302-t adott.)'
 
 function allow() { process.exit(0) }
 
