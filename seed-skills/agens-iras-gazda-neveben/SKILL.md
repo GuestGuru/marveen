@@ -64,6 +64,18 @@ bontás, és lejjebb a minta-táblázat ágensenkénti darabszámai), ÉS A PUBL
 `GuestGuru/marveen` FORK `seed-skills/` ÁGÁN ÉL, ahol minden sor világolvasható, a git
 history visszamenőleg is.** salesninja mérése, 2026-09-15: titok, adószám, telefonszám,
 cím és e-mail nulla, teljes név két kollégáé, három-három előfordulással.
+🔄 **ÚJRAMÉRVE 2026-09-18 09:0x-kor, mert a 09-15-i szám időközben ELAVULT, és egy
+mérési ablakkal kiírt szám is félrevezet, ha a világ közben megváltozott.** Titok,
+adószám, telefonszám, cím és e-mail továbbra is nulla. TELJES név (keresztnév +
+vezetéknév) ma NULLA: a 09-17 esti redakció hét előfordulást vett ki, a nyolcadikat
+pedig salesninja mérte ki ma, ragozott alakban, sortörés után -- **egy alanyesetre
+menő redakciós keresés pontosan ezt a formát hagyja bent**, és ez a lelet fontosabb,
+mint maga a javítás. PUSZTA KERESZTNÉV viszont hét helyen áll, három kollégáé, és
+kettő mellett darabszám is van. (Sorszámot szándékosan nem írok ide: egy bővülő
+fájlban a sorszám a következő szerkesztéssel elavul, a `grep` viszont nem.)
+Ezekhez NEM nyúltam: a meglévő említések ügye a gazdáké, és egy kolléga
+kifejezett döntése (maradjon bent) már felül lett írva egyszer. A kérdés a publikus
+fork összevont döntésével megy a gazda elé, nem külön szálon.
 **Ami itt a kockázat, az nem a NÉV, hanem a név MELLETT álló teljesítmény-szám** -- a
 gg-fork-push-lanc értékalapú szűrője ezt elvileg sem fogja, mert nem személyesadat-ALAKÚ
 érték, hanem egy hétköznapi kéttagú szám egy táblázatban.
@@ -435,8 +447,8 @@ teljes szám. Ezt mondd is ki, különben a jelentésed egy plafont ad ki tényk
   itt véletlenül helyes dátumot ad (mindkettő 09-15), de máskor TÚL RÉGIT adna.
   ⚠️ **És nem csak a FLAG hiányzik, hanem a NODE is** -- ezt a mezőnkénti lekérdezés
   dönti el, nem a szűrő. Az IT-836 három history node-ja: 09:40:56 és 09:40:57 két
-  CÍMKÉZÉS a `GG Agent` automatizmustól, 10:54:34 pedig címke + felelős Krasser
-  Tamástól. A két `issueUpdate` (09:41:01 és 09:41:38, mindkettő KIZÁRÓLAG a
+  CÍMKÉZÉS a `GG Agent` automatizmustól, 10:54:34 pedig címke + felelős a gazdától.
+  A két `issueUpdate` (09:41:01 és 09:41:38, mindkettő KIZÁRÓLAG a
   `description` mezőt írta -- a payloadokból ellenőrizve) **egyik node-nak sem felel
   meg, és időben utánuk van.** Vagyis az írás tényleg nyomtalan, nem csak jelöletlen.
   💡 **Egy hipotézis, amit ez megenged, de nem bizonyít:** a létrehozás utáni rövid
