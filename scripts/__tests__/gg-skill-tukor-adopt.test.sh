@@ -89,8 +89,8 @@ if [ -f "$MIRROR/skills/tiszta-agens-skill/SKILL.md" ] \
 else
   fail "nem masolta at vagy nem stagelte: $OUT"
 fi
-if echo "$OUT" | grep -q 'adoptalva=1'; then
-  pass "az osszegzo sor egyet szamol"
+if echo "$OUT" | grep -q 'adoptalva=2'; then
+  pass "az osszegzo sor kettot szamol (az agens- ES a globalis skill)"
 else
   fail "rossz adoptalva-szam: $OUT"
 fi
@@ -104,20 +104,28 @@ else
   fail "titkot tarto skill bekerult a tukorbe: $OUT"
 fi
 
-# --- Test 4: a global skill stays a decision ----------------------------------
+# --- Test 4: a global skill goes to the private mirror too --------------------
+# Rewritten 2026-09-18. It asserted that a GLOBAL unversioned skill waits for a
+# decision, which the script stopped doing on 2026-09-15 (the owner's standing
+# call: when in doubt, the private repo) and which he closed for good on 09-18
+# (our skills go private, there is nothing to weigh). The behaviour changed on
+# purpose; this test kept asserting the old rule and had been failing since,
+# which is the rule-residue class: the rule moved, the thing that CHECKS it did
+# not, and a red suite stops being read.
 echo ""
-echo "Test 4: GLOBALIS verziozatlan skillt nem adoptal magatol"
-if [ ! -e "$MIRROR/skills/globalis-skill" ] && echo "$OUT" | grep -q '  - globalis-skill'; then
-  pass "a globalis skill dontesre var, nem kerult automatikusan a privat repoba"
+echo "Test 4: GLOBALIS verziozatlan skillt is a PRIVAT tukorbe adoptal"
+if [ -f "$MIRROR/skills/globalis-skill/SKILL.md" ] \
+   && git -C "$MIRROR" diff --cached --name-only | grep -q '^skills/globalis-skill/SKILL.md$'; then
+  pass "a globalis skill a privat tukorbe kerult es stagelve van"
 else
-  fail "a globalis skillt automatikusan adoptalta: $OUT"
+  fail "a globalis skill nem kerult a privat tukorbe: $OUT"
 fi
 
 # --- Test 5: the leftover count is honest -------------------------------------
 echo ""
-echo "Test 5: a maradek verziozatlan szam a ket el nem intezett esetet mutatja"
-if echo "$OUT" | grep -q 'verziozatlan=2'; then
-  pass "verziozatlan=2 (a titkos es a globalis), nem nullara hazudott osszegzes"
+echo "Test 5: a maradek verziozatlan szam az egy el nem intezett esetet mutatja"
+if echo "$OUT" | grep -q 'verziozatlan=1'; then
+  pass "verziozatlan=1 (a hitelesito-adatot tarto), nem nullara hazudott osszegzes"
 else
   fail "rossz maradek-szam: $OUT"
 fi

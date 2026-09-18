@@ -320,7 +320,12 @@ if [ "$adopted" -gt 0 ]; then
   echo "  majd push a SAJAT gg-mcp identitasoddal (ld. gg-fork-push-lanc)."
 fi
 if [ "$unversioned" -gt 0 ]; then
-  echo "verziozatlan (nincs kovetett tukre, DONTES kell -- seed-skills/ ha gep-fuggetlen, a PRIVAT gg-agent-skills/skills/ ha GG-specifikus):"
+  # 2026-09-18, the owner's decision: our own skills go to the PRIVATE repo, full
+  # stop. There is no per-file judgement to make any more -- that judgement was
+  # itself the defect, and it ran for exactly one file (of the eleven under
+  # seed-skills/, ten belong to the upstream product). The public seed-skills/ is
+  # now the upstream product's, not a destination we choose.
+  echo "verziozatlan (nincs kovetett tukre -- a PRIVAT gg-agent-skills/skills/ ala valo, ez a gazda 2026-09-18-i dontese, nincs merlegeles):"
   for n in $unversioned_list; do echo "  - $n"; done
 fi
 [ "$stale" -gt 0 ] && exit 1
