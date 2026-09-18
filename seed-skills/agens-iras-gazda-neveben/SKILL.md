@@ -42,6 +42,18 @@ salesninja mérése 2026-09-15-én a Linear `issue.history` `botActor` mezőjén
 ÖT node-ján -- **mindegyiken üres**, a broker-írásokon és a felületi írásokon egyaránt.
 bubi fogalmazta meg, mi ebből a következtetés: a gazda nevében végzett írásunk a Linear
 FELŐL NÉZVE is teljesen emberi, nem csak a névben.
+
+⚠️ **ÉS EZ A MÉRÉS HATÁRA, salesninja megfogalmazásában (2026-09-17, miután a Linear
+history szerkezetét megnézte): a lelet nem a MÉRÉST dönti meg, hanem a MINTAVÉTELT teszi
+bizonytalanná.** Ami áll: a megnézett node-ok `botActor` mezője kivétel nélkül üres volt.
+Amit viszont nem tudunk: hány node-ot nem is láttunk. A Linear az egymáshoz közeli
+szerkesztéseket egy egységbe vonja, tehát egy köztes írás nyomtalanul beolvadhat, és a
+megmaradó időbélyeg az egység UTOLSÓ írásáé. A következtetés ettől érvényes marad, csak
+KEVESEBB node-on áll, mint ahány írás történt.
+**És az irány számít, ezért írom ki:** a „nincs mire támaszkodni a marker nélkül" állítást
+ez nem gyengíti, mert egy nem látott node sem adna megkülönböztetőt. Fordítva viszont nem
+áll: arra, hogy a `botActor` üressége BIZONYÍTJA a bot-írás hiányát, ez a minta kevés. A
+marker melletti érv tehát változatlan, egy visszamenőleges AUDIT viszont nem építhet rá.
 **A skill alaptételét ez két független oldalról támasztja alá:** a TORZÍTÁS felől (a
 `user.name` a gazdáé, négyszer mérve) és a SZÉTVÁLASZTHATÓSÁG felől (nincs mire
 támaszkodni, ha a marker hiányzik). Aki a markert elhagyja, nem egy kényelmes címkét hagy
