@@ -116,6 +116,27 @@ provenance_src() {
   return 0
 }
 
+# Ki irta UTOLJARA ezt a skillt a TUKORBEN, ha nem a sajat gazdaja? bubi merese
+# 2026-09-18: a --fix az ELO peldanybol ir, tehat a tukorbe MASHONNAN bekerult
+# tartalom (tipikusan egy jelolt masolat javitasa) nulla elo peldanyban marad meg.
+# A tartalom maga NEM vesz el, mert a tukor git-repo -- de a kimenetbol ez nem
+# latszott, sot a zaradek-visszafuzes azt a latszatot keltette, hogy a jelolt par
+# kezelve van. A jeloles tulelte a masolast, a HOZZAJARULAS nem.
+# Ez a fuggveny nem blokkol es nem talalgat: kiirja a nevet es a commitot, hogy a
+# felulirasrol a ket erintett TUDJON, ne az legyen a vedelem, hogy valaki eszreveszi.
+mirror_last_foreign_author() {
+  local name="$1" owner="$2" a
+  git -C "$PRIVATE_MIRROR_ROOT" rev-parse --git-dir >/dev/null 2>&1 || return 1
+  a=$(git -C "$PRIVATE_MIRROR_ROOT" log -1 --format='%an|%h' -- "skills/$name" 2>/dev/null)
+  [ -n "$a" ] || return 1
+  # A scope "agens:<nev>" vagy "agens"/"globalis"; a gazdat kisbetusen hasonlitjuk.
+  case "$(printf '%s' "${a%%|*}" | tr 'A-Z' 'a-z')" in
+    "$(printf '%s' "$owner" | tr 'A-Z' 'a-z')") return 1 ;;
+    marveen) [ "$owner" = "marveen" ] && return 1 ;;
+  esac
+  printf '%s' "$a"
+}
+
 live_copies() {
   local name="$1" n=0 d
   [ -f "$HOME/.claude/skills/$name/SKILL.md" ] && n=$((n + 1))
@@ -199,6 +220,13 @@ check_one() {
       # konzisztens. Ezert itt nem "masol vagy kihagy" a kerdes: masolunk ES
       # visszafuzzuk a zaradekot.
       prov_keep="$(provenance_block "$mirror/SKILL.md" 2>/dev/null || true)"
+      owner="${scope#agens:}"; [ "$owner" = "agens" ] && owner="marveen"
+      [ "$owner" = "globalis" ] && owner="marveen"
+      if foreign="$(mirror_last_foreign_author "$name" "$owner")" && [ -n "$foreign" ]; then
+        echo "  IDEGEN SZERZO A TUKORBEN  $name  -- utoljara ${foreign%%|*} irta (${foreign#*|}), most $owner peldanya irja felul."
+        echo "      A tartalma a git-tortenetben marad, de ELO peldanyban sehol: ha nem vetted at, most tunik el a lemezrol."
+        echo "      Szolj mindkettojuknek. Ez a sor azert van, mert a zaradek-visszafuzes eddig kezeltnek MUTATTA a part."
+      fi
       cp -r "$live/." "$mirror/"
       if [ -n "$prov_keep" ] && ! grep -qE 'SZ[AÁ]RMAZ[AÁ]S:' "$mirror/SKILL.md" 2>/dev/null; then
         printf '\n%s\n' "$prov_keep" >> "$mirror/SKILL.md"
