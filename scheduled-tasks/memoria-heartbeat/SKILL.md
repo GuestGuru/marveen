@@ -52,10 +52,10 @@ Nézd át, mi történt **az előző memória-kör óta**. Két dolgot csinálj:
 >
 > A kör ablak-lekérdezése ezért ez, másolhatóan:
 > ```bash
-> LAST=$(python3 -c "import json;print(json.load(open('/home/gg/marveen/store/memoria-heartbeat-state.json'))['last_run_at'])")
+> LAST=$(python3 -c "import json;print(json.load(open('{{INSTALL_DIR}}/store/memoria-heartbeat-state.json'))['last_run_at'])")
 > python3 -c "
 > import sqlite3,sys
-> db=sqlite3.connect('/home/gg/marveen/store/claudeclaw.db'); last=int(sys.argv[1])
+> db=sqlite3.connect('{{INSTALL_DIR}}/store/claudeclaw.db'); last=int(sys.argv[1])
 > print('uzenet:', db.execute('SELECT id,from_agent,to_agent FROM agent_messages WHERE created_at > ?',(last,)).fetchall())
 > print('emlek :', db.execute('SELECT id,agent_id,category FROM memories WHERE created_at > ?',(last,)).fetchall())
 > " "$LAST"
