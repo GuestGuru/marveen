@@ -159,8 +159,16 @@ Lépések:
    A patch a lemezen van, az index frissült, a kör késznek látszik: ekkor ér véget
    a figyelem. A tükör viszont nem frissül magától.
    ```bash
-   bash {{INSTALL_DIR}}/scripts/gg-skill-tukor-sync.sh | grep -E 'azonos=|ELTER'
+   bash {{INSTALL_DIR}}/scripts/gg-skill-tukor-sync.sh | grep -E 'azonos=|ELTER|IDEGEN'
    ```
+   🔴 **AZ `IDEGEN` 2026-09-18-ÁN KERÜLT A MINTÁBA, ÉS A HOZZÁADÁSA MAGA A TANULSÁG.**
+   Aznap délelőtt új sort tettem a mérőbe (`IDEGEN SZERZO A TUKORBEN`: a tükröt
+   utoljára nem a skill gazdája írta, tehát a felülírással az ő hozzájárulása csak a
+   git-történetben marad), és a következő körben vettem észre, hogy **ez a grep pont
+   kiszűrte volna.** Az új jelzés láthatatlan lett volna abban a körben, amelyiknek
+   olvasnia kellene. **A forma, ami ebből általánosít: ha egy MÉRŐT bővítesz, a
+   FOGYASZTÓJÁT is meg kell nézni** -- egy fix minta a fogyasztó oldalán ugyanúgy
+   elavul, mint egy fix percszám, csak némán, mert a szűrő nem hibázik, csak hallgat.
    `elter=0` -> kész. `ELTER <nev>` -> `--fix`, majd commit ÉS push a privát repóba
    (a recept a `gg-fork-push-lanc` skillben, a push külön lépés, nem a `--fix` része).
    **Miért kell ide, és nem a skill-írás jó szándékára bízva:** a mai patchem kilenc
