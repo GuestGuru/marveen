@@ -23,9 +23,21 @@ mérés marad.
    - `live drain: did not surface the open question`: a formátum-illesztés bukik,
      a kérdés szövege egyébként ott van a kimenetben.
 
-   **Miért nem javítottuk:** ha a teszt állítását igazítjuk a kódhoz, azzal elfedhetünk
-   egy valódi upstream regressziót. Ez upstream döntés, nem fork-döntés. A fork-oldali
-   teendő annyi, hogy a baseline ismert legyen, és ne számítson új törésnek.
+   **Miért nem javítottuk (2026-09-10-i indoklás):** ha a teszt állítását igazítjuk a
+   kódhoz, azzal elfedhetünk egy valódi upstream regressziót. Ez upstream döntés, nem
+   fork-döntés. A fork-oldali teendő annyi, hogy a baseline ismert legyen.
+
+   🟢 **MÉRVE 2026-09-19, ÉS A FENTI FELTEVÉS MEGDŐLT: nem regresszió, hanem
+   FORK-LEMARADÁS.** Egy eldobható worktree-ben az `upstream/main`-en (v1.38.0)
+   futtatva ugyanez a teszt **52/52 zöld**. Vagyis az upstream mindkét bukást javította
+   azóta, és nálunk azért piros, mert a `ledger-capture.py` és maga a teszt is RÉGEBBI
+   nálunk (a blob-hash mindkettőn eltér).
+   **A teendő tehát nem fork-döntés és nem folt, hanem az UPSTREAM-ÁTVÉTEL.** Van egy
+   félbehagyott `chore/upstream-1.37.0` ág, az upstream pedig már v1.38.0-n áll.
+   **Amit ebből meg kell jegyezni:** a „valószínűleg a teszt az elavult, de nem
+   találgatunk" helyes óvatosság volt, csak elmaradt a hozzá tartozó MÉRÉS. Az egy
+   worktree és egy parancs volt, és kilenc napig senki nem futtatta le. Ugyanaz a
+   forma, mint a workflow-scope falnál: a blokkoló ok elavult, és nem szólt róla senki.
 
 ## v1.36.0 (merge 2026-09-01)
 
