@@ -290,6 +290,27 @@ def main():
         check_true("ui-label: a puszta nevelo nem szamit magyar jelnek",
                    not gate._hungarian_signal("a") and not gate._hungarian_signal("az"), "")
 
+        # --- GATEFOREIGNPOS919: a szukites NEMAN atengedte a valodi esetet -----
+        # marveen merese, 2026-09-19. A fenti szukites a BIZONYITEK HIANYAT vette
+        # idegensegnek, es ez pont abban az esetben fordult at, amiert a kapu van:
+        # egy ekezetet VESZTETT magyar mondatban egyik szomszed sem ad magyar jelet
+        # (a hetkoznapi fonev nincs szotarban, a nevelo szandekosan kizarva), tehat
+        # az ambivalens talalat CSENDBEN kiesett. Kilenc napig allt igy, es csak
+        # azert derult ki, mert aznap bekapcsoltuk a CI-t es a suite pirosat mutatott.
+        # A javitas: eldobni csak POZITIV idegen bizonyitekra szabad.
+        check_true("foreign-pos: ekezetet vesztett mondatban a kotoszo TALALAT",
+                   accent_hits("A dokumentum es a melleklet is megjott, nezd meg."),
+                   "a nema atengedes visszajott")
+        check_true("foreign-pos: helyes magyar prozaban az ambivalens szo TALALAT",
+                   accent_hits("A video nagyon jol sikerult, holnap kuldom."),
+                   "a nema atengedes visszajott a masik ambivalens szora is")
+        check_true("foreign-pos: a puszta 'nincs magyar jel' nem eleg az eldobashoz",
+                   not gate._foreign_signal("dokumentum") and not gate._foreign_signal("nagyon"),
+                   "hetkoznapi magyar szo idegen jelnek mer")
+        check_true("foreign-pos: a mert idegen feliratok szavai idegen jelet adnak",
+                   all(gate._foreign_signal(w) for w in ("Filter", "dates", "Gross", "amount")),
+                   "a mert UI-szavak kiestek a listabol")
+
     if FAILS:
         print(f"\n{len(FAILS)} FAILED: {FAILS}", file=sys.stderr)
         sys.exit(1)
