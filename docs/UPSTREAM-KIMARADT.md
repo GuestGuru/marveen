@@ -30,7 +30,30 @@ mérés marad.
 ## v1.36.0 (merge 2026-09-01)
 
 **`.github/workflows/test.yml`** -- az upstream uj CI-munkafolyamata, ami PR-eken
-lefuttatja a `vitest`-et es a `tsc`-t. **NEM sikerult felvinni.**
+lefuttatja a `vitest`-et es a `tsc`-t. ~~**NEM sikerult felvinni.**~~
+
+🟢 **MEGOLDVA 2026-09-19, es a megoldas nem emberi lepes volt: a fal maga szunt meg.**
+A fajl a sajat tokenunkkel, a szokasos proxy-push uton felment (PR 592/593), es
+mind a ket belso PR elsore mergelodott. Vagyis a lenti ket "emberi lepes" kozul
+EGYIKRE SEM volt szukseg. **A blokkolo ok elavult, es errol semmi nem szolt** --
+18 napig allt a fajl verziozatlanul a munkafaban, mert 2026-09-01 ota senki nem
+probalta ujra.
+
+**Amit NEM mertunk, es ezert nem allitjuk:** hogy MIERT szunt meg. A token
+scope-jait innen nem olvassuk ki, tehat a legkezenfekvobb magyarazat (a token
+azota kapott `workflow` scope-ot) megmeretlen. A mert teny a kimenetel.
+
+**A tanulsag, ami fontosabb ennel az egy fajlnal:** ebben a doksiban minden tetel
+egy BLOKKOLO OKRA hivatkozik, es egy blokkolo ok ugyanugy elavul, mint egy
+merooszam -- csak nem szol rola senki. **Egy kimaradt hunk ujraprobalasa olcsobb,
+mint a felirasa.** Aki ezt a fajlt olvassa, eloszor probalja meg ujra a muveletet,
+es csak utana keressen emberi lepest.
+
+**Es amit a bekapcsolas azonnal megmutatott:** a suite PIROS volt, es ELOZETESEN az
+(a bekapcsolas elotti commiten, a42d6a4, ugyanaz a ket teszt bukik). Negy sertes,
+mind a mienk: ket sablonban beegetett abszolut utvonal es ketszer egy `{{CHAT_ID}}`
+helyorzo, amit a seed nem helyettesit. Javitva a PR 594/595-ben. Ez pontosan az,
+amiert a CI kell: a piros alapvonal addig lathatatlan volt.
 
 A push elszallt:
 
@@ -46,7 +69,8 @@ megkerulheto a Git Data API-val sem: a korlat a tokenre vonatkozik, nem az utra.
 minden "N/N zold" allitas lokalis meres marad, amit a PR feje nem tud bizonyitani.
 Pontosan az a hianyossag, amit az upstream ezzel a fajllal javitott.
 
-**A javitas ket lehetseges utja, mindketto emberi lepes:**
+**A javitas ket lehetseges utja, mindketto emberi lepes** (tortenetileg, 2026-09-01-en
+-- egyikre sem volt szukseg, lasd a fenti zold bekezdest)**:**
 1. a gazda hozza letre a fajlt egy commitban (a tartalma az upstream
    `Szotasz/marveen` `main` againak `.github/workflows/test.yml`-je), VAGY
 2. a gg-mcp GitHub-tokenje kapjon `workflow` scope-ot, es akkor a kovetkezo
