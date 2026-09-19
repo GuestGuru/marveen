@@ -13,7 +13,14 @@ import { isUnsafeHookCommand } from '../web/agent-scaffold.js'
 // output: nothing checked their outgoing Hungarian for stripped accents or em
 // dashes, and a restart left them with no conversation at all.
 
-const ROOT = '/home/gg/marveen'
+// GATEHOOKROOT919 (2026-09-19): ez a sor `'/home/gg/marveen'` volt, vagyis EGYETLEN
+// telepites utvonala egy szallitott tesztfajlban. Barhol maskent futtatva a hook-ok
+// altal hivatkozott szkriptek nem leteznek, es az `isUnsafeHookCommand` az
+// `existsSync` agan (agent-scaffold.ts) veszelyesnek minositi oket -- tehat a teszt
+// NEM a viselkedest merte, hanem azt, hogy ezen a gepen fut-e. Lokalisan zold volt,
+// ubuntu runneren piros, es ez a CI bekapcsolasanak elso perceben derult ki.
+// A szomszedos tesztfajlok mind ezt az idiomat hasznaljak, ez volt az egyetlen kivetel.
+const ROOT = join(__dirname, '..', '..')
 
 describe('fleetChannelHooks', () => {
   const hooks = fleetChannelHooks(ROOT)
