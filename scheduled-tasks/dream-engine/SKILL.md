@@ -122,7 +122,7 @@ megjelolt szo ekezetet kapott (valodi talalat), vagy eltunt mindket alakban (ham
 pozitiv GYANU). Ezt az osszesitot futtasd, es a kimenetet egy sorban vidd at:
 
 ```bash
-python3 /home/gg/marveen/scripts/kapu-fp-audit.py --napok 7
+python3 {{INSTALL_DIR}}/scripts/kapu-fp-audit.py --napok 7
 ```
 
 **Miert ide kerult, es miert nem uj utemezett feladat:** a mero maga megvolt mar
