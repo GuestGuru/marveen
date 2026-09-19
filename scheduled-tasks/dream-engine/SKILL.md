@@ -85,6 +85,18 @@ sqlite3 {{INSTALL_DIR}}/store/claudeclaw.db "SELECT agent_id, date, substr(conte
 
 **ELJÁRÁS: ha egy bucket lekérdezése HIBÁRA fut, az nem üres eredmény, hanem hiányzó bemenet.** Vagy javítsd és futtasd újra ugyanabban a körben, vagy a DREAM.md `## ⚠️ Hibák` szekciójában mondd ki, hogy az adott bucket csonka bemenetből dolgozott. Csendben továbbmenni a legrosszabb, mert a kimenet ugyanúgy magabiztosnak látszik.
 
+🔴 **A 23:00-S AUTOMATA ÖSSZEFOGLALÓ MÁSODLAGOS FORRÁS, NEM BIZONYÍTÉK (mérve 2026-09-19 23:0x).**
+Aznap a #971-es összefoglaló NYITOTT kérdésként hozta a kimenő ékezet-kapu ügyét, holott a gazda
+reggel jóváhagyta (Telegram msg 920), és a javítás délelőtt fel is ment a main ágra (232c261),
+zöld teszttel. Az összefoglaló a nap ELSŐ feléből dolgozott, és a saját záró mondata mondja ki,
+hogy csonkolt memória-rekordokból épült. Ha ezt bemenetnek veszed, a top-3 egy MÁR LEZÁRT ügyet
+emel be, és a reggeli napindító azt kéri számon a gazdán, amit ő már eldöntött.
+
+**Eljárás: minden „nyitott" tételt, ami CSAK az összefoglalóból jön, mérj vissza az elsődleges
+nyomon** (git-történet, teszt-kimenet, kanban-státusz, vagy egy későbbi emlék), és csak akkor
+vidd a top-3-ba, ha a visszamérés is nyitottnak mutatja. A visszamérés két parancs, az elmaradása
+egy egész reggelt visz rossz irányba.
+
 Output: 3 sor, mindegyik formátum `<project>: <kártya cím / akció> — <indok 1 mondatban>`.
 
 ### Bucket 4 — 🌐 External opportunities (új skill-repo ajánlások)
