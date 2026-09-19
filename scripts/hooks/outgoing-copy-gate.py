@@ -852,6 +852,49 @@ def accentless_evidence(words):
 # AMIT EZ NEM LAZIT: csak a 15 ambivalens szora all, es csak akkor, ha MINDEN
 # elofordulasuk idegen szomszedsagban van. Egy tenylegesen ekezetvesztett magyar
 # szoveget tovabbra is elkap, mert ott a talalatok tobbsege NEM ambivalens szo.
+# GATEFOREIGNPOS919 (2026-09-19, marveen merese, NEMA ATENGEDES): a lenti
+# _hungarian_signal a BIZONYITEK HIANYAT vette idegensegnek, es ez pont abban az
+# esetben fordult at, amiert a kapu letezik. Egy ekezetet VESZTETT magyar mondatban
+# egyetlen szomszed sem hordoz ekezetet, a hetkoznapi fonevek (pl. "dokumentum")
+# nincsenek egyik szotarban sem, a puszta nevelo pedig szandekosan ki van zarva --
+# tehat MINDEN szomszed "idegennek" mert, es az ambivalens talalat CSENDBEN kiesett.
+# Merve: a "dokumentum es a melleklet" mondatban a 09-10 ELOTTI kapu jelezte a
+# kotoszot, a 09-10 UTANI egyszer sem, harom mondatforman.
+#
+# A JAVITAS IRANYA: eldobni csak POZITIV idegen bizonyitekra szabad. Ha a
+# szomszedsag se magyar jelet, se idegen jelet nem ad, a talalat MARAD. Ezzel a
+# hibaforma zajossa valik (felesleges tiltas egy ismeretlen idegen felirat korul)
+# ahelyett, hogy nema lenne (valodi ekezetvesztes jut ki a gazdahoz) -- egy
+# ekezet-kapunal ez a helyes irany, ahogy a fajl mashol is kimondja.
+#
+# AMIT NEM OLD MEG, es ezt ki kell mondani: a lista veges. Egy olyan idegen
+# felirat, aminek egyik szava sincs benne, hamis pozitivot fog adni. Az ar
+# tudatos: a hamis pozitiv latszik es atfogalmazassal megkerulheto, a nema
+# atengedes nem latszik. Ha egy felirat ismetlodoen bukik, IDE kell felvenni,
+# nem a szabalyt lazitani.
+FOREIGN_UI_WORDS = {
+    # a ket mert esetbol (2026-09-10, brokermarcsi): Airbnb-menu es riport-oszlop
+    "filter", "dates", "date", "custom", "previous", "next", "month", "months",
+    "gross", "amount", "net", "total", "subtotal", "balance", "payout", "payouts",
+    # gyakori UI- es riport-angol, ami magyar prozaba agyazva szokott allni
+    "settings", "account", "export", "import", "report", "reports", "summary",
+    "details", "status", "pending", "completed", "cancelled", "canceled",
+    "column", "columns", "row", "rows", "filters", "sort", "search", "view",
+    "dashboard", "overview", "listing", "listings", "booking", "bookings",
+    "guest", "guests", "host", "reservation", "reservations", "calendar",
+    "price", "prices", "fee", "fees", "tax", "taxes", "invoice", "invoices",
+    "from", "to", "and", "or", "of", "the", "for", "with", "by", "per",
+    "all", "any", "none", "select", "selected", "apply", "reset", "clear",
+}
+
+
+def _foreign_signal(word: str) -> bool:
+    """POZITIV idegen jel: a szomszed szo egy ismert idegen UI- vagy riport-szo.
+    Szandekosan NEM adjuk vissza igazat pusztan azert, mert egy szo nincs a magyar
+    szotarban -- pont az volt a GATEFOREIGNPOS919 hibaja."""
+    return word.lower() in FOREIGN_UI_WORDS
+
+
 def _hungarian_signal(word: str) -> bool:
     """Magyar jel-e ez a szomszed szo: van benne ekezet, vagy funkcionalis magyar
     marker, vagy olyan szotari alak, ami maga NEM ambivalens."""
@@ -898,6 +941,12 @@ def drop_foreign_context_hits(hits, tok_pos, prose):
             szomszedok = _neighbours_in_prose(prose, pos, len(h))
             # szomszed nelkuli (egy szavas) eset: nem tudjuk megitelni, maradjon
             if not szomszedok or any(_hungarian_signal(x) for x in szomszedok):
+                magyar_kontextusban = True
+                break
+            # GATEFOREIGNPOS919: POZITIV idegen bizonyitek nelkul NEM dobunk el.
+            # A "nincs magyar jel" onmagaban nem bizonyitek -- egy ekezetet
+            # vesztett magyar mondatban egyetlen szomszed sem ad magyar jelet.
+            if not any(_foreign_signal(x) for x in szomszedok):
                 magyar_kontextusban = True
                 break
         if magyar_kontextusban:
