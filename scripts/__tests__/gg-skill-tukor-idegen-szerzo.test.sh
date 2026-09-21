@@ -39,9 +39,15 @@ else
 fi
 
 echo ""
-echo "Test 2: IDEGEN szerzo utolso commitja utan KIIRJA, kit ir felul"
+echo "Test 2: IDEGEN szerzo + a tukorben VAN sor, ami az eloben nincs -> KIIRJA, kit ir felul"
+# 2026-09-21: a fixture korabban --allow-empty commitot hasznalt, tehat a tukor
+# tartalma az elo peldanyeba volt foglalva. A 09-21-i szukites (mirror_only_lines)
+# ota ott HELYESEN nincs figyelmeztetes, es ez a teszt pont a regi viselkedest
+# kerte szamon -- ezert volt piros a main agon. A sor most valodi, csak a tukorben
+# letezo tartalmat kap, vagyis azt az esetet, AMIERT a figyelmeztetes letezik.
+printf 'a\nb\nBUBI JAVITASA\n' > "$MIRROR/skills/pelda-skill/SKILL.md"
 git -C "$MIRROR" add -A >/dev/null 2>&1
-git -C "$MIRROR" -c user.name=Bubi -c user.email=bubi@guest.guru commit -qm "bubi javitasa" --allow-empty
+git -C "$MIRROR" -c user.name=Bubi -c user.email=bubi@guest.guru commit -qm "bubi javitasa"
 printf 'a\nb\nc\nd\n' > "$ROOT/agents/peppa/.claude/skills/pelda-skill/SKILL.md"
 OUT=$(run --fix)
 if echo "$OUT" | grep -q 'IDEGEN SZERZO A TUKORBEN  pelda-skill'; then
@@ -62,6 +68,28 @@ if echo "$OUT" | grep -q 'SZINKRONIZALVA  pelda-skill' && \
   pass "a masolas lefutott (a sor jelez, nem tilt -- egy blokkolo guard a nightly futast allitana meg)"
 else
   fail "a figyelmeztetes megallitotta a szinkront: $OUT"
+fi
+
+echo ""
+echo "Test 4: NEGATIV KONTROLL -- idegen szerzo, de a tukorben NINCS sajat tartalom"
+# Ez peppa 2026-09-21-i leletenek a rogzitese: a sor korabban a COMMIT SZERZOJERE
+# tuzelt, nem arra, hogy elveszne-e barmi. Egy idegen szerzoju, de tartalmilag
+# lemaradt tukornel igy olyan dontest kert, aminek nincs targya. A figyelmeztetes
+# ITT a hamis pozitiv, es az assertion azert van, hogy ne nyilhasson vissza neman.
+printf 'a\nb\n' > "$MIRROR/skills/pelda-skill/SKILL.md"
+git -C "$MIRROR" add -A >/dev/null 2>&1
+git -C "$MIRROR" -c user.name=Bubi -c user.email=bubi@guest.guru commit -qm "bubi ujabb commitja"
+printf 'a\nb\nc\nd\ne\n' > "$ROOT/agents/peppa/.claude/skills/pelda-skill/SKILL.md"
+OUT4=$(run --fix)
+if ! echo "$OUT4" | grep -q 'IDEGEN SZERZO'; then
+  pass "nincs riasztas, ha a feluliras nem vesz el semmit (a szerzo maga nem lelet)"
+else
+  fail "a puszta idegen szerzore is riasztott: $OUT4"
+fi
+if echo "$OUT4" | grep -q 'SZINKRONIZALVA  pelda-skill'; then
+  pass "es a szinkron ettol fuggetlenul lefutott"
+else
+  fail "a negativ kontroll agon elmaradt a szinkron: $OUT4"
 fi
 
 echo ""
