@@ -137,6 +137,15 @@ mirror_last_foreign_author() {
   printf '%s' "$a"
 }
 
+# HANY sor letezik CSAK a tukorben? Ez az, amit a feluliras tenylegesen elvesz.
+# A "Only in <mirror>" sor egy egesz FAJLT jelent, az is veszteseg, ezert szamolodik.
+mirror_only_lines() {
+  local live="$1" mirror="$2"
+  # shellcheck disable=SC2086
+  diff -r $DIFF_EXCLUDES "$live" "$mirror" 2>/dev/null \
+    | awk -v m="Only in $mirror" '/^>/ { n++ } index($0, m) == 1 { n++ } END { print n+0 }'
+}
+
 live_copies() {
   local name="$1" n=0 d
   [ -f "$HOME/.claude/skills/$name/SKILL.md" ] && n=$((n + 1))
@@ -222,8 +231,20 @@ check_one() {
       prov_keep="$(provenance_block "$mirror/SKILL.md" 2>/dev/null || true)"
       owner="${scope#agens:}"; [ "$owner" = "agens" ] && owner="marveen"
       [ "$owner" = "globalis" ] && owner="marveen"
-      if foreign="$(mirror_last_foreign_author "$name" "$owner")" && [ -n "$foreign" ]; then
+      # KAPU: a szerzo csak HELYETTESITO, a figyelmeztetes viszont tartalom-vesztest
+      # allit. A ketto akkor esik egybe, ha a tukorben van olyan sor, ami az elo
+      # peldanyban NINCS -- kulonben a felulirasnak nincs mit elvennie.
+      # peppa merte 2026-09-21-en: az ADOPTALAS szuksegszeruen idegen szerzot gyart
+      # (a gazda skilljet a tukorbe MAS agens viszi fel eloszor), tehat a sor pont a
+      # LEGGYAKORIBB esetben szolt tevesen. Sajat esete: a166052 Marveen adoptalo
+      # commitja volt, 152 sor hozzaadva, NULLA torles -- a tartalom vegig peppa-e.
+      # A koltseg nem a megijedes (az egyszeri), hanem a MEGSZOKAS: aki megtanulja,
+      # hogy ez a sor jellemzoen hamis, az az IGAZI esetet is atlapozza majd.
+      # Ezert NEM toroljuk a sort, hanem kapuzzuk: az adat eddig is ott volt.
+      if foreign="$(mirror_last_foreign_author "$name" "$owner")" && [ -n "$foreign" ] \
+         && [ "$(mirror_only_lines "$live" "$mirror")" -gt 0 ]; then
         echo "  IDEGEN SZERZO A TUKORBEN  $name  -- utoljara ${foreign%%|*} irta (${foreign#*|}), most $owner peldanya irja felul."
+        echo "      $(mirror_only_lines "$live" "$mirror") olyan sor van a tukorben, ami az elo peldanyban NINCS -- ezt veszi el a feluliras."
         echo "      A tartalma a git-tortenetben marad, de ELO peldanyban sehol: ha nem vetted at, most tunik el a lemezrol."
         echo "      Szolj mindkettojuknek. Ez a sor azert van, mert a zaradek-visszafuzes eddig kezeltnek MUTATTA a part."
       fi
