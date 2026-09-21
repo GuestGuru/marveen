@@ -459,7 +459,10 @@ mkdir -p "$TMPDIR_BASE/ld1"; DB_LD1="$TMPDIR_BASE/ld1/x.db"
 emit_inbound 10000000001 1122 "Elveszett elo kerdes" | run_hook ledger-capture.py "$DB_LD1"
 age_rows "$DB_LD1" 120
 OUT_G1="$(run_drain "$DB_LD1")"
-if printf '%s' "$OUT_G1" | grep -q "OPEN_QUESTION chat_id=10000000001 message_id=1122"; then
+# GG fork (653398b, multi-provider ledger): the drain line carries the provider,
+# because a bare chat_id is no longer unique across channels. Upstream has no
+# such field, so this grep is one of the two places this suite differs.
+if printf '%s' "$OUT_G1" | grep -q "OPEN_QUESTION provider=telegram chat_id=10000000001 message_id=1122"; then
     pass "live drain: surfaces an aged, unanswered open question"
 else
     fail "live drain: did not surface the open question (got: $OUT_G1)"
@@ -508,7 +511,12 @@ emit_inbound_provider discord 20000000002 7001 "kerdes egy masik csatornarol" \
 H_IN="$(db_scalar "$DB_H" "SELECT text FROM conversation_log WHERE direction='in'")"
 assert_eq "discord inbound is captured" "kerdes egy masik csatornarol" "$H_IN"
 H_CHAT="$(db_scalar "$DB_H" "SELECT chat_id FROM conversation_log WHERE direction='in'")"
-assert_eq "discord inbound keeps its chat_id" "20000000002" "$H_CHAT"
+# GG fork (653398b): the stored key is NAMESPACED for every provider except
+# telegram (qualify_chat), because two channels can hand out the same numeric
+# chat_id and the ledger would then splice two conversations into one. Telegram
+# stays bare for backward compatibility -- the sections above pin that half, and
+# a passing telegram assertion is what proves this is not a blanket prefix.
+assert_eq "discord inbound is namespaced by provider" "discord:20000000002" "$H_CHAT"
 
 # (h2) outbound reply from a non-telegram provider is captured
 emit_reply_provider discord 20000000002 "valasz egy masik csatornara" "sent (id: 7002)" \
