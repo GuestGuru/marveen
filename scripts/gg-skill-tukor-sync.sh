@@ -45,7 +45,7 @@ PRIVATE_MIRROR_ROOT="${GG_PRIVATE_SKILLS:-$HOME/gg-agent-skills}"
 # GG-specific ones moved out. Kept as a list so a future third target is one word.
 MIRRORS="seed-skills skills"
 
-stale=0; synced=0; same=0; unversioned=0; adopted=0
+stale=0; synced=0; same=0; unversioned=0; adopted=0; dupes=0
 unversioned_list=""
 
 # Files that live NEXT TO a skill but deliberately never reach the mirror: build
@@ -156,8 +156,32 @@ live_copies() {
   echo "$n"
 }
 
+# DUPLIKALT SZEKCIOCIM az ELO peldanyban. Merve 2026-09-21: a sajat
+# meres-tervezes-emben KET egymast koveto '## Ellenorzes' cim allt, mindket
+# peldanyban azonosan, tehat a defekt VERZIOZVA volt -- egy tegnapi patchem hagyta
+# ott. Egy ketertelmu horgony nem hibat ad, hanem TALALATOT, csak nem feltetlenul
+# azt, amit kerestel: nemán teved (brokermarcsi osztalyozasa ugyanaznap).
+# A KODBLOKKON BELULI cimek NEM szamitanak: a sablon-skillek (skill-factory,
+# skill-management) skill-VAZAT mutatnak, ott a '## Mikor hasznald' ketszer is
+# szerepelhet. Ez a mero ismert hamis-pozitiv osztalya, ezert van kiszurve, es
+# ezert all itt kiirva: a nyers detektor 67 fajlbol ketton tevedett, mindketton
+# ezert.
+dup_headings() {
+  awk '
+    /^[[:space:]]*```/ { fence = !fence; next }
+    !fence && /^## / { seen[$0]++ }
+    END { for (h in seen) if (seen[h] > 1) printf "%s (%dx) ", h, seen[h] }
+  ' "$1" 2>/dev/null
+}
+
 check_one() {
-  local live="$1" name="$2" scope="$3" m mirror lf mf f repo
+  local live="$1" name="$2" scope="$3" m mirror lf mf f repo dup
+  dup="$(dup_headings "$live/SKILL.md")"
+  if [ -n "$dup" ]; then
+    echo "  DUPLA CIM  $name  ($scope)  -- ${dup% }"
+    echo "      Ketertelmu horgony: a rea mutato hivatkozas TALALATOT ad, csak nem biztos, hogy azt."
+    dupes=$((dupes + 1))
+  fi
   # The PRIVATE repo is checked first: since 2026-09-01 that is where a GG-specific
   # skill belongs, so a skill present in both must be compared against the one that
   # is actually maintained.
@@ -360,7 +384,7 @@ for d in agents/*/.claude/skills/*/; do
 done
 
 echo
-echo "azonos=$same  elter=$stale  szinkronizalva=$synced  adoptalva=$adopted  verziozatlan=$unversioned"
+echo "azonos=$same  elter=$stale  szinkronizalva=$synced  adoptalva=$adopted  verziozatlan=$unversioned  dupla-cim=$dupes"
 if [ "$adopted" -gt 0 ]; then
   # Say the remaining step out loud. The copy is the easy half; the half that gets
   # forgotten is the push, and the private repo does not ride the marveen chain.
