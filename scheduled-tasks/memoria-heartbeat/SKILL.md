@@ -159,7 +159,7 @@ Lépések:
    A patch a lemezen van, az index frissült, a kör késznek látszik: ekkor ér véget
    a figyelem. A tükör viszont nem frissül magától.
    ```bash
-   bash {{INSTALL_DIR}}/scripts/gg-skill-tukor-sync.sh | grep -E 'azonos=|ELTER|IDEGEN'
+   bash {{INSTALL_DIR}}/scripts/gg-skill-tukor-sync.sh | grep -E 'azonos=|ELTER|IDEGEN|DUPLA'
    ```
    🔴 **AZ `IDEGEN` 2026-09-18-ÁN KERÜLT A MINTÁBA, ÉS A HOZZÁADÁSA MAGA A TANULSÁG.**
    Aznap délelőtt új sort tettem a mérőbe (`IDEGEN SZERZO A TUKORBEN`: a tükröt
