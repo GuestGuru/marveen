@@ -44,6 +44,18 @@ def run_telegram(store, text):
     return p.returncode, p.stderr
 
 
+def run_check_file(store, text):
+    """The CLI route (--check-file), the morning briefing's path. (exit, stderr)."""
+    env = dict(os.environ)
+    env["OUTGOING_COPY_GATE_RULES"] = os.path.join(store, "outgoing-copy-gate-rules.json")
+    path = os.path.join(store, "szoveg.txt")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(text)
+    p = subprocess.run([sys.executable, GATE, "--check-file", path], env=env,
+                       capture_output=True, text=True)
+    return p.returncode, p.stderr
+
+
 def ledger(store):
     path = os.path.join(store, "outgoing-copy-gate-fp.jsonl")
     if not os.path.exists(path):
@@ -108,6 +120,53 @@ with tempfile.TemporaryDirectory() as store:
     rows = ledger(store)
     check("a tiszta szoveg atment", code == 0, f"(exit={code})")
     check("nincs egyetlen sor sem", rows == [], f"(sorok={rows})")
+
+print("6. a CLI-ut (--check-file) NAPLOSORT ir, de pending-et NEM nyit")
+# 2026-09-21: eddig egyik felet sem irta, tehat minden CLI-tiltas lathatatlan volt
+# a naplonak -- a sajat DREAM.md-emen kapott hamis pozitiv sem hagyott nyomot.
+# A ket fel kulon itelet ala esik: a naplosor (a NEVEZO) hianyzott, az utokovetes
+# viszont ezen az uton szerkezetileg ertelmetlen -- nincs "kovetkezo szoveg
+# ugyanazon a toolon", a folyamat kilep.
+with tempfile.TemporaryDirectory() as store:
+    code, err = run_check_file(store, BAD)
+    rows = ledger(store)
+    blocks = [r for r in rows if r.get("esemeny") == "tiltas"]
+    check("a CLI-ut tiltott", code == 1, f"(exit={code})")
+    check("egy tiltas-sor keletkezett a CLI-uton", len(blocks) == 1, f"(sorok={rows})")
+    check("a sor megnevezi a CLI-utat",
+          bool(blocks) and blocks[0].get("tool") == "cli-check-file",
+          f"(tool={blocks[0].get('tool') if blocks else None})")
+    check("a sor kimondja, hogy nem feloldhato",
+          bool(blocks) and blocks[0].get("feloldhato") is False,
+          f"(feloldhato={blocks[0].get('feloldhato') if blocks else None})")
+    check("a sor nevesiti a megjelolt szavakat", bool(blocks and blocks[0].get("szavak")),
+          f"(szavak={blocks[0].get('szavak') if blocks else None})")
+    check("NEM nyilt pending bejegyzes",
+          not os.path.exists(os.path.join(store, "outgoing-copy-gate-pending.json")))
+
+print("7. az osszesito a CLI-sort NEM szamolja nyitott hatraleknak")
+with tempfile.TemporaryDirectory() as store:
+    run_telegram(store, BAD)        # hook-ut: ez valoban nyitva marad
+    run_check_file(store, BAD)      # CLI-ut: ez soha nem zarhato le
+    p = subprocess.run([sys.executable, AUDIT, "--napok", "0",
+                        "--ledger", os.path.join(store, "outgoing-copy-gate-fp.jsonl")],
+                       capture_output=True, text=True)
+    check("az osszesito lefut", p.returncode == 0, p.stderr[:200])
+    check("ket tiltast lat", "2 tiltas" in p.stdout, p.stdout[:200])
+    check("egyet szamol nyitottnak", "1 meg nyitva" in p.stdout, p.stdout[:200])
+    check("egyet utokovethetetlennek", "1 utokovethetetlen" in p.stdout, p.stdout[:200])
+
+print("8. visszafele kompatibilitas: a mezo NELKULI regi sor hook-sor, tehat nyitott")
+with tempfile.TemporaryDirectory() as store:
+    path = os.path.join(store, "regi.jsonl")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(json.dumps({"esemeny": "tiltas", "tool": "send_email",
+                             "szavak": ["dontes"], "problema_tipusok": ["HIANYZO EKEZETEK"],
+                             "ts": "2026-09-18T11:11:00+0200"}, ensure_ascii=False) + "\n")
+    p = subprocess.run([sys.executable, AUDIT, "--napok", "0", "--ledger", path],
+                       capture_output=True, text=True)
+    check("a regi sor nyitottnak szamit", "1 meg nyitva" in p.stdout, p.stdout[:200])
+    check("es nem utokovethetetlennek", "0 utokovethetetlen" in p.stdout, p.stdout[:200])
 
 print()
 if failures:

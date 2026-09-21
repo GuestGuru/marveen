@@ -15,6 +15,13 @@ What the numbers mean, and what they do NOT:
                sender worked around the gate by changing the content instead of
                fixing it. This is evidence against the GATE, not against them.
 
+A ledger also has rows that can NEVER get a resolution half, and they are marked
+as such (`feloldhato: false`): the gate's CLI route (`--check-file`, the morning
+briefing's path) audits a finished file and exits, so there is no "next text on
+the same tool" to classify. Those rows are still the DENOMINATOR -- they count
+blocks -- so they are reported separately instead of piling up as "still open".
+Rows written before 2026-09-21 have no such field and are hook rows.
+
 "eltunt" is suspicion, not proof: a legitimate rephrasing looks identical from
 here. Every suspect line is printed in full so a human decides. The "magyarnak
 latszott" flag is recorded because brokermarcsi's hypothesis is that the real
@@ -72,6 +79,11 @@ def main():
 
     window = f"{args.napok} nap" if args.napok else "teljes naplo"
     blocks = [r for r in rows if r.get("esemeny") == "tiltas"]
+    # GG fork 2026-09-21: a CLI-ut sorai soha nem kapnak feloldast (nincs mit
+    # osztalyozni utanuk), tehat "meg nyitva"-kent szamolva hamis novekvo
+    # hatralekot adnanak. A hianyzo mezo hook-sort jelent, innen a not-False.
+    kovethetetlen = [r for r in blocks if r.get("feloldhato") is False]
+    kovetheto = [r for r in blocks if r.get("feloldhato") is not False]
     resolutions = [r for r in rows if r.get("esemeny") == "feloldas"]
     counts = {"javitva": 0, "valtozatlan": 0, "eltunt": 0}
     suspects = []
@@ -86,7 +98,8 @@ def main():
     # The denominator first, deliberately: a suspect count on its own says
     # nothing about the gate.
     print(f"kapu-fp-audit ({window}): {len(blocks)} tiltas, {len(resolutions)} feloldva, "
-          f"{len(blocks) - len(resolutions)} meg nyitva.")
+          f"{len(kovetheto) - len(resolutions)} meg nyitva, "
+          f"{len(kovethetetlen)} utokovethetetlen (CLI-ut, nem nyitott hatralek).")
     total = sum(counts.values())
     if not total:
         print("  Feloldott szo meg nincs, tehat ARANYT MEG NEM LEHET MONDANI.")
