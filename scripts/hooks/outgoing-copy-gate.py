@@ -534,12 +534,29 @@ def fp_resolve(tool: str, text: str) -> None:
                 "magyarnak_latszott": entry.get("magyarnak_latszott", {})})
 
 
-def fp_record_block(tool: str, problems: list) -> None:
-    """One ledger row per block, plus the pending entry the next call resolves."""
+def fp_record_block(tool: str, problems: list, pending: bool = True, extra=None) -> None:
+    """One ledger row per block, plus the pending entry the next call resolves.
+
+    GG fork, 2026-09-21: `pending=False` writes the row WITHOUT opening a
+    pending entry. This is for the CLI route (`--check-file`), where the
+    resolution half is structurally meaningless: there is no "next text on the
+    same tool" to classify, the caller exits with a code and the process ends.
+    The row itself is NOT meaningless -- it is the DENOMINATOR, the count of
+    blocks the gate produced. Before this, the CLI route wrote neither half, so
+    every `--check-file` block was invisible to the ledger, and a false positive
+    caught there (measured 2026-09-21 on my own DREAM.md) left no trace at all.
+
+    `feloldhato` says which of the two halves this row can ever get: a reader
+    counting unresolved blocks must not count a CLI row as a missing resolution.
+    """
     words = list(LAST_FLAGGED)
-    _fp_append({"esemeny": "tiltas", "tool": tool, "szavak": words,
-                "problema_tipusok": [p.split(",")[0].split(" -- ")[0][:40] for p in problems]})
-    if not words:
+    row = {"esemeny": "tiltas", "tool": tool, "szavak": words,
+           "feloldhato": bool(pending),
+           "problema_tipusok": [p.split(",")[0].split(" -- ")[0][:40] for p in problems]}
+    if extra:
+        row.update(extra)
+    _fp_append(row)
+    if not pending or not words:
         return
     pending = _fp_pending_read()
     from datetime import datetime
@@ -1155,6 +1172,9 @@ def check_file_mode(path):
     problems = audit(text)
     if problems:
         sys.stderr.write("\n".join(f"  - {p}" for p in problems) + "\n")
+        # GG fork: the ledger row (the denominator) without a pending entry --
+        # nothing follows on this route that could resolve it. See fp_record_block.
+        fp_record_block("cli-check-file", problems, pending=False, extra={"fajl": path})
         return 1
     return 0
 
