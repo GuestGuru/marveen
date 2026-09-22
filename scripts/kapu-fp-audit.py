@@ -16,11 +16,14 @@ What the numbers mean, and what they do NOT:
                fixing it. This is evidence against the GATE, not against them.
 
 A ledger also has rows that can NEVER get a resolution half, and they are marked
-as such (`feloldhato: false`): the gate's CLI route (`--check-file`, the morning
-briefing's path) audits a finished file and exits, so there is no "next text on
-the same tool" to classify. Those rows are still the DENOMINATOR -- they count
-blocks -- so they are reported separately instead of piling up as "still open".
-Rows written before 2026-09-21 have no such field and are hook rows.
+as such (`feloldhato: false`), for two different reasons. The gate's CLI route
+(`--check-file`, the morning briefing's path) audits a finished file and exits,
+so there is no "next text on the same tool" to classify. And a block that flagged
+no WORDS at all -- an em dash, a wrong product name -- has nothing to follow up
+on either, whichever route it came from. Those rows are still the DENOMINATOR --
+they count blocks -- so they are reported separately instead of piling up as
+"still open". Rows written before 2026-09-21 have no such field and are treated
+as resolvable hook rows.
 
 "eltunt" is suspicion, not proof: a legitimate rephrasing looks identical from
 here. Every suspect line is printed in full so a human decides. The "magyarnak
@@ -99,7 +102,7 @@ def main():
     # nothing about the gate.
     print(f"kapu-fp-audit ({window}): {len(blocks)} tiltas, {len(resolutions)} feloldva, "
           f"{len(kovetheto) - len(resolutions)} meg nyitva, "
-          f"{len(kovethetetlen)} utokovethetetlen (CLI-ut, nem nyitott hatralek).")
+          f"{len(kovethetetlen)} utokovethetetlen (nincs mit osztalyozni, nem nyitott hatralek).")
     total = sum(counts.values())
     if not total:
         print("  Feloldott szo meg nincs, tehat ARANYT MEG NEM LEHET MONDANI.")

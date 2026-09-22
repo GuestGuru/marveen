@@ -69,6 +69,8 @@ def ledger(store):
 BAD = "A hetfoi egyeztetesen a kollega elmondta, hogy a szamla kesik, es kertek turelmet."
 FIXED = "A hétfői egyeztetésen a kolléga elmondta, hogy a számla késik, és kértek türelmet."
 REPHRASED = "A hétfői megbeszélésen elhangzott, hogy a bizonylat késik, és türelmet kértek."
+# Helyes ekezetes szoveg, ami MAS okbol bukik: gondolatjel. A szolista igy URES marad.
+NO_WORDS = "A hétfői egyeztetésen a kolléga elmondta \u2014 és ezt kérték \u2014 hogy a számla késik."
 
 print("1. a tiltas bekerul a naploba, a szavakkal egyutt")
 with tempfile.TemporaryDirectory() as store:
@@ -167,6 +169,31 @@ with tempfile.TemporaryDirectory() as store:
                        capture_output=True, text=True)
     check("a regi sor nyitottnak szamit", "1 meg nyitva" in p.stdout, p.stdout[:200])
     check("es nem utokovethetetlennek", "0 utokovethetetlen" in p.stdout, p.stdout[:200])
+
+print("9. a szolista NELKULI tiltas nem allithatja magarol, hogy feloldhato")
+# 2026-09-22: a `feloldhato` mezo eddig az UTVONALAT kodolta, nem azt, hogy nyilt-e
+# pending. Egy gondolatjel- vagy nev-szabaly tiltas nem jelol meg egyetlen szot sem,
+# tehat pending sem nyilik ra -- megis `true`-t hordozott, es az osszesito nyitott
+# hatraleknak szamolta. Ugyanaz a felrecimkezes, amit a CLI-ut kapcsan javitottunk,
+# csak egy masik ajton. Az elo naplon merve: nyolc tiltasbol HAT ilyen.
+with tempfile.TemporaryDirectory() as store:
+    code, err = run_telegram(store, NO_WORDS)
+    rows = ledger(store)
+    blocks = [r for r in rows if r.get("esemeny") == "tiltas"]
+    check("a kapu tiltott (nem ekezet miatt)", code == 2, f"(exit={code})")
+    check("egy tiltas-sor keletkezett", len(blocks) == 1, f"(sorok={rows})")
+    check("a szolista URES", blocks and blocks[0].get("szavak") == [],
+          f"(szavak={blocks[0].get('szavak') if blocks else None})")
+    check("a sor NEM allitja, hogy feloldhato",
+          bool(blocks) and blocks[0].get("feloldhato") is False,
+          f"(feloldhato={blocks[0].get('feloldhato') if blocks else None})")
+    check("es tenyleg nem nyilt pending",
+          not os.path.exists(os.path.join(store, "outgoing-copy-gate-pending.json")))
+    p = subprocess.run([sys.executable, AUDIT, "--napok", "0",
+                        "--ledger", os.path.join(store, "outgoing-copy-gate-fp.jsonl")],
+                       capture_output=True, text=True)
+    check("az osszesito NEM szamolja nyitottnak", "0 meg nyitva" in p.stdout, p.stdout[:200])
+    check("hanem utokovethetetlennek", "1 utokovethetetlen" in p.stdout, p.stdout[:200])
 
 print()
 if failures:
