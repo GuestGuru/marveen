@@ -36,7 +36,19 @@ export async function tryHandleMemories(ctx: RouteContext): Promise<boolean> {
 
   if (path === '/api/memories' && method === 'POST') {
     const body = await readBody(req)
-    const data = JSON.parse(body.toString()) as { agent_id?: string; content: string; tier?: string; category?: string; keywords?: string }
+    const data = JSON.parse(body.toString()) as { agent_id?: string; agent?: string; owner?: string; content: string; tier?: string; category?: string; keywords?: string }
+    // GG fork 2026-09-22 (MEMOWNER922): the three endpoints of this resource asked for
+    // the SAME thing under three names -- POST `agent_id`, GET `agent`, PUT/DELETE
+    // `owner` -- and only the modifying ones had a gate. Measured that day: a peer sent
+    // `"agent": "salesninja"` here, the field was ignored, and the row landed under the
+    // MAIN agent with HTTP 200 and ok:true. Nothing told the caller. The gate was missing
+    // in the worse direction: a mistyped field name does not fail, it silently attributes
+    // someone's work to the most privileged agent in the fleet.
+    // Two additive fixes, neither breaking an existing caller:
+    //   1. all three spellings are accepted here as well, so the trap cannot fire;
+    //   2. when NONE is given the default still applies (callers rely on it), but it is
+    //      logged AND declared in the response, so the silence ends.
+    const ownerGiven = data.agent_id || data.agent || data.owner
     if (!data.content?.trim()) { json(res, { error: 'Content is required' }, 400); return true }
     if (containsSuspiciousContent(data.content)) {
       logger.warn({ agent: data.agent_id }, 'Memory content rejected: suspicious pattern')
@@ -51,8 +63,11 @@ export async function tryHandleMemories(ctx: RouteContext): Promise<boolean> {
       json(res, { error: `Invalid category "${category}". Allowed: ${[...MEMORY_CATEGORIES].join(', ')}` }, 400)
       return true
     }
+    if (!ownerGiven) {
+      logger.warn({ category }, 'POST /api/memories: no agent_id/agent/owner given, memory attributed to the MAIN agent')
+    }
     const result = saveAgentMemory(
-      data.agent_id || MAIN_AGENT_ID,
+      ownerGiven || MAIN_AGENT_ID,
       data.content.trim(),
       category,
       data.keywords || undefined,
@@ -64,11 +79,11 @@ export async function tryHandleMemories(ctx: RouteContext): Promise<boolean> {
     const homoglyphs = detectHomoglyphs(data.content)
     if (homoglyphs.length > 0) {
       const warning = formatHomoglyphWarning(homoglyphs)
-      logger.warn({ agent: data.agent_id, memoryId: result.id }, `memory saved with ${warning}`)
-      json(res, { ok: true, id: result.id, homoglyph_warning: warning })
+      logger.warn({ agent: ownerGiven, memoryId: result.id }, `memory saved with ${warning}`)
+      json(res, { ok: true, id: result.id, homoglyph_warning: warning, ...(ownerGiven ? {} : { owner_defaulted: MAIN_AGENT_ID }) })
       return true
     }
-    json(res, { ok: true, id: result.id })
+    json(res, { ok: true, id: result.id, ...(ownerGiven ? {} : { owner_defaulted: MAIN_AGENT_ID }) })
     return true
   }
 
