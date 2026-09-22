@@ -550,8 +550,14 @@ def fp_record_block(tool: str, problems: list, pending: bool = True, extra=None)
     counting unresolved blocks must not count a CLI row as a missing resolution.
     """
     words = list(LAST_FLAGGED)
+    # GG fork, 2026-09-22: `feloldhato` must say whether a pending entry is ACTUALLY
+    # opened, not merely which route we are on. A block with no flagged words (an em
+    # dash, a wrong product name) opens nothing either, so claiming True for it puts
+    # a permanently unresolvable row into the reader's open-backlog count -- the very
+    # miscount this field was added to prevent, coming back through a second door.
+    # Measured on this ledger: 6 of 8 blocks carry an empty word list.
     row = {"esemeny": "tiltas", "tool": tool, "szavak": words,
-           "feloldhato": bool(pending),
+           "feloldhato": bool(pending and words),
            "problema_tipusok": [p.split(",")[0].split(" -- ")[0][:40] for p in problems]}
     if extra:
         row.update(extra)
