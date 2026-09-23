@@ -599,7 +599,11 @@ export async function tryHandleAgents(ctx: RouteContext, webDir: string): Promis
     const orCatalog = loadOpenRouterCatalog()
     json(res, {
       claude: [
-        { id: 'claude-opus-5', label: 'Opus 5 (legújabb Opus)' },
+        // GG fork: Opus 5.5 added (2026-09-23), first in the list because it is this
+        // install's DEFAULT_AGENT_MODEL. Drop these two lines once upstream ships 5.5.
+        { id: 'claude-opus-5-5[1m]', label: 'Opus 5.5 (1M kontextus, legújabb)' },
+        { id: 'claude-opus-5-5', label: 'Opus 5.5' },
+        { id: 'claude-opus-5', label: 'Opus 5' },
         { id: 'claude-sonnet-5', label: 'Sonnet 5' },
         { id: 'claude-sonnet-4-6', label: 'Sonnet 4.6' },
         { id: 'claude-fable-5', label: 'Fable 5' },
