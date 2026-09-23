@@ -460,6 +460,9 @@ export const SETTINGS_REGISTRY: SettingDefinition[] = [
     secret: false,
     requiresRestart: true,
     valueSet: [
+      // GG fork: Opus 5.5 (2026-09-23), so the install default can be set from the dashboard.
+      'claude-opus-5-5',
+      'claude-opus-5-5[1m]',
       'claude-opus-5',
       'claude-opus-5[1m]',
       'claude-sonnet-5',
