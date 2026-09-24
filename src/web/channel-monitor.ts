@@ -59,6 +59,7 @@ import { getClaudePidForSession, hasChannelPluginAlive, probeChannelPluginLivene
 import { getDesiredAgents } from './agent-desired-state.js'
 // GG fork: queue-authoritative rescue for the no-remedy 'hold' branch.
 import { tryQueuedFrameRecovery } from '../gg/stuck-input-queue-reinject.js'
+import { summarizePermissionPrompt } from '../gg/permission-prompt-summary.js'
 
 // Lazily resolved (see makeLazyBinResolver): a module-level `resolveFromPath`
 // const throws at IMPORT time, so any environment where the binary is not
@@ -1999,7 +2000,9 @@ export function startChannelPluginMonitor(): NodeJS.Timeout | null {
             // they had approved them. Same rule as the unrecognised trust dialog
             // above: no keystroke is neutral, so send none and say so, loudly.
             logger.warn({ session: t.session, agent: label }, 'Blocking "menu" is a tool-permission prompt -- a human decides, NO keystrokes sent')
-            sendAlert(`🔐 A(z) ${label} session egy engedélykérésen vár, és NEM nyomtam meg semmit: ott az Escape NEM-et jelentene. Döntsd el te: tmux attach -t ${t.session}`)
+            // GG fork: quote the request itself, so the operator can decide without a round trip.
+            const permSummary = summarizePermissionPrompt(paneNow)
+            sendAlert(`🔐 A(z) ${label} session egy engedélykérésen vár, és NEM nyomtam meg semmit: ott az Escape NEM-et jelentene. Döntsd el te: tmux attach -t ${t.session}${permSummary ? `\n\nA kérés:\n${permSummary}` : ''}`)
           } else {
             logger.warn({ session: t.session, agent: label }, 'Session parked in a blocking interactive menu -- sending Escape to recover')
             try {
