@@ -50,8 +50,15 @@
 // than inherit the owner's by omission. That is the intended cost: the safe
 // path is the default, and the flexible one has to be asked for.
 
-/** Where a per-agent gg-mcp token lives, by convention. */
-export function ggTokenPathFor(agentName: string, tokensDir = '/home/gg/gg-mcp/tokens'): string {
+/**
+ * Where a per-agent gg-mcp token lives, by convention.
+ *
+ * IT-863 (2026-09-27): next to the flat install (`~/.gg-mcp`), not inside the
+ * `/home/gg/gg-mcp` source clone. That clone is retired: a client needs only
+ * the bundle and its token, and a full rsync copy of the server repo was one
+ * more thing that could drift or be read by the wrong agent.
+ */
+export function ggTokenPathFor(agentName: string, tokensDir = '/home/gg/.gg-mcp/tokens'): string {
   return `${tokensDir}/${agentName}.token`
 }
 
@@ -68,8 +75,13 @@ export function ggTokenPathFor(agentName: string, tokensDir = '/home/gg/gg-mcp/t
  * per-agent identity in `GG_MCP_TOKEN_FILE` and participates in the pairing
  * flow. `GG_MCP_UPSTREAM_URL` is deliberately not set -- the proxy falls back
  * to its built-in upstream, which resolves from every machine in the fleet.
+ *
+ * IT-863 (2026-09-27): the single-file esbuild bundle of that same proxy (same
+ * CLI, `exec` included), installed flat under `~/.gg-mcp`. The source clone it
+ * used to be spawned from is retired -- a client needs only the bundle and its
+ * token -- so an agent scaffolded onto the old path would simply fail to start.
  */
-export const GG_MCP_STDIO_ENTRY = '/home/gg/gg-mcp/dist/proxy.js'
+export const GG_MCP_STDIO_ENTRY = '/home/gg/.gg-mcp/proxy.bundle.js'
 
 /**
  * True when a gg-access entry speaks to a remote endpoint (Streamable HTTP or

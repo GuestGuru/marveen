@@ -199,6 +199,62 @@ with tempfile.TemporaryDirectory() as d:
     # otherwise the probe would stop looking for the child that does exist.
     check("proxy entry is not remote", ggmcp.remote_target(ggmcp.gg_access_config(d)), None)
 
+# --- IT-863: the flat install (~/.gg-mcp/proxy.bundle.js) -------------------
+# The /home/gg/gg-mcp source clone is retired; the fleet now spawns the
+# single-file bundle. A probe that only knew the dist/ needles would call every
+# agent DEAD the moment they were switched over -- the 2026-08-12 false alarm,
+# one shape further along. The old needles stay (a rollback may bring them back).
+BUNDLE = "/home/gg/.gg-mcp/proxy.bundle.js"
+check("needle: bundle matches",
+      ggmcp.server_needle_in(f"node {BUNDLE}"), ".gg-mcp/proxy.bundle.js")
+check("needle: bundle exec (shell path) also matches",
+      ggmcp.server_needle_in(f"node {BUNDLE} exec --alias linear -- sh -c x"),
+      ".gg-mcp/proxy.bundle.js")
+check("needle: old proxy still matches after the switch",
+      ggmcp.server_needle_in("node /home/gg/gg-mcp/dist/proxy.js"), "gg-mcp/dist/proxy.js")
+check("is_proxy_path: bundle is proxy mode", ggmcp.is_proxy_path(BUNDLE), True)
+check("is_proxy_path: old dist proxy is proxy mode",
+      ggmcp.is_proxy_path("/home/gg/gg-mcp/dist/proxy.js"), True)
+check("is_proxy_path: direct server is not", ggmcp.is_proxy_path("/home/gg/gg-mcp/dist/index.js"), False)
+check("is_proxy_path: None is not", ggmcp.is_proxy_path(None), False)
+
+with tempfile.TemporaryDirectory() as d:
+    with open(os.path.join(d, ".mcp.json"), "w") as fh:
+        json.dump({"mcpServers": {"gg-access": {
+            "command": "node", "args": [BUNDLE],
+            "env": {"GG_MCP_TOKEN_FILE": "/home/gg/.gg-mcp/tokens/x.token"}}}}, fh)
+    check("declares: bundle entry yields the bundle path",
+          ggmcp.declares_gg_access(d), (True, BUNDLE))
+    check("bundle entry is not remote", ggmcp.remote_target(ggmcp.gg_access_config(d)), None)
+
+# Token judgement must follow the proxy onto the bundle. Before IT-863 it keyed
+# on the substring "proxy.js", which "proxy.bundle.js" does not contain -- so a
+# bundle agent with no token would have read `ok`: the 08-14 blind spot again.
+check("token_state: bundle without the env var",
+      ggmcp.token_state(BUNDLE, {"command": "node"})[0], "undeclared")
+check("token_state: bundle with an absent token file",
+      ggmcp.token_state(BUNDLE, {"env": {"GG_MCP_TOKEN_FILE": "/nonexistent/.gg-mcp/tokens/x.token"}})[0],
+      "missing_file")
+with tempfile.TemporaryDirectory() as d:
+    tok = os.path.join(d, "x.token")
+    with open(tok, "w") as fh:
+        fh.write("gg_live_token\n")
+    check("token_state: bundle with a live token is ok",
+          ggmcp.token_state(BUNDLE, {"env": {"GG_MCP_TOKEN_FILE": tok}})[0], "ok")
+
+    # STALE/ok against a REAL bundle file: its mtime is the install time, and a
+    # session that started before the (re)install is running superseded proxy code.
+    bundle = os.path.join(d, ".gg-mcp", "proxy.bundle.js")
+    os.makedirs(os.path.dirname(bundle))
+    open(bundle, "w").close()
+    os.utime(bundle, (NOW - 10 * HOUR, NOW - 10 * HOUR))
+    built = ggmcp.build_mtime(bundle)
+    check("bundle: build time is the bundle mtime", built, NOW - 10 * HOUR)
+    check("bundle: session older than the install -> STALE",
+          ggmcp.classify(True, 38 * HOUR, NOW - 38 * HOUR, built, token="ok")[0], "STALE")
+    check("bundle: session newer than the install -> ok",
+          ggmcp.classify(True, 2 * HOUR, NOW - 2 * HOUR, built, token="ok")[0], "ok")
+
 # --- gg_access_config / config_mtime_after ----------------------------------
 with tempfile.TemporaryDirectory() as d:
     check("gg_access_config: missing file", ggmcp.gg_access_config(d), None)
@@ -435,8 +491,14 @@ check("live_upstream: missing process -> None", ggmcp.live_upstream(2**22), None
 _real_live = ggmcp.live_upstream
 _real_health = ggmcp.upstream_health
 try:
-    ggmcp.live_upstream = lambda pid: "http://127.0.0.1:59999"
     ggmcp.upstream_health = lambda url: {"state": "ok", "detail": "teszt"}
+    # Baseline from the same fleet with no forced divergence. The check below is
+    # RELATIVE to it: an absolute `== 0` made this test fail whenever the live
+    # fleet had an unrelated problem -- measured 2026-09-27 (IT-863), when all
+    # seven agents were correctly STALE between the switch to the bundle and
+    # their restart.
+    _base = ggmcp.probe()
+    ggmcp.live_upstream = lambda pid: "http://127.0.0.1:59999"
     _div = ggmcp.probe()
 finally:
     ggmcp.live_upstream = _real_live
@@ -449,7 +511,7 @@ check("divergence: the live upstream is probed too",
       "http://127.0.0.1:59999" in [u["url"] for u in _div.get("upstreams", [])], True)
 # Stated, never alarmed: a config repaired and awaiting a restart looks exactly
 # like one just broken, and the process table cannot tell them apart.
-check("divergence: is NOT a fault on its own", _div["problems"], 0)
+check("divergence: is NOT a fault on its own", _div["problems"], _base["problems"])
 
 if failures:
     print(f"FAIL ({len(failures)}):")

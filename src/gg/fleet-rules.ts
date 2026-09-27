@@ -82,7 +82,8 @@ export function ggFleetRule7({ botName, mainAgentId, ownerName }: FleetRuleIdent
  * An agent reaches gg-mcp two ways, and only one of them carries its identity
  * automatically. The MCP path takes the token file from the agent's own
  * `.mcp.json` (written by src/gg/mcp-identity.ts) -- correct by construction.
- * The SHELL path (`gg-mcp-proxy exec`, or `node dist/proxy.js exec`) takes
+ * The SHELL path (`gg-mcp-proxy exec`, or `node ~/.gg-mcp/proxy.bundle.js exec`
+ * -- `dist/proxy.js` before IT-863 retired the gg-mcp source clone) takes
  * whatever `GG_MCP_TOKEN_FILE` the caller sets, and until 2026-08-13 the
  * wrapper silently fell back to the MAIN agent's `.mcp.json` when the caller
  * set nothing.
@@ -116,7 +117,7 @@ export function ggFleetRule8({
     `8. **CSAK A SAJÁT MCP TOKENEDET HASZNÁLHATOD. SOHA MÁSÉT.** A gg-mcp-hez KÉT utad van, ` +
     `és csak az egyik viszi magától a te identitásodat. Az **MCP-úton** (sima \`gg_*\` toolok) a ` +
     `saját \`.mcp.json\`-od visz, ott nincs teendőd. A **SHELL-ÚTON** (\`gg-mcp-proxy exec\`, ` +
-    `illetve \`node .../dist/proxy.js exec\`) viszont NEKED KELL MEGADNOD az identitásodat: ` +
+    `illetve \`node ~/.gg-mcp/proxy.bundle.js exec\`) viszont NEKED KELL MEGADNOD az identitásodat: ` +
     `a \`GG_MCP_TOKEN_FILE\` ÉRTÉKÉT a SAJÁT \`.mcp.json\`-odból (\`${ownMcpJson}\`) OLVASD KI -- ` +
     `az ott álló token-fájl útja kell, NEM maga a \`.mcp.json\` (a proxy a megadott fájl TELJES ` +
     `tartalmát teszi a Bearer fejlécbe, tehát a JSON-nal \`invalid header value\`-val elszáll; ` +

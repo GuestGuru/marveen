@@ -117,13 +117,13 @@ tail -30 store/morning.log | grep -n "$(date +'%a %b %e')"
   A `google-olvasas` csomag **kulcsot** ad (`google-gmail-ro`, `google-calendar-ro`),
   és azzal a Google API közvetlenül hívható. Ez működik, tehát a szekciót MEG KELL írni:
 
-  A ket `<...>` szegmens doku-helyorzo, nem valodi ut: a gg-mcp checkout helye
-  telepitesenkent mas, es a token-fajl A SAJATOD kell legyen (idegen tokennel
-  jogot cserelsz, nem nevet -- lasd a CLAUDE.md identitas-szabalyat).
+  A proxy a lapos telepítés bundle-je (`~/.gg-mcp/proxy.bundle.js`, IT-863 óta; a
+  korábbi gg-mcp forrásklón kivezetve), a token-fájl pedig A SAJÁTOD kell legyen
+  (idegen tokennel jogot cserélsz, nem nevet -- lásd a CLAUDE.md identitás-szabályát).
 
   ```bash
-  GG_MCP_TOKEN_FILE=<gg-mcp>/tokens/{{MAIN_AGENT_ID}}.token GG_MCP_AGENT_LABEL={{MAIN_AGENT_ID}}/{{BOT_NAME}} \
-  node <gg-mcp>/dist/proxy.js exec --alias google-calendar-ro -- \
+  GG_MCP_TOKEN_FILE=$HOME/.gg-mcp/tokens/{{MAIN_AGENT_ID}}.token GG_MCP_AGENT_LABEL={{MAIN_AGENT_ID}}/{{BOT_NAME}} \
+  node $HOME/.gg-mcp/proxy.bundle.js exec --alias google-calendar-ro -- \
     sh -c 'curl -s -H "Authorization: Bearer $GOOGLE_CALENDAR_RO_ACCESS_TOKEN" \
       "https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=<ma>T00:00:00%2B02:00&timeMax=<ma>T23:59:59%2B02:00&singleEvents=true&orderBy=startTime"'
   # Gmail: --alias google-gmail-ro, $GOOGLE_GMAIL_RO_ACCESS_TOKEN,

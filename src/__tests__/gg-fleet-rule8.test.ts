@@ -76,6 +76,14 @@ describe('ggFleetRule8: only your own gg-mcp token', () => {
     expect(rule).toContain('GG_MCP_AGENT_LABEL=marveen/jean')
   })
 
+  // IT-863 (2026-09-27): a gg-mcp forrásklón (és vele a `dist/proxy.js`)
+  // kivezetve; a shell-út közvetlen alakja a lapos telepítés bundle-je. Egy
+  // generált szabály, ami a megszűnt útra mutat, minden ágensnek rossz receptet ad.
+  it('names the direct shell-path entry by its current install path', () => {
+    expect(rule).toContain('node ~/.gg-mcp/proxy.bundle.js exec')
+    expect(rule).not.toContain('dist/proxy.js')
+  })
+
   it('forbids the main agent token explicitly, in capitals', () => {
     expect(rule).toContain('TOKEN-FÁJLJÁT HASZNÁLNI TILOS')
     expect(rule).toContain('CSAK A SAJÁT MCP TOKENEDET HASZNÁLHATOD')
