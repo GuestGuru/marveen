@@ -117,7 +117,8 @@ export function ggFleetRule8({
     `8. **CSAK A SAJÁT MCP TOKENEDET HASZNÁLHATOD. SOHA MÁSÉT.** A gg-mcp-hez KÉT utad van, ` +
     `és csak az egyik viszi magától a te identitásodat. Az **MCP-úton** (sima \`gg_*\` toolok) a ` +
     `saját \`.mcp.json\`-od visz, ott nincs teendőd. A **SHELL-ÚTON** (\`gg-mcp-proxy exec\`, ` +
-    `illetve \`node ~/.gg-mcp/proxy.bundle.js exec\`) viszont NEKED KELL MEGADNOD az identitásodat: ` +
+    `illetve \`node ~/.gg-mcp/proxy.bundle.js exec\` -- ez utóbbinál a \`GG_MCP_UPSTREAM_URL\`-t is a saját ` +
+    `\`.mcp.json\`-odból add meg, különben "fetch failed") viszont NEKED KELL MEGADNOD az identitásodat: ` +
     `a \`GG_MCP_TOKEN_FILE\` ÉRTÉKÉT a SAJÁT \`.mcp.json\`-odból (\`${ownMcpJson}\`) OLVASD KI -- ` +
     `az ott álló token-fájl útja kell, NEM maga a \`.mcp.json\` (a proxy a megadott fájl TELJES ` +
     `tartalmát teszi a Bearer fejlécbe, tehát a JSON-nal \`invalid header value\`-val elszáll; ` +
