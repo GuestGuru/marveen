@@ -26,11 +26,15 @@ set -uo pipefail
 # retired -- a client needs only the bundle and its own token.
 TOKEN_FILE="${GG_MCP_TOKEN_FILE:-/home/gg/.gg-mcp/tokens/marveen.token}"
 PROXY="/home/gg/.gg-mcp/proxy.bundle.js"
+# The bundle's BUILT-IN upstream is the gg-access tailnet name, which this host
+# does not resolve (measured 2026-09-27: "fetch failed"). The old dist/proxy.js
+# defaulted to loopback, so this used to work without it. Same value as .mcp.json.
+UPSTREAM="${GG_MCP_UPSTREAM_URL:-http://127.0.0.1:3450}"
 WHAT="${1:-mind}"
 TODAY="$(date +%F)"
 
 run_proxy() {  # $1 = alias, $2 = shell command using the injected env var
-  GG_MCP_TOKEN_FILE="$TOKEN_FILE" GG_MCP_AGENT_LABEL="marveen/Marveen" \
+  GG_MCP_TOKEN_FILE="$TOKEN_FILE" GG_MCP_AGENT_LABEL="marveen/Marveen" GG_MCP_UPSTREAM_URL="$UPSTREAM" \
     node "$PROXY" exec --alias "$1" -- sh -c "$2" 2>&1 | grep -v '^gg-mcp-proxy exec:'
 }
 

@@ -27,6 +27,7 @@
 #   GG_MCP_TOKEN_FILE   override the identity (default: from .mcp.json)
 #   GG_MCP_AGENT_LABEL  override the audit label (default: from .mcp.json)
 #   GG_MCP_PROXY        path to the proxy, ~/.gg-mcp/proxy.bundle.js (default: from .mcp.json)
+#   GG_MCP_UPSTREAM_URL the gg-mcp endpoint (default: from .mcp.json, else loopback)
 #   REPO_SLUG           owner/repo (default: GuestGuru/marveen)
 #   DRY_RUN=1           print what would happen, touch nothing remote
 
@@ -62,6 +63,11 @@ PY
 TOKEN_FILE="${GG_MCP_TOKEN_FILE:-$(read_mcp_field GG_MCP_TOKEN_FILE)}"
 AGENT_LABEL="${GG_MCP_AGENT_LABEL:-$(read_mcp_field GG_MCP_AGENT_LABEL)}"
 PROXY="${GG_MCP_PROXY:-$(read_mcp_field proxy)}"
+# IT-863: the bundle's BUILT-IN upstream is the gg-access tailnet name, which this
+# host does not resolve ("fetch failed", measured 2026-09-27). Take the same value
+# the MCP path uses.
+UPSTREAM="${GG_MCP_UPSTREAM_URL:-$(read_mcp_field GG_MCP_UPSTREAM_URL)}"
+UPSTREAM="${UPSTREAM:-http://127.0.0.1:3450}"
 
 [ -n "$TOKEN_FILE" ] || die "nincs GG_MCP_TOKEN_FILE, es a .mcp.json sem ad egyet -- add meg explicit a SAJAT tokenedet"
 [ -s "$TOKEN_FILE" ] || die "a token-fajl hianyzik vagy ures: $TOKEN_FILE (parositas kell, nem restart)"
@@ -105,7 +111,7 @@ ensure_worktree_deps() {
 
 # Run a command with the proxy's github credentials in its env.
 gh_exec() {
-  GG_MCP_TOKEN_FILE="$TOKEN_FILE" GG_MCP_AGENT_LABEL="$AGENT_LABEL" \
+  GG_MCP_TOKEN_FILE="$TOKEN_FILE" GG_MCP_AGENT_LABEL="$AGENT_LABEL" GG_MCP_UPSTREAM_URL="$UPSTREAM" \
     node "$PROXY" exec --alias github -- "$@"
 }
 
