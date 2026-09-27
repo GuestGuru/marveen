@@ -81,9 +81,16 @@ describe('ggFleetRule8: only your own gg-mcp token', () => {
   // generált szabály, ami a megszűnt útra mutat, minden ágensnek rossz receptet ad.
   it('names the direct shell-path entry by its current install path', () => {
     expect(rule).toContain('node ~/.gg-mcp/proxy.bundle.js exec')
-    // IT-863: the bundle's built-in upstream does not resolve on the fleet host
-    expect(rule).toContain('GG_MCP_UPSTREAM_URL')
     expect(rule).not.toContain('dist/proxy.js')
+  })
+
+  // IT-1144 (2026-09-27): the fleet host resolves the tailnet name since
+  // `tailscale set --accept-dns=true`, so the bundle's built-in upstream is right.
+  // The old advice to copy GG_MCP_UPSTREAM_URL from .mcp.json pinned every agent's
+  // shell path to the loopback forwarder that is being retired.
+  it('does not tell agents to pass an upstream on the shell path', () => {
+    expect(rule).not.toContain('GG_MCP_UPSTREAM_URL')
+    expect(rule).not.toContain('fetch failed')
   })
 
   it('forbids the main agent token explicitly, in capitals', () => {
