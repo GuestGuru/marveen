@@ -18,8 +18,10 @@ REPO="${GG_PRIVATE_SKILLS:-$HOME/gg-agent-skills}"
 URL="https://x-access-token@github.com/GuestGuru/gg-agent-skills.git"
 TOKEN_FILE="${GG_MCP_TOKEN_FILE:-}"
 LABEL="${GG_MCP_AGENT_LABEL:-}"
-# IT-863: a bundle BEÉPÍTETT upstreamje a gg-access tailnet-neve, amit ez a gép nem
-# old fel ("fetch failed", mérve 2026-09-27) -- a .mcp.json-ban álló érték kell.
+# Az upstream a .mcp.json-ban álló érték, ha van; különben a bundle BEÉPÍTETT
+# upstreamje (a gg-access tailnet-neve). IT-1144 (2026-09-27): ez a gép azóta
+# feloldja a tailnet-nevet (tailscale --accept-dns=true), a loopback-átjáró nem kell.
+# ÜRES értéket nem adunk tovább: a proxy `??`-vel esik vissza, az üres nála cím.
 UPSTREAM="${GG_MCP_UPSTREAM_URL:-}"
 # IT-863 (2026-09-27): a lapos telepítés bundle-je; a ~/gg-mcp forrásklón kivezetve.
 PROXY="${GG_MCP_PROXY:-$HOME/.gg-mcp/proxy.bundle.js}"
@@ -35,11 +37,11 @@ fi
 [ -n "$TOKEN_FILE" ] || { echo "HIBA: nincs GG_MCP_TOKEN_FILE (add meg kezzel, a SAJATODAT)" >&2; exit 1; }
 [ -n "$LABEL" ]      || { echo "HIBA: nincs GG_MCP_AGENT_LABEL (add meg kezzel, a SAJATODAT)" >&2; exit 1; }
 [ -f "$PROXY" ]      || { echo "HIBA: nincs meg a gg-mcp proxy: $PROXY" >&2; exit 1; }
-UPSTREAM="${UPSTREAM:-http://127.0.0.1:3450}"
 
 SP="$(mktemp -d)"; trap 'rm -rf "$SP"' EXIT
 printf '#!/bin/sh\nprintf "%%s\\n" "$GITHUB_TOKEN"\n' > "$SP/askpass.sh"; chmod 700 "$SP/askpass.sh"
-run() { GG_MCP_TOKEN_FILE="$TOKEN_FILE" GG_MCP_AGENT_LABEL="$LABEL" GG_MCP_UPSTREAM_URL="$UPSTREAM" \
+run() { env -u GG_MCP_UPSTREAM_URL ${UPSTREAM:+"GG_MCP_UPSTREAM_URL=$UPSTREAM"} \
+  GG_MCP_TOKEN_FILE="$TOKEN_FILE" GG_MCP_AGENT_LABEL="$LABEL" \
   node "$PROXY" exec --alias github -- \
   sh -c "GIT_ASKPASS=$SP/askpass.sh GIT_TERMINAL_PROMPT=0 $1"; }
 
