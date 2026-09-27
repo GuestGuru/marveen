@@ -8,6 +8,9 @@
 import { describe, it, expect } from 'vitest'
 import { withOwnGgIdentity, ggTokenPathFor, GG_MCP_STDIO_ENTRY } from '../gg/mcp-identity.js'
 
+// The pre-IT-863 shape (source-clone paths), kept on purpose: the stdio rewrite
+// is shape-agnostic -- only the identity changes -- and an input that differs
+// from the new defaults is what makes that visible.
 const MAIN_COPY = {
   mcpServers: {
     'gg-access': {
@@ -22,8 +25,11 @@ const MAIN_COPY = {
 }
 
 describe('ggTokenPathFor', () => {
+  // IT-863: a tokenek a lapos telepítés mellett élnek (`~/.gg-mcp/tokens`), nem a
+  // kivezetett forrásklónban. Literálisan mérve, mert a régi út a klón törlése
+  // után egy nem létező fájl lenne -- az ágens némán login-módban indulna.
   it('follows the fleet convention', () => {
-    expect(ggTokenPathFor('bubi')).toBe('/home/gg/gg-mcp/tokens/bubi.token')
+    expect(ggTokenPathFor('bubi')).toBe('/home/gg/.gg-mcp/tokens/bubi.token')
   })
 
   it('honours a custom tokens dir', () => {
@@ -35,7 +41,7 @@ describe('withOwnGgIdentity', () => {
   it('replaces the inherited main-agent identity with the agent’s own', () => {
     const out = withOwnGgIdentity(MAIN_COPY, 'bubi') as typeof MAIN_COPY
     expect(out.mcpServers['gg-access'].env).toEqual({
-      GG_MCP_TOKEN_FILE: '/home/gg/gg-mcp/tokens/bubi.token',
+      GG_MCP_TOKEN_FILE: '/home/gg/.gg-mcp/tokens/bubi.token',
       GG_MCP_AGENT_LABEL: 'marveen/bubi',
     })
   })
@@ -134,8 +140,16 @@ describe('withOwnGgIdentity — remote (HTTP/SSE) gg-access', () => {
     const out = withOwnGgIdentity(HTTP_COPY, 'bubi') as {
       mcpServers: Record<string, Record<string, unknown>>
     }
-    expect(out.mcpServers['gg-access'].args).toEqual(['/home/gg/gg-mcp/dist/proxy.js'])
+    expect(out.mcpServers['gg-access'].args).toEqual(['/home/gg/.gg-mcp/proxy.bundle.js'])
     expect(JSON.stringify(out)).not.toContain('gg-mcp/dist/index.js')
+  })
+
+  // IT-863: a `/home/gg/gg-mcp` forrásklón kivezetésre került; a kliensnek csak a
+  // bundle és a token kell. Egy rá mutató új ágens a klón törlése után nem
+  // indulna el (DEAD), ezért egyetlen útvonal sem hivatkozhat rá.
+  it('never points a rebuilt entry into the retired gg-mcp source clone', () => {
+    const out = withOwnGgIdentity(HTTP_COPY, 'bubi')
+    expect(JSON.stringify(out)).not.toContain('/home/gg/gg-mcp/')
   })
 
   it('normalises the remote entry to the canonical stdio shape', () => {
@@ -146,7 +160,7 @@ describe('withOwnGgIdentity — remote (HTTP/SSE) gg-access', () => {
       command: 'node',
       args: [GG_MCP_STDIO_ENTRY],
       env: {
-        GG_MCP_TOKEN_FILE: '/home/gg/gg-mcp/tokens/bubi.token',
+        GG_MCP_TOKEN_FILE: '/home/gg/.gg-mcp/tokens/bubi.token',
         GG_MCP_AGENT_LABEL: 'marveen/bubi',
       },
     })

@@ -22,8 +22,10 @@
 
 set -uo pipefail
 
-TOKEN_FILE="${GG_MCP_TOKEN_FILE:-/home/gg/gg-mcp/tokens/marveen.token}"
-PROXY="/home/gg/gg-mcp/dist/proxy.js"
+# IT-863 (2026-09-27): the flat install. The /home/gg/gg-mcp source clone is
+# retired -- a client needs only the bundle and its own token.
+TOKEN_FILE="${GG_MCP_TOKEN_FILE:-/home/gg/.gg-mcp/tokens/marveen.token}"
+PROXY="/home/gg/.gg-mcp/proxy.bundle.js"
 WHAT="${1:-mind}"
 TODAY="$(date +%F)"
 

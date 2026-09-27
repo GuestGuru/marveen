@@ -26,7 +26,7 @@
 # Env:
 #   GG_MCP_TOKEN_FILE   override the identity (default: from .mcp.json)
 #   GG_MCP_AGENT_LABEL  override the audit label (default: from .mcp.json)
-#   GG_MCP_PROXY        path to proxy.js (default: from .mcp.json)
+#   GG_MCP_PROXY        path to the proxy, ~/.gg-mcp/proxy.bundle.js (default: from .mcp.json)
 #   REPO_SLUG           owner/repo (default: GuestGuru/marveen)
 #   DRY_RUN=1           print what would happen, touch nothing remote
 
