@@ -67,13 +67,15 @@ gyökerében, ÉS megnöveli a "problems"-et:
 
 - **`ambient_token_trap`**: létrejött a `~/.gg-mcp/token`, ami a proxy
   HOME-alapértelmezése. Ezen a több-ágenses gépen ez KÖZÖS identitás: bárki, aki
-  `GG_MCP_TOKEN_FILE` nélkül hívja közvetlenül a `dist/proxy.js`-t, ennek a
+  `GG_MCP_TOKEN_FILE` nélkül hívja közvetlenül a `~/.gg-mcp/proxy.bundle.js`-t, ennek a
   tokennek a nevében ÉS JOGÁVAL fut. A `gg-mcp-proxy` wrapper fail-closed, de a
   közvetlen hívás megkerüli. Ez a 2026-08-13-i GG-559-eset visszanyílása lenne.
   **Ilyenkor NE ágenst keress** (a `findings` mind lehet `ok`): írj Tamásnak,
   hogy megjelent a fájl, mikor (`stat`), és hogy amíg ott van, minden shell-úti
   hívásnak explicit saját tokent kell adnia. A fájlt NE töröld magadtól, mert
   nem tudod, ki hozta létre és mire kell: ez `data_delete`, Tamás döntése.
+  ⚠️ Maga a `~/.gg-mcp/` KÖNYVTÁR (IT-863 óta) szándékosan létezik: abban él a
+  bundle és a `tokens/<ágens>.token` fájlok. Csak az egyes számú `token` fájl a csapda.
 
 - **`upstreams`** (2026-09-16 óta): a szolgáltatás oldala. Minden külön upstream
   URL-re, amit egy FUTÓ ágens deklarál, egy sor: `url`, `agents` (kik használják),
@@ -123,19 +125,21 @@ Ha van DEAD vagy STALE:
    mondja ki, hogy nincs `.git`. Külön üzenetben kellett pontosítanom. Ez ugyanaz a
    hibaosztály, mint egy megírt dologra azt mondani, hogy hiányzik: munkát és bizalmat
    is visz, mert a gazda egy megválaszolható kérdést lát megválaszolatlanul.
-   **A lokális mérés két sor, és a legtöbb esetben ELÉG** (a build a lokális forrásból
-   készül, tehát ami változott, annak az mtime-ja a build ideje):
-   ```bash
-   GGMCP="${GGMCP:-$HOME/gg-mcp}"   # a gg-mcp telepites gyokere
-   find "$GGMCP/src" -name '*.ts' -newermt '<a build napja> 00:00' -printf '%TH:%TM %p\n' | sort
-   grep -ohE '"(gg|gg3|sales|channex|github|sentry|gcp|irnok|wiki|slack)_[a-z_]+"' \
-     "$GGMCP/dist/tools/<a valtozott fajl>.js" | tr -d '"' | sort -u
+   **A mérés (IT-863, 2026-09-27 óta): ezen a gépen NINCS gg-mcp forrás.** A kliens
+   egyetlen fájl, a `~/.gg-mcp/proxy.bundle.js`, és a gg-mcp éles deployja
+   (`deploy-mcp.sh --uj-host`) minden alkalommal újraküldi. A bundle mtime-ja (a sor
+   `build_time`-ja) tehát az utolsó deploy ideje, a „mi változott" forrása pedig a
+   `GuestGuru/gg-mcp` `main` commit-története a session indulása és a build között,
+   a `github_request` toolon át:
    ```
-   Az első megmondja, MELYIK forrásfájl változott, a második, hogy jött-e ÚJ tool.
-   **A kettő együtt dönti el a sürgősséget:** új tool nélkül a kollégák semmit nem
-   vesznek észre a régi kódon, tehát a hajnali auto-restart bőven elég. Ha a lokális
-   mérés nem elég (pl. a forrás mtime-ja sem mozdult), akkor jön a skill 3. pontja,
-   a blob-hash összevetés a GitHub tree-vel.
+   https://api.github.com/repos/GuestGuru/gg-mcp/commits?sha=main&since=<session_started, ISO+02:00>&until=<build_time, ISO+02:00>&per_page=30
+   ```
+   A commit-üzenetek (IT-számmal) megmondják, mi változott; ha kétséges, jött-e ÚJ
+   tool, a `.../commits/<sha>` válaszában a `files[].filename` mutatja, nyúlt-e a
+   `src/tools/` alá. **Ez dönti el a sürgősséget:** új tool nélkül a kollégák semmit
+   nem vesznek észre a régi kódon, tehát a hajnali auto-restart bőven elég. Ha a
+   `github_request` nem hívható, ne keress kerülőutat: STALE → session-restart
+   javaslat (lent), és mondd ki, hogy a változás-listát nem tudtad lemérni.
 1. NE indítsd újra magadtól az ágenst. Egy restart munkát szakít meg, és sub-ágensnél idegen tulajdonos (pl. Péter) munkáját viszi el.
 2. Írj Tamásnak Telegramon (reply tool, chat_id 0): melyik ágens, milyen állapot, mióta (session_started), és mit jelent gyakorlatilag. DEAD-nél mondd ki, hogy az ágens most nem éri el a GG-rendszereket.
 3. Javasold a javítást: POST /api/agents/<nev>/restart {"fresh": true}. A fresh azért kell, mert a --channels plugin csak friss induláskor töltődik be megbízhatóan, continue-nál néma maradhat a bot.

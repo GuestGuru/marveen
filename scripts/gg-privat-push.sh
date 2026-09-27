@@ -18,7 +18,8 @@ REPO="${GG_PRIVATE_SKILLS:-$HOME/gg-agent-skills}"
 URL="https://x-access-token@github.com/GuestGuru/gg-agent-skills.git"
 TOKEN_FILE="${GG_MCP_TOKEN_FILE:-}"
 LABEL="${GG_MCP_AGENT_LABEL:-}"
-PROXY="${GG_MCP_PROXY:-$HOME/gg-mcp/dist/proxy.js}"
+# IT-863 (2026-09-27): a lapos telepítés bundle-je; a ~/gg-mcp forrásklón kivezetve.
+PROXY="${GG_MCP_PROXY:-$HOME/.gg-mcp/proxy.bundle.js}"
 
 # Az identitas a HIVOE. Sajat token, sajat label -- idegen token JOGCSERE.
 if [ -z "$TOKEN_FILE" ] || [ -z "$LABEL" ]; then

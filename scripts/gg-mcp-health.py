@@ -72,14 +72,30 @@ AGENTS_DIR = os.path.join(PROJECT_ROOT, "agents")
 # every proxy-mode agent DEAD -- the same false alarm this probe was fixed for
 # hours earlier, one shape further along. Whenever a new way to reach gg-mcp
 # appears, it belongs in this tuple before anyone is switched onto it.
-SERVER_NEEDLES = ("gg-mcp/dist/index.js", "gg-mcp/dist/proxy.js")
+#
+# .gg-mcp/proxy.bundle.js is the fourth (IT-863, 2026-09-27): the same proxy as
+# a single-file esbuild bundle, installed flat under ~/.gg-mcp. The
+# /home/gg/gg-mcp source clone the dist/ shapes lived in is retired -- a client
+# needs only the bundle and its token. The dist/ needles stay on purpose: a
+# rollback may bring that path back, and a probe that forgot it would call the
+# rolled-back fleet DEAD.
+SERVER_NEEDLES = ("gg-mcp/dist/index.js", "gg-mcp/dist/proxy.js", ".gg-mcp/proxy.bundle.js")
 # Kept for callers that predate the tuple; the direct server remains the default.
 SERVER_NEEDLE = SERVER_NEEDLES[0]
+# The subset that is PROXY mode (identity from GG_MCP_TOKEN_FILE). Matched on
+# the full needle, not a bare "proxy.js" substring: "proxy.bundle.js" does not
+# contain that, and a bundle agent with no token would have read `ok`.
+PROXY_NEEDLES = ("gg-mcp/dist/proxy.js", ".gg-mcp/proxy.bundle.js")
 
 
 def server_needle_in(text: str) -> str | None:
     """The gg-mcp server binary this cmdline/arg refers to, or None."""
     return next((n for n in SERVER_NEEDLES if n in text), None)
+
+
+def is_proxy_path(server_path: str | None) -> bool:
+    """Is this stdio server path the proxy (either shape), not the direct server?"""
+    return bool(server_path) and any(n in server_path for n in PROXY_NEEDLES)
 
 
 def _read(path: str) -> str:
@@ -426,7 +442,7 @@ def token_state(server_path: str | None, entry: dict | None) -> tuple[str | None
     is a live file and looks identical from here; the detail text says so rather
     than letting `ok` be read as "the token still works".
     """
-    if not server_path or "proxy.js" not in server_path:
+    if not is_proxy_path(server_path):
         return None, None, None
     path = token_file_for(entry)
     if not path:
@@ -637,6 +653,11 @@ def probe() -> dict:
 # machine, where several agents share one POSIX user, it would be an ambient
 # identity: every agent that invoked the bundle directly would silently become
 # whoever that token belongs to.
+#
+# Since IT-863 (2026-09-27) the ~/.gg-mcp DIRECTORY exists here on purpose: it
+# holds the bundle and the per-agent tokens/<agent>.token files. Only the
+# singular `token` file is the trap, and the installer deliberately never
+# writes it on this box.
 AMBIENT_TOKEN_PATH = os.path.join(os.path.expanduser("~"), ".gg-mcp", "token")
 
 
@@ -645,8 +666,9 @@ def ambient_token_trap() -> dict | None:
 
     Why this check exists (2026-08-13). The identity leak fixed that day lived
     in the `gg-mcp-proxy` wrapper, which is now fail-closed. But the wrapper is
-    only one of the two ways in: `node .../dist/proxy.js exec` skips it, and
-    proxy.ts still falls back to this path (src/proxy.ts, proxyDepsFromEnv).
+    only one of the two ways in: `node ~/.gg-mcp/proxy.bundle.js exec` (before
+    IT-863: `node .../dist/proxy.js exec`) skips it, and the proxy still falls
+    back to this path (src/proxy.ts, proxyDepsFromEnv).
 
     Today that fallback is harmless ONLY because the file does not exist -- a
     direct call without GG_MCP_TOKEN_FILE gets a quiet 401 instead of someone
@@ -665,7 +687,7 @@ def ambient_token_trap() -> dict | None:
         "why": (
             "A proxy HOME-alapertelmezese. Ezen a tobb-agenses gepen ez KOZOS "
             "identitas: barmelyik agens, aki GG_MCP_TOKEN_FILE nelkul hivja "
-            "kozvetlenul a dist/proxy.js-t, ennek a tokennek a nevesben es "
+            "kozvetlenul a ~/.gg-mcp/proxy.bundle.js-t, ennek a tokennek a nevesben es "
             "jogaval fut. A wrapper (gg-mcp-proxy) fail-closed, de a kozvetlen "
             "hivas megkeruli."
         ),
