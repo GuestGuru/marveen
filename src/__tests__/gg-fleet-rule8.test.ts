@@ -81,6 +81,8 @@ describe('ggFleetRule8: only your own gg-mcp token', () => {
   // generált szabály, ami a megszűnt útra mutat, minden ágensnek rossz receptet ad.
   it('names the direct shell-path entry by its current install path', () => {
     expect(rule).toContain('node ~/.gg-mcp/proxy.bundle.js exec')
+    // IT-863: the bundle's built-in upstream does not resolve on the fleet host
+    expect(rule).toContain('GG_MCP_UPSTREAM_URL')
     expect(rule).not.toContain('dist/proxy.js')
   })
 
