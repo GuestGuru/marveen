@@ -60,6 +60,7 @@ import { ensureMemoryRulesSection } from '../gg/memory-rules-section.js'
 // GG fork: fleet rules 7-8 as a MAINTAINED block, not a scaffold-time snapshot.
 import { ensureFleetRulesSection } from '../gg/fleet-rules-section.js'
 import { ensureSendReliabilitySection } from '../gg/send-reliability-section.js'
+import { ensureBrainRulesSection } from '../gg/brain-rules-section.js'
 import { schedulePluginUnlockAfterRespawn } from './channel-plugin-unlock.js'
 import { recordInjectedPrompt } from './injected-prompt-registry.js'
 import { getSecret } from './vault.js'
@@ -1444,6 +1445,9 @@ export async function startAgentProcess(name: string, opts: { fresh?: boolean } 
       { agentId: name, projectRoot: PROJECT_ROOT, dashboardOrigin: resolveDashboardOrigin(DASHBOARD_PUBLIC_URL, WEB_PORT, AGENT_API_ORIGIN), tokenPath: join(PROJECT_ROOT, 'store', '.dashboard-token') },
       atomicWriteFileSync,
     )
+    // GG fork 2026-09-30 (IT-1178): a céges agy használata -- mi megy a bot saját
+    // memóriájába és mi a céges agyba. See src/gg/brain-rules-section.ts.
+    ensureBrainRulesSection(agentDir(name), atomicWriteFileSync)
     // A sub-agent must load ONLY its own channel plugin. The user-scope
     // enabledPlugins would otherwise make EVERY sub-agent spawn a telegram
     // (and slack/discord) poller that falls back to the main agent's bot
