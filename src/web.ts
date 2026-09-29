@@ -14,6 +14,9 @@ import { json } from './web/http-helpers.js'
 import { detectLanIp } from './web/network-info.js'
 import { AGENTS_BASE_DIR, listAgentNames, listAllAgentNames } from './web/agent-config.js'
 import { ensureAgentHooks, ensureAgentStalenessHook, ensureAgentProvenanceHook, ensureEgressGate, ensureGovernanceGateCommands, ensureTelegramCopyGate, ensureQuarantineReader, watchEgressAllowlistForReaderRender, ensureDefaultScheduledTasks, agentSettingsPath, ensureAutonomySection, ensureSkillsPathTrapSection, ensureSystemDirectiveAuthSection } from './web/agent-scaffold.js'
+// GG fork (IT-1178): the brain-rules block reaches the main agent too.
+import { ensureBrainRulesSection } from './gg/brain-rules-section.js'
+import { atomicWriteFileSync } from './web/atomic-write.js'
 import { shouldRegisterHooks, pruneStaleHooksFromSettingsFile } from './web/hook-registration-guard.js'
 import { refreshMarveenBotUsername } from './web/telegram.js'
 import { startMessageRouter } from './web/message-router.js'
@@ -521,6 +524,9 @@ setInterval(() => { try { sweepExpiredDesktopLock() } catch { /* never kill the 
     ensureAutonomySection(MAIN_AGENT_ID)
     ensureSkillsPathTrapSection(MAIN_AGENT_ID)
     ensureSystemDirectiveAuthSection(MAIN_AGENT_ID)
+    // GG fork 2026-09-30 (IT-1178): a fő-agens kézi CLAUDE.md-je a céges agyról
+    // semmit nem mond, ezért a blokk ide is kell. See src/gg/brain-rules-section.ts.
+    ensureBrainRulesSection(PROJECT_ROOT, atomicWriteFileSync)
   }
 
   // Backfill the PreCompact hook into existing agents' settings.json so the
