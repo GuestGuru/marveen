@@ -87,3 +87,26 @@ describe('outgoing-copy gate tokenization: a suffix attached to a number is not 
     expect(probs[0]).toContain('a dokumentum es a melleklet')
   })
 })
+
+// GATEPCT930 (2026-09-30): a Hungarian suffix attached with a hyphen to a SYMBOL
+// (`80%-ot`) or to a CODE SPAN (`` `ok`-ot ``) left a bare `ot` fragment that the
+// dictionary read as the accent-stripped `öt`. Fourth false positive of the `ot`
+// class (jean msg 1913, plus the owner-facing DREAM.md on 09-30). The fix is the
+// TECHNICAL mask, not the dictionary: a bare `ot` in prose must still be caught.
+describe('outgoing-copy gate: symbol / code-span + hyphen suffix (GATEPCT930)', () => {
+  const lead = 'Megírtam, de előbb egy javítás: a ki-be kapcsolást, amit az előbb javasoltam, kimértem, és nem működne. Visszavonom.\n\n' +
+    'A mérés néhány lakás elmúlt évének foglalásain ment. Egy lakás pár hét alatt csak kevés foglalást kap, ezért az érték hétről hétre kb. '
+  const tail = ' ingadozik. Így csak a nagy hatás látszana. Ezt mérés nélkül javasoltam, hiba volt.'
+
+  it('a percent sign with a hyphenated suffix passes', () => {
+    expect(auditAccent(lead + '±80%-ot' + tail)).toEqual([])
+  })
+
+  it('positive control: a bare accent-stripped word in the same sentence is still caught', () => {
+    expect(auditAccent(lead + 'ot' + tail).length).toBe(1)
+  })
+
+  it('a double-backtick code span holding a suffixed inline code passes', () => {
+    expect(auditAccent('Mindkét tétel ugyanaz: a `` `ok`-ot `` ragozás, amit a kapu hibának látott, pedig a szöveg helyes volt, és nem kell rajta javítani.')).toEqual([])
+  })
+})
