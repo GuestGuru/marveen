@@ -806,10 +806,20 @@ def _hit_context(prose: str, pos: int, length: int) -> str:
 # szet, amit a szotar hibanak lat -- pedig ott toldalek, nem szo. A javitas nem a szotarbol
 # vesz ki (az elrontana a valodi talalatokat is), hanem a technikai regiokat
 # vagja ki a vizsgalt szovegbol. A gondolatjel- es nev-ellenorzes NEM ezen fut.
+# GATEPCT930 (2026-09-30), OTODIK a toldalek-sorozatban: a toldalek NEM BETUHOZ es
+# NEM SZAMHOZ, hanem JELHEZ vagy KOD-SPANHOZ kapcsolodik kotojellel. (1) jean msg 1913:
+# `kb. ±80%-ot ingadozik` -- a `%` se betu, se szam, igy egyik fenti szabaly sem fogta,
+# es a maradek `ot` -> `öt` javaslatot kapott. (2) a sajat DREAM.md-m 09-30 02:10-kor:
+# egy kod-span utan kotojellel ragozott alak (`ok`-ot), illetve a DUPLA backtickes span,
+# amit az egyszeru `[^`]*` parositas rosszul bont, es a `-ot` darab kiesik belole.
+# A javitas itt is a MASZK, nem a szotar: a jel/kod-span + kotojeles toldalek egyben
+# technikai regio. Az onallo `ot` prozaban tovabbra is bukik (teszt vedi).
 TECHNICAL = re.compile(
     r"""https?://\S+                # URL
       | [\w.+-]+@[\w-]+\.[\w.]+     # email
-      | `[^`]*`                     # kod-span
+      | ``.+?``(?:-[^\W\d_]+)?      # dupla backtickes kod-span (+ toldalek)
+      | `[^`]*`(?:-[^\W\d_]+)?       # kod-span (+ kotojeles toldalek: `ok`-ot)
+      | [%‰°€$£]-[^\W\d_]+          # jel + magyar toldalek (80%-ot, 30°-os)
       | \b\w+(?:_\w+)+\b            # snake_case azonosito
       | \b\w+\.[A-Za-z]{2,10}\b     # fajlnev / domain (video.mp4, marveen.io)
       | \b[\w-]*/[\w/-]+            # utvonal / slug
