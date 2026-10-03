@@ -36,7 +36,8 @@ kötni), akkor:
 Jelenleg módosított upstream fájljaink (ezekre számíts konfliktusra): `install-linux.sh`,
 `src/web/routes/agents.ts`, `src/web/update-checker.ts`, `scripts/hooks/ledger*.py`,
 `src/web.ts` és `src/web/agent-process.ts` (az `ensure*Section` bekötések) (kiegészítve
-2026-09-30, IT-1178).
+2026-09-30, IT-1178); a `src/web.ts` hook-ágában az `ensureBrainPromotionForFleet` hívás is (2026-10-03, IT-1289,
+lásd `docs/gg-brain-promotion.md`).
 
 ---
 
