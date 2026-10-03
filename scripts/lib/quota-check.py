@@ -10,17 +10,102 @@ exits 2 at parse time and Linux CI (bash >= 4) is structurally blind to it
 (measured on the PR #1080 verify). With the body in its own file the
 hazard class is gone and comments may use normal punctuation.
 """
-import json, os, time
+import json, os, sys, time
+
+# The ONE place the staleness window is decided for the measured quota path.
+# limit-monitor.sh used to carry its own copy of the default; it no longer does,
+# so these two numbers cannot drift apart from the code that enforces them.
+DEFAULT_MAX_AGE_SEC = 21600
+
+# QUOTAFELSOHATAR910. The guard had a floor but no CEILING, and the missing side
+# is the dangerous one: too small only makes a fresh reading look stale (loud,
+# harmless), while too large makes a DEAD reading look fresh -- the strip shows
+# a confident green for a weeks-old number and the monitor stays quiet. Measured
+# on 2026-09-10: a 30-day-old reading with QUOTA_MAX_AGE_SEC=216000000 produced
+# NO output at all, i.e. one mistyped zero silently switches the guard off.
+# Where 604800 comes from, stated as what it actually is -- OUR operating
+# decision, not a claim about the provider's product. This monitor tracks
+# exactly two windows, and they are the two its own writer produces:
+# statusline-ratelimit.sh writes rate_limits.five_hour and rate_limits.seven_day,
+# and the loop below reads those same two. Seven days is therefore the longest
+# window WE HAVE A NUMBER FOR, so a reading older than that cannot be checked
+# against anything we track, whatever the config claims. Whether some longer
+# window exists upstream is not measured here and the ceiling does not depend
+# on it: past a week the reading is unusable for this monitor either way.
+MAX_AGE_CEILING_SEC = 604800
+
+
+def resolve_max_age(raw):
+    """Return (seconds, note). A note means the value was rejected.
+
+    Rejected values fall back to the default and SAY SO on stderr (the monitor
+    logs it). Silently repairing a bad config would keep exactly the silence
+    this guard exists to remove: the operator would go on believing the number
+    they typed is the number in force.
+    """
+    if raw is None or raw.strip() == "":
+        return DEFAULT_MAX_AGE_SEC, None
+    try:
+        value = int(raw)
+    except ValueError:
+        return DEFAULT_MAX_AGE_SEC, (
+            "QUOTA_MAX_AGE_SEC=%r nem szam, ezert nem hasznalom; helyette a default %d masodperc"
+            % (raw, DEFAULT_MAX_AGE_SEC))
+    if value <= 0:
+        return DEFAULT_MAX_AGE_SEC, (
+            "QUOTA_MAX_AGE_SEC=%d nem pozitiv, ezert nem hasznalom; helyette a default %d masodperc"
+            % (value, DEFAULT_MAX_AGE_SEC))
+    if value > MAX_AGE_CEILING_SEC:
+        return DEFAULT_MAX_AGE_SEC, (
+            "QUOTA_MAX_AGE_SEC=%d nagyobb a %d masodperces felso hatarnal (a leghosszabb ablak, amit ez a monitor kovet), "
+            "ezert nem hasznalom; helyette a default %d masodperc"
+            % (value, MAX_AGE_CEILING_SEC, DEFAULT_MAX_AGE_SEC))
+    return value, None
+
 
 path = os.environ["QUOTA_FILE"]
 warn = float(os.environ["QUOTA_WARN_PCT"])
-max_age = int(os.environ["QUOTA_MAX_AGE_SEC"])
+max_age, max_age_note = resolve_max_age(os.environ.get("QUOTA_MAX_AGE_SEC"))
+if max_age_note:
+    # stderr, not stdout: stdout carries the single STALE / EXPIRED / HIT line
+    # the monitor parses, and a second line there would break its `case`.
+    print(max_age_note, file=sys.stderr)
 try:
     d = json.load(open(path))
 except Exception:
     raise SystemExit(0)
 
-age = int(time.time()) - int(d.get("written_at") or 0)
+
+
+def reading_age(d, now):
+    """Return (age_seconds, None), or (None, reason) when there is no usable stamp.
+
+    This used to be `now - int(d.get("written_at") or 0)`, so a missing, null or
+    zero stamp became an age counted from 1970 -- "STALE 1790511588", about 56
+    years, printed exactly like a genuinely old reading. The log could not tell
+    "the writer never stamped this file" from "this file is very old", and those
+    have different fixes. A non-numeric stamp or a non-object file raised a
+    traceback instead. All of them are now one distinct, named outcome.
+    """
+    if not isinstance(d, dict):
+        return None, "a fajl nem JSON objektum (%s)" % type(d).__name__
+    if "written_at" not in d or d["written_at"] is None:
+        return None, "nincs written_at"
+    ts = d["written_at"]
+    # bool is an int subclass: True would pass as the stamp 1.
+    if isinstance(ts, bool) or not isinstance(ts, (int, float)):
+        return None, "written_at nem szam: %r" % (ts,)
+    if ts <= 0:
+        return None, "written_at nem pozitiv: %r" % (ts,)
+    return int(now) - int(ts), None
+
+
+age, no_stamp = reading_age(d, time.time())
+if no_stamp:
+    # Still a STALE line, so the measured path is skipped exactly as before, but
+    # the second field is a word, never a number: it cannot be read as an age.
+    print("STALE\tnostamp\t%s" % no_stamp)
+    raise SystemExit(0)
 if age > max_age:
     print("STALE\t%d" % age)
     raise SystemExit(0)

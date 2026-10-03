@@ -108,13 +108,15 @@ describe('decideTaskTimeout: the stall rule', () => {
 
   it('progress does not defeat eviction or the idle clear', () => {
     const fresh = { ...entry, stalledSince: MAX_TRACK }
-    expect(decideTaskTimeout(fresh, 'busy', MAX_TRACK, OPTS)).toBe('clear')
+    // GG fork (v1.40.0 merge): upstream renamed the terminal decisions -- eviction is
+    // 'abandoned', idle after a seen turn is 'done'. The behaviour pinned here is unchanged.
+    expect(decideTaskTimeout(fresh, 'busy', MAX_TRACK, OPTS)).toBe('abandoned')
     // Upstream v1.36 split the idle branch on `sawTurn`: idle+sawTurn is a task
     // that RAN and finished (clear), idle without it past the grace window is a
     // prompt that was never picked up (lost). The GG stall rule is orthogonal --
     // what this line pins is that PROGRESS does not defeat the idle clear, so it
     // has to describe a task that actually ran.
-    expect(decideTaskTimeout({ ...entry, sawTurn: true, stalledSince: 0 }, 'idle', 9 * MIN, OPTS)).toBe('clear')
+    expect(decideTaskTimeout({ ...entry, sawTurn: true, stalledSince: 0 }, 'idle', 9 * MIN, OPTS)).toBe('done')
     // And the new upstream case, pinned here so a later merge cannot silently
     // undo it: idle, never saw a turn, past grace -> the delivery is gone.
     expect(decideTaskTimeout({ ...entry, stalledSince: 0 }, 'idle', 9 * MIN, OPTS)).toBe('lost')

@@ -58,7 +58,7 @@ export function ggFleetRule7({ botName, mainAgentId, ownerName }: FleetRuleIdent
     `automatikus bejelentkezés vagy saját jelszó/credential kezelése, (b) böngésző-automatizálás ` +
     `vagy scraper olyan rendszeren, amihez a gg-mcp nem ad kulcsot. Ilyenkor jelezd a ` +
     `${botName} Főnöknek (${mainAgentId}) inter-agent üzenettel, ő koordinálja és ` +
-    `${ownerName}-val egyezteti (a 4. szabály szellemében). Credential-t SOHA ne égess nyersen ` +
+    `${ownerName}-val egyezteti. Credential-t SOHA ne égess nyersen ` +
     `kódba; a gg-mcp-ből kapott kulcsot mindig a \`gg-mcp-proxy exec\` env-jén át vedd, sose írd ` +
     `fájlba és sose a beszélgetésbe. A kapott kulcs hatóköre lehet SZÉLESEBB, mint a feladatod ` +
     `(a Drive-token például megosztani is tud) -- a szűkítés innentől a te ítélőképességed, nem ` +

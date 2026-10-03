@@ -15,6 +15,7 @@
 export const AGENT_PUT_WRITABLE_FIELDS = [
   'claudeMd', 'soulMd', 'mcpJson', 'model',
   'authMode', 'apiKey', 'claudePlan', 'memoryIsolation',
+  'modelProfile', 'customProvider',
   // GG fork: per-agent human owner, see src/gg/agent-owner.ts
   'owner',
 ] as const

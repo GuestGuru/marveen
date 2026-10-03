@@ -145,6 +145,13 @@ def config(state=None):
 
 def channel_dir(agent):
     if agent == MAIN_AGENT:
+        # #915: env override, then install-scoped once migrated, then legacy shared.
+        d = os.environ.get("TELEGRAM_STATE_DIR")
+        if d:
+            return d
+        inst = os.path.join(ROOT, ".claude", "channels", "telegram")
+        if os.path.isfile(os.path.join(inst, ".env")):
+            return inst
         return os.path.expanduser("~/.claude/channels/telegram")
     return os.path.join(ROOT, "agents", agent, ".claude", "channels", "telegram")
 
@@ -186,7 +193,10 @@ def session_alive(agent):
     try:
         return subprocess.run(["tmux", "has-session", "-t", tmux_session(agent)],
                               capture_output=True, timeout=5).returncode == 0
-    except Exception:
+    except Exception as exc:
+        # SILENTOLLAMA926: a missing tmux binary made every session look dead
+        # with no line anywhere; name it (the log() sink is the script's own).
+        log(f"tmux has-session failed for {agent}: {type(exc).__name__}: {exc}")
         return False
 
 
@@ -245,7 +255,8 @@ def status_line(agent):
         out = subprocess.run(
             ["tmux", "capture-pane", "-p", "-t", session],
             capture_output=True, text=True, timeout=5).stdout
-    except Exception:
+    except Exception as exc:
+        log(f"tmux capture-pane failed for {session}: {type(exc).__name__}: {exc}")
         return None
     return classify_pane(out)
 
