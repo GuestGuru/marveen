@@ -87,6 +87,7 @@ describe('the promotion prompt', () => {
     expect(p).toContain('`marveen-jean-mem-<id>`')
     expect(p).toContain('`jovahagyta`-t ne adj meg')
     expect(p).toContain('A gazdádnak NE írj')
+    expect(p).toContain('Magáról a körről se írj memóriát')
     expect(p).toContain('marveen-átemelés')
   })
 

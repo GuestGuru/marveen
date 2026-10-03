@@ -154,6 +154,8 @@ export function buildBrainPromotionPrompt({ agent, projectRoot }: BrainPromotion
     '  rákérdez, a `status` megmutatja, mit vittél át:',
     `  \`${cli} status --agent ${agent}\`. Ha egyet nem kér, a CLAUDE.md visszavonási szabálya szerint vond vissza.`,
     '- A saját memóriádba ne írj mutatót és ne módosíts tételt: hogy mi kész, azt a `done` vezeti.',
+    '  Magáról a körről se írj memóriát, napló-bejegyzést vagy skill-jegyzetet: rutinfeladat, a',
+    '  `status` a naplója (mérve 2026-10-03: az első kör után egy `hot` „skip-skill” sor keletkezett).',
     '- Másik bot tételét ne emeld át: az ő gazdája nevében neki kell.',
   ].join('\n') + '\n'
 }
