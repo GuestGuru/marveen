@@ -28,14 +28,14 @@ beforeEach(() => {
 describe('updateMemory owner guard', () => {
   it('writes when the guard names the real owner', () => {
     const { id } = saveAgentMemory('guard-owner', 'Original', 'warm', 'k')
-    expect(updateMemory(id, 'Rewritten', undefined, undefined, undefined, 'guard-owner')).toBe(true)
+    expect(updateMemory(id, 'Rewritten', undefined, undefined, undefined, undefined, 'guard-owner')).toBe(true)
     expect(getAgentMemories('guard-owner', 50).find(m => m.id === id)?.content).toBe('Rewritten')
   })
 
   it('refuses the write when the guard names someone else, and leaves the row untouched', () => {
     const { id } = saveAgentMemory('guard-victim', 'Victim content', 'warm', 'k')
     // The typo: another agent aimed at its own id and hit this one instead.
-    expect(updateMemory(id, 'Clobbered', undefined, undefined, undefined, 'guard-typist')).toBe(false)
+    expect(updateMemory(id, 'Clobbered', undefined, undefined, undefined, undefined, 'guard-typist')).toBe(false)
     expect(getAgentMemories('guard-victim', 50).find(m => m.id === id)?.content).toBe('Victim content')
   })
 
@@ -43,7 +43,7 @@ describe('updateMemory owner guard', () => {
     const { id } = saveAgentMemory('guard-victim2', 'Still mine', 'warm', 'k')
     // Same call the dashboard makes on a real edit: agent_id present, meaning
     // "reassign". Without the guard this both overwrites AND steals the row.
-    expect(updateMemory(id, 'Clobbered', 'cold', 'guard-typist2', 'k2', 'guard-typist2')).toBe(false)
+    expect(updateMemory(id, 'Clobbered', 'cold', 'guard-typist2', 'k2', undefined, 'guard-typist2')).toBe(false)
     expect(getAgentMemories('guard-victim2', 50).find(m => m.id === id)?.content).toBe('Still mine')
     expect(getAgentMemories('guard-typist2', 50).find(m => m.id === id)).toBeUndefined()
   })
@@ -64,7 +64,7 @@ describe('updateMemory owner guard', () => {
 describe('updateMemory without content', () => {
   it('moves the tier and leaves the content untouched', () => {
     const { id } = saveAgentMemory('tier-mover', 'Closed decision, full text', 'hot', 'k')
-    expect(updateMemory(id, undefined, 'cold', undefined, undefined, 'tier-mover')).toBe(true)
+    expect(updateMemory(id, undefined, 'cold', undefined, undefined, undefined, 'tier-mover')).toBe(true)
     const row = getAgentMemories('tier-mover', 50).find(m => m.id === id)
     expect(row?.content).toBe('Closed decision, full text')
     expect(row?.category).toBe('cold')
@@ -72,7 +72,7 @@ describe('updateMemory without content', () => {
 
   it('still rewrites the content when one is given', () => {
     const { id } = saveAgentMemory('tier-mover', 'Before', 'hot', 'k')
-    expect(updateMemory(id, 'After', 'cold', undefined, undefined, 'tier-mover')).toBe(true)
+    expect(updateMemory(id, 'After', 'cold', undefined, undefined, undefined, 'tier-mover')).toBe(true)
     const row = getAgentMemories('tier-mover', 50).find(m => m.id === id)
     expect(row?.content).toBe('After')
     expect(row?.category).toBe('cold')
@@ -80,7 +80,7 @@ describe('updateMemory without content', () => {
 
   it('keeps honouring the owner guard on a tier-only edit', () => {
     const { id } = saveAgentMemory('tier-victim', 'Victim content', 'hot', 'k')
-    expect(updateMemory(id, undefined, 'cold', undefined, undefined, 'tier-typist')).toBe(false)
+    expect(updateMemory(id, undefined, 'cold', undefined, undefined, undefined, 'tier-typist')).toBe(false)
     const row = getAgentMemories('tier-victim', 50).find(m => m.id === id)
     expect(row?.content).toBe('Victim content')
     expect(row?.category).toBe('hot')

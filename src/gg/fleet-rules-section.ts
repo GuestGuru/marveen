@@ -35,15 +35,23 @@ export const FLEET_RULES_BLOCK_RE = new RegExp(
   `${escape(FLEET_RULES_BEGIN)}[\\s\\S]*?${escape(FLEET_RULES_END)}`,
 )
 
+const stripListNumber = (rule: string): string => rule.replace(/^\d+\. /, '- ')
+
 export function buildFleetRulesBody(identity: FleetRule8Identity): string {
   return [
     '## Flotta-szabályok, amiket a rendszer tart karban',
     '',
-    'Ez a két szabály a legutóbbi indulásodkor generálódott, tehát ez a MÉRVADÓ szövegük.',
-    'Ha a fenti, kézzel írt részben régebbi megfogalmazás szerepel, EZT vedd figyelembe.',
+    'Ez a két szabály (a gg-mcp mint kontroll, és a saját MCP token) a legutóbbi indulásodkor',
+    'generálódott, tehát ez a MÉRVADÓ szövegük. Ha a fenti, kézzel írt listában UGYANERRŐL a két',
+    'témáról régebbi megfogalmazás szerepel, EZT vedd figyelembe; a lista többi pontját ez nem írja felül.',
     '',
-    ggFleetRule7(identity),
-    ggFleetRule8(identity),
+    // GG fork (upstream v1.40.0 merge): no list numbers here. Upstream renumbered
+    // its fleet list (its 7 and 8 are now draft-only and flag-and-wait), so a
+    // numbered "7." in this block would read as overriding a different rule in
+    // agents generated after the merge, while older agents still carry the old
+    // numbering. The block names its two rules by topic instead.
+    stripListNumber(ggFleetRule7(identity)),
+    stripListNumber(ggFleetRule8(identity)),
   ].join('\n')
 }
 

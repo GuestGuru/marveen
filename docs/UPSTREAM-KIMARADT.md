@@ -1,5 +1,25 @@
 # Ami az upstream-atvetelbol KIMARADT, es miert
 
+## v1.40.0 átvétel (2026-10-03): a `.github/workflows/test.yml` bővítése
+
+Az upstream kilenc új CI-lépést tett a `test.yml`-be (egress-drift-scan, dash-audit-scan,
+mio-orszem-precheck, memory-link-audit, keepalive-probe-install, morning-stamp-gate,
+morning-timer-park, userbot-arming-gate, supabase-q-token-hiding). A fájl a mi
+változatunkon maradt, mert a push-token `workflow` scope nélkül nem írhat
+`.github/workflows/` alá (lásd `gg-fork-push-lanc`, MEGHALADOTT A FAL). A tesztek
+maguk bent vannak, csak a CI nem futtatja őket. Pótlás: a gazda commitolja a
+`git show v1.40.0:.github/workflows/test.yml` tartalmát.
+
+A `scripts/__tests__/morning-stamp-gate.test.sh` sem jött át: az upstream napindító
+sentinel-sort vár a `-p` futástól (MORNING_SENT_OK), a mi `morning-briefing.sh`-nk viszont
+a szöveget kéri el, és maga küldi Bot API-val. Nálunk a napi pecsét csak a Bot API
+`"ok":true` válasza után íródik, ami közvetlen kézbesítési bizonyíték, tehát a teszt
+egy olyan kódutat mérne, ami ebben a forkban nincs.
+
+Ugyanebben az átvételben az upstream történet újraíródott: a `v1.38.0` új gyökér-commit,
+a v1.37.0-val nincs közös őse. A merge explicit háromutas volt, a `v1.37.0` bázissal
+(`git read-tree -m -u v1.37.0 HEAD v1.40.0`). Innentől a közös ős a `v1.40.0`.
+
 ## Piros baseline: két bukó teszt a HEAD-en (mérve 2026-09-10)
 
 A teljes suite ezen a napon **2 failed / 393 passed** (5046 teszt zöld, 1 skipped).
