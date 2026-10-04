@@ -1,7 +1,7 @@
 import http from 'node:http'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { tmpdir } from 'node:os'
+import { homedir, tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { runLsof } from './lsof.js'
 import { PROJECT_ROOT, WEB_HOST, DASHBOARD_PUBLIC_URL, DASHBOARD_ALLOWED_ORIGINS, MAIN_AGENT_ID } from './config.js'
@@ -12,10 +12,11 @@ import { sweepExpiredDeviceKeys } from './web/auth-device-keys.js'
 import { isBlockedCrossOriginWrite, originMatchesServedHost } from './web/csrf-origin.js'
 import { json } from './web/http-helpers.js'
 import { detectLanIp } from './web/network-info.js'
-import { AGENTS_BASE_DIR, listAgentNames, listAllAgentNames } from './web/agent-config.js'
+import { AGENTS_BASE_DIR, agentDir, listAgentNames, listAllAgentNames } from './web/agent-config.js'
 import { ensureAgentHooks, ensureProjectRootInClaudeMd, ensureAgentStalenessHook, ensureAgentProvenanceHook, ensureEgressGate, ensureBashEgressDeny, ensureBashEgressParser, ensureGovernanceGateCommands, ensureTelegramCopyGate, ensureQuarantineReader, watchEgressAllowlistForReaderRender, ensureDefaultScheduledTasks, agentSettingsPath, ensureAutonomySection, ensureSkillsPathTrapSection, ensureSystemDirectiveAuthSection, ensureMemorySearchLabelSection, ensureFleetAuthSection, ensureEvidenceSection, ensureMcpListChannelSection, ensureMessageCloseSection } from './web/agent-scaffold.js'
 // GG fork (IT-1178): the brain-rules block reaches the main agent too.
 import { ensureBrainRulesSection } from './gg/brain-rules-section.js'
+import { ensureBrainPromotionForFleet } from './gg/brain-promotion-fleet.js'
 import { atomicWriteFileSync } from './web/atomic-write.js'
 import { shouldRegisterHooks, pruneStaleHooksFromSettingsFile } from './web/hook-registration-guard.js'
 import { mainAgentConfigDirIfSeparate } from './web/agent-process.js'
@@ -670,6 +671,20 @@ setInterval(() => { try { sweepExpiredDesktopLock() } catch { /* never kill the 
       if (bashParserPatched.length) logger.info({ patched: bashParserPatched }, 'bash-egress-parser Bash hook backfilled into agent settings.json (EGRESSPARSER923)')
       if (govPatched.length) logger.info({ patched: govPatched }, 'governance gate hook commands upgraded to absolute node path in agent settings.json')
       if (copyGatePatched.length) logger.info({ patched: copyGatePatched }, 'outgoing-copy-gate wired onto the Telegram send tools in agent settings.json (GATECOPY828)')
+      // GG fork 2026-10-03 (IT-1289): botonkénti éjszakai átemelő kör a céges agyba +
+      // a PreCompact-prompt shared-sora. Itt, a hook-regisztráció ágában, mert egy
+      // worktree/sandbox példány se a közös feladatokat, se a settingset ne írja.
+      // See src/gg/brain-promotion-fleet.ts.
+      const brainPromotion = ensureBrainPromotionForFleet({
+        mainAgentId: MAIN_AGENT_ID,
+        subAgents: listAgentNames(),
+        projectRoot: PROJECT_ROOT,
+        scheduledTasksDir: join(homedir(), '.claude', 'scheduled-tasks'),
+        settingsPathFor: agentSettingsPath,
+        agentDirFor: agentDir,
+        atomicWrite: atomicWriteFileSync,
+      })
+      if (brainPromotion.tasks.length || brainPromotion.notes.length) logger.info(brainPromotion, 'brain-promotion tasks and PreCompact note ensured (IT-1289)')
     } catch (err) {
       logger.warn({ err }, 'Agent hook backfill skipped')
     }

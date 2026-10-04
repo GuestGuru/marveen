@@ -218,7 +218,7 @@ tail -30 store/morning.log | grep -n "$(date +'%a %b %e')"
   maradt le (a Dream Engine 5 bucketje), tehát elég volt azt pótolni (msg 573).
   Ha ezt kihagyod, dupla napindítót küldesz. A log a leggyorsabb és egyetlen
   megbízható forrás, mert a Telegram Bot API nem ad előzményt.
-  ⚠️ **A tail HÁROMFÉLE kimenetet ad, és a különbség dönti el a teendőt:**
+  ⚠️ **A tail NÉGYFÉLE kimenetet ad, és a különbség dönti el a teendőt:**
   (a) a `=== Reggeli napindító <ma> ===` fejléc alatt ÉRDEMI sor áll (msg id,
   összefoglaló) -> a `-p` session kiküldte, csak a hiányzó szekciót pótold;
   (b) a fejléc alatt közvetlenül `Execution error` áll, majd a `=== Kész ===`
@@ -236,6 +236,29 @@ tail -30 store/morning.log | grep -n "$(date +'%a %b %e')"
   `.mcp.json`-ra és az `enabledPlugins`-re tett állítása a `-p` sessionre igaz,
   a tiédre nem; ugyanabban a percben nálam a `gg-napi-forras.sh` és a
   `mcp__plugin_telegram_telegram__reply` is hibátlanul ment (msg 588).
+
+  (d) 2026-09-30: a fejléc alatt KÖZVETLENÜL a `=== Kész ===` sor áll, se
+  szöveg, se `KAPU`, se `KIKULDVE`. Ez a (b) néma rokona: semmi nem ment ki, a
+  TELJES napindító a tiéd. Mért ok aznap: a dashboard `channel-poller-reap`-je
+  (periodikus, kb. 10 percenként) a `--channels` kapcsolóval indított `-p`
+  sessiont árva csatorna-processznek nézte és kilőtte (`journalctl --user`:
+  `Killed ... --channels`, `dashboard.log`: `periodic reap removed detached
+  channel-claude orphans` ugyanabban a másodpercben). Csak akkor jön elő, ha a
+  reap épp a 07:27-07:30 ablakba esik. Javaslat a gazdánál: a `--channels`
+  kivétele a `morning-briefing.sh`-ból (msg 991).
+  **Második mért eset: 2026-10-02**, ugyanez a minta (`Killed` és `periodic reap` is
+  07:29:17-kor), a teljes napindító kézzel ment ki (msg 1012). 09-30 óta három reggelből kettő (10-01 kiment, msg 992),
+  tehát nem ritka kivétel: a (d) ágra minden reggel számíts, amíg a kapcsoló bent van.
+  A felismerés egy parancs: `journalctl --user --since 07:26 --until 07:31 | grep Killed`.
+
+  (e) 2026-10-03: a szöveg elkészült, `KAPU: tiszta`, de alatta
+  `KULDESI HIBA: ... "message is too long"` áll. A Telegram 4096 karakteres
+  korlátja: a napindító 4961 karakter volt (hosszú AI-hírek), a Bot API az egészet
+  visszadobta, semmi nem ment ki. A szöveg viszont KÉSZ a naplóban: vágd ki
+  (`sed -n "/=== Reggeli napindító <ma>/,/KAPU/p"`), bontsd két részre szekcióhatáron
+  (az `🤖 AI hírek` előtt), kapu mindkettőre, és két reply-üzenetben küldd (msg
+  1013+1014). A valódi javítás a `morning-briefing.sh` küldő ágában a darabolás
+  (102. sor körül), ez gazda-döntés.
 
   ⚠️ **2026-08-22 ÓTA A (c) MÁR NEM AZ ALAPESET -- a szkriptes út MŰKÖDIK.**
   Három egymást követő reggel ment ki sikeresen a systemd + Bot API úton:

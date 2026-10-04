@@ -36,7 +36,8 @@ kötni), akkor:
 Jelenleg módosított upstream fájljaink (ezekre számíts konfliktusra): `install-linux.sh`,
 `src/web/routes/agents.ts`, `src/web/update-checker.ts`, `scripts/hooks/ledger*.py`,
 `src/web.ts` és `src/web/agent-process.ts` (az `ensure*Section` bekötések) (kiegészítve
-2026-09-30, IT-1178).
+2026-09-30, IT-1178); a `src/web.ts` hook-ágában az `ensureBrainPromotionForFleet` hívás is (2026-10-03, IT-1289,
+lásd `docs/gg-brain-promotion.md`).
 
 ---
 
@@ -57,8 +58,15 @@ semmi" — mert a szerver a `main`-t húzza, ami közben nem mozdult.
 A teljes lánc tehát:
 
 ```
-feature branch → develop → main → (szerveren) update.sh
+feature branch → PR → develop → PR → main → gg-mcp-deploy/deploy/update-marveen.sh --ag main
 ```
+
+A GG-hoszton a fenti wrapper a frissítési belépő: visszateszi a verziózott GG settings-overlayt,
+és alapból buildel, majd újraindít. Az upstream `update.sh` önmagában nem kezeli ezt az overlayt
+(ellenőrizve: 2026-10-04, IT-1292). A `--nincs-restart` a buildet is kihagyja. Csak generált
+feladatprompt módosításakor külön, ellenőrzött `--ff-only` frissítés + build + az érintett
+`ensure*` generátor futtatása is elég, ha a futó szolgáltatás memóriában tartott kódja nem
+változik; előtte és utána ellenőrizni kell a settings-overlay és a futó állapot változatlanságát.
 
 ---
 
