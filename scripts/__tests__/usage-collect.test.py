@@ -804,6 +804,13 @@ class TestClaudeTokenSources(unittest.TestCase):
     KEYCHAIN_PAYLOAD = json.dumps({"claudeAiOauth": {"accessToken": "keychain-tok"}})
 
     def setUp(self):
+        # A teszt soha ne olvassa a futtató valódi hitelesítő fájlját.
+        self._credential_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self._credential_dir.cleanup)
+        credential_path = os.path.join(self._credential_dir.name, "credentials.json")
+        expanduser = patch.object(uc.os.path, "expanduser", return_value=credential_path)
+        expanduser.start()
+        self.addCleanup(expanduser.stop)
         self._tmp = tempfile.NamedTemporaryFile("w", suffix=".env", delete=False)
         self._tmp.write("CLAUDE_CODE_OAUTH_TOKEN=env-tok\n")
         self._tmp.close()

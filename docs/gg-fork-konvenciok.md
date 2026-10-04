@@ -58,8 +58,15 @@ semmi" — mert a szerver a `main`-t húzza, ami közben nem mozdult.
 A teljes lánc tehát:
 
 ```
-feature branch → develop → main → (szerveren) update.sh
+feature branch → PR → develop → PR → main → gg-mcp-deploy/deploy/update-marveen.sh --ag main
 ```
+
+A GG-hoszton a fenti wrapper a frissítési belépő: visszateszi a verziózott GG settings-overlayt,
+és alapból buildel, majd újraindít. Az upstream `update.sh` önmagában nem kezeli ezt az overlayt
+(ellenőrizve: 2026-10-04, IT-1292). A `--nincs-restart` a buildet is kihagyja. Csak generált
+feladatprompt módosításakor külön, ellenőrzött `--ff-only` frissítés + build + az érintett
+`ensure*` generátor futtatása is elég, ha a futó szolgáltatás memóriában tartott kódja nem
+változik; előtte és utána ellenőrizni kell a settings-overlay és a futó állapot változatlanságát.
 
 ---
 
