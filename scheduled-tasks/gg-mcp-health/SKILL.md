@@ -141,6 +141,19 @@ Ha van DEAD vagy STALE:
    `github_request` nem hívható, ne keress kerülőutat: STALE → session-restart
    javaslat (lent), és mondd ki, hogy a változás-listát nem tudtad lemérni.
 1. NE indítsd újra magadtól az ágenst. Egy restart munkát szakít meg, és sub-ágensnél idegen tulajdonos (pl. Péter) munkáját viszi el.
+   🔴 **STALE-nél ÜZENET CSAK AKKOR MEGY, ha a 0. pont mérése szerint a kollégák valamit
+   NEM érnek el a régi kódon (új tool, vagy olyan javítás, ami ezen a gépen hibát old meg).**
+   Ha nincs új tool, a változás nem érinti a futó flottát (pl. csak Windows-javítás), és a
+   hajnali 3-as auto-restart úgyis frissít: NE írj Tamásnak. Egy `warm` emlék elég a reggeli
+   ellenőrzéssel (7/7 `ok` lett-e). Tamás korrekciója 2026-10-05 20:05 (Telegram msg 1035):
+   a msg 1031 pont ilyen eset volt, „tökéletes példája annak, amikor nem kell zaklatnod
+   felesleges üzenetekkel". A STALE nem működési hiba: a tool-ok mennek, csak a régi
+   kliens-kód fut. A 2-5. lépés csak a fenti kivételen kívül, illetve DEAD-nél él.
+   ⚠️ **Új tool esetén is a VÁRAKOZÁS az alapértelmezés, ha a deployt Tamás maga csinálta** (a
+   commitok szerzője ő): tudja, hogy a sessionök hajnal óta futnak, és 2026-08-24-én pont
+   ilyenkor a várakozást választotta („ráér, nem is tudnak a kollégák az új toolokról”,
+   msg 633). Ilyenkor `warm` emlék a reggeli ellenőrzéssel, üzenet nélkül. Üzenet akkor jár,
+   ha a deploy NEM tőle jött, vagy ha egy kolléga jelzi, hogy most kellene neki az új tool.
 2. Írj Tamásnak Telegramon (reply tool, chat_id 0): melyik ágens, milyen állapot, mióta (session_started), és mit jelent gyakorlatilag. DEAD-nél mondd ki, hogy az ágens most nem éri el a GG-rendszereket.
 3. Javasold a javítást: POST /api/agents/<nev>/restart {"fresh": true}. A fresh azért kell, mert a --channels plugin csak friss induláskor töltődik be megbízhatóan, continue-nál néma maradhat a bot.
 4. Ha az ágensnek van tulajdonosa (agent-config.json -> owner), írd oda, hogy az ő munkáját érinti.

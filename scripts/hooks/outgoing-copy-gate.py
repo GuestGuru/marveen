@@ -896,8 +896,17 @@ def _at_sentence_start(text: str, idx: int) -> bool:
     return False
 
 
+# GG fork: U+2010 (HYPHEN) and U+2011 (NON-BREAKING HYPHEN) count as a hyphen for
+# tokenizing. Measured 2026-10-04 07:28 (msg 1022): the morning brief carried
+# "07:27‑es", HYPHEN_WORD only knew ASCII '-', so "es" fell out as a standalone
+# word and the gate flagged a correct text ("es -> és"). Length-preserving swap, so
+# every returned position still indexes the original prose.
+_HYPHEN_LOOKALIKES = str.maketrans({"‐": "-", "‑": "-"})
+
+
 def accent_check_tokens(prose: str):
     """(lowercase alak, kezdo-pozicio) parok az ekezet-vizsgalathoz."""
+    prose = prose.translate(_HYPHEN_LOOKALIKES)  # GG fork: see _HYPHEN_LOOKALIKES
     out = []
     for m in HYPHEN_WORD.finditer(prose):
         tok = m.group(0)
