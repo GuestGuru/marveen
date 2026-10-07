@@ -17,6 +17,15 @@ A többi szekció (email, naptár, AI hírek) maradnak a CLAUDE.md-ben leírt fo
 
 ## 0. ELŐFELTÉTEL: ma már kiment a napindító?
 
+🔴 **2026-10-04 ÓTA EGY ÚT VAN: a 07:27-es timer KI VAN KAPCSOLVA** (`systemctl --user
+is-enabled marveen-morning.timer` -> `disabled`; az upstream v1.40.0 élesítésével, a gazda
+jóváhagyásával). A lenti „két út" leírás és az (a)-(e) ágak a timer korszakából valók: ha a
+timer `disabled`, a `morning.log`-ban a mai napra nem lesz szkriptes sor, és a TELJES
+napindító a tiéd. Az első így küldött reggel 2026-10-05, msg 1030, egy üzenetben (3002
+karakter). A küldés után a `morning.log`-ba magad írj egy sort mért időbélyeggel, mert
+a következő kör ebből látja, hogy ma már kiment. Ha a timert valaki visszakapcsolja,
+a lenti ágak újra érvényesek.
+
 **2026-08-22 óta KÉT út visz ugyanahhoz az üzenethez, és mindkettő működhet.**
 A reggeli systemd timer (`...-morning.timer`) 07:27-kor futtatja a
 `{{INSTALL_DIR}}/scripts/morning-briefing.sh`-t,
