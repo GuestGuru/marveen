@@ -132,6 +132,14 @@ Pinned default (mindig védett): claude-video, frontend-design, docx, skill-crea
 
 Output: 0-3 javaslat: "skill <név> antikvált (utolsó használat >30 nap), törlés vagy frissítés javasolt".
 
+**A `skill_usage` darabszám lekérdezése, másolhatóan (2026-10-05, két egymást követő éjjel elszállt):**
+a tábla időoszlopa `created_at` (MÁSODPERC), nem `ts`. 10-04-én és 10-05-én is `ts`-sel
+kérdeztem le fejből, és mindkétszer `no such column: ts` lett belőle; a `task_runs.ts`
+ezredmásodperces oszlopneve szivárgott át.
+```bash
+python3 -c "import sqlite3;db=sqlite3.connect('{{INSTALL_DIR}}/store/claudeclaw.db');print(db.execute(\"SELECT COUNT(*), SUM(created_at > CAST(strftime('%s','now','-24 hours') AS INTEGER)) FROM skill_usage\").fetchone())"
+```
+
 **És ugyanebben a buckettben egy sor a KAPU sajat hamis pozitivjairol (#836, 2026-09-15).**
 A kimeno-szoveg kapu 2026-09-15 ota naplozza, mi tortent minden tiltas UTAN: a
 megjelolt szo ekezetet kapott (valodi talalat), vagy eltunt mindket alakban (hamis

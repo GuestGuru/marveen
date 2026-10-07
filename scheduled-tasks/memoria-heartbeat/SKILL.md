@@ -64,6 +64,12 @@ Nézd át, mi történt **az előző memória-kör óta**. Két dolgot csinálj:
 > időbélyegét másodpercként ÉS ezredmásodpercként is értelmezve nézd meg, melyik ad 2026-ot.
 > Az egyik 1970-et fog adni, és az mondja meg, melyik ágon tévedsz.
 >
+> ⚠️ **AZ ABLAK-LEKÉRDEZÉS NEM LÉTEZÉS-MÉRÉS (mérve 2026-10-06/07).** Az ablak azt mutatja, mi
+> keletkezett az előző kör ZÁRÁSA óta, nem azt, hogy valami létezik-e. 10-06 23:30-kor azt írtam,
+> hogy a 23:00-s automata összefoglaló „nem jelent meg”, holott 23:00:15-kor létrejött, csak a
+> 23:00-s kör zárása előtt, tehát egyik ablakba sem esett. Ha egy elvárt esemény HIÁNYÁT akarod
+> kimondani, dátum szerint kérdezz rá (`created_at` a nap elejétől), ne az ablakból következtess.
+>
 > **HA MÉGIS ÁTFEDÉST LÁTSZ:** a mérce nem az idő, hanem hogy *lezártad-e már*. Ha egy munkára már
 > írtál memóriát vagy patcheltél skillt az előző körben, az KÉSZ -- ne írd meg újra más szavakkal.
 
