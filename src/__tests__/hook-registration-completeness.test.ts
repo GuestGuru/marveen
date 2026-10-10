@@ -46,6 +46,7 @@ const HOOKS_DIR = join(ROOT, 'scripts', 'hooks')
 const SEEDING_SURFACES = [
   'templates/settings.json.template',
   'src/web/agent-scaffold.ts',
+  'src/gg/fleet-channel-hooks.ts',
   'scripts/install-telegram-progress-hook.sh',
   'scripts/install-slack-progress-hook.sh',
   'scripts/install-channel-image-hook.sh',
@@ -129,14 +130,7 @@ const CHECKOUT_ONLY: Record<string, string> = {
     'level-aware email gate for the MAIN agent (EMAILKAPU901 PR2, #1149): its docstring scopes it to sessions rooted at PROJECT_ROOT, and sub-agents keep their unconditional hard-deny (email-send-gate.mjs), behind which this gate would be a no-op',
   'inbox-drain.py':
     'main-agent inbox PULL (#506): sub-agents are fed by the message router\'s tmux-push path, and draining them here too would double-deliver (docstring: "Main-agent ONLY")',
-  'ledger-capture.py':
-    'conversation-continuity ledger: docs/conversation-continuity.md wires the ledger trio in the PROJECT settings for the main channels session ("NOT user scope"); the sub-agent path is the clear-capture/clear-replay pair, which IS in the template',
-  'ledger-outbound.py':
-    'conversation-continuity ledger: same design as ledger-capture.py (docs/conversation-continuity.md, project settings only)',
-  'ledger-replay.py':
-    'conversation-continuity ledger: same design as ledger-capture.py; the docs state it is "wired in the repo\'s project settings only (the main agent)"',
-  'telegram-reply-guard.py':
-    'the Stop-hook half of the Telegram reply enforcement (#856) decides from ledger_lib.open_question_with_age, i.e. the conversation_log the main-only ledger trio writes; seeded alone it would read an empty ledger and allow every stop, a silent no-op -- seeding it means seeding the ledger trio with it, a separate design decision',
+
 }
 
 // The direction that was blind: a hook the checkout's own settings wire, which

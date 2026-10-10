@@ -73,9 +73,11 @@ export function readState(stateDir: string, agent: string): PromotionState {
   if (!existsSync(p)) return emptyState(agent)
   try {
     const raw = JSON.parse(readFileSync(p, 'utf-8')) as Partial<PromotionState>
+    // Létező, de hibás kurzor nem indulhat elölről csendben.
+    if (!raw || !Number.isSafeInteger(raw.cursor) || raw.cursor! < 0) throw new Error('invalid cursor')
     return {
       agent,
-      cursor: Number.isInteger(raw.cursor) ? raw.cursor as number : 0,
+      cursor: raw.cursor as number,
       lastRunAt: typeof raw.lastRunAt === 'string' ? raw.lastRunAt : null,
       totals: raw.totals && typeof raw.totals === 'object' ? raw.totals : {},
       log: Array.isArray(raw.log) ? raw.log : [],
@@ -141,6 +143,22 @@ export function markDone(
   }
 }
 
+// A mentés és a lezárás ugyanazt a következő, saját tételt ellenőrzi.
+// Nem új állapot: a meglévő kurzor és a csak olvasott memória az igazságforrás.
+export function assertNextCandidate(paths: CliPaths, agent: string, id: number): void {
+  if (!Number.isSafeInteger(id) || id <= 0) throw new Error('invalid --id')
+  const state = readState(paths.stateDir, agent)
+  if (id <= state.cursor) throw new Error('Ez a tétel már lezárt; ne nyugtázd újra.')
+  const db = new Database(paths.dbPath, { readonly: true, fileMustExist: true })
+  try {
+    const next = selectCandidates(db, agent, state.cursor, 1).items[0]
+    if (!next) throw new Error('nincs feldolgozatlan tétel')
+    if (next.id !== id) throw new Error(`Előbb a ${next.id} tételt dolgozd fel és zárd le; a ${id} még nem következik.`)
+  } finally {
+    db.close()
+  }
+}
+
 function parseArgs(argv: string[]): { command: string; flags: Record<string, string> } {
   const [command = '', ...rest] = argv
   const flags: Record<string, string> = {}
@@ -185,7 +203,12 @@ export function runCli(argv: string[], paths: CliPaths, now: () => Date = () => 
         db.close()
       }
     }
+    case 'check-save': {
+      assertNextCandidate(paths, agent, Number(flags.id))
+      return JSON.stringify({ allowed: true })
+    }
     case 'done': {
+      assertNextCandidate(paths, agent, Number(flags.id))
       const state = readState(paths.stateDir, agent)
       const next = markDone(state, {
         id: Number(flags.id),
@@ -208,7 +231,7 @@ export function runCli(argv: string[], paths: CliPaths, now: () => Date = () => 
       }, null, 2)
     }
     default:
-      throw new Error(`unknown command: ${command || '(none)'} (candidates | done | status)`)
+      throw new Error(`unknown command: ${command || '(none)'} (candidates | check-save | done | status)`)
   }
 }
 
