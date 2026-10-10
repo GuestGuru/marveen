@@ -5,11 +5,12 @@
  * measured version -> unsupported models refused / disabled; unmeasured ->
  * nothing refused, hint shown.
  */
-import { describe, it, expect, beforeEach, afterAll } from 'vitest'
+import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest'
 import { EventEmitter } from 'node:events'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import * as vault from '../web/vault.js'
 import { tryHandleAgents, refuseIfCliCannotLaunch } from '../web/routes/agents.js'
 import { measureClaudeCliVersion, resetClaudeCliVersionCache, CLI_VERSION_OVERRIDE_ENV } from '../web/claude-cli-version.js'
 import type { RouteContext } from '../web/routes/types.js'
@@ -56,11 +57,28 @@ describe('/api/models/available carries the gate', () => {
     expect(s.measured).toBe(true)
     expect(s.unsupported.map((u) => u.id).sort()).toEqual(['claude-fable-5-1', 'claude-opus-5-5', 'claude-sonnet-5-5'])
     const ids = (body.claude as Array<{ id: string }>).map((m) => m.id)
-    for (const id of ['claude-fable-5-1', 'claude-opus-5-5[1m]', 'claude-opus-5', 'claude-sonnet-5-5', 'claude-sonnet-5']) expect(ids).toContain(id)
+    for (const id of ['claude-fable-5-1', 'claude-opus-5-5[1m]', 'claude-sonnet-5-5', 'claude-haiku-5-5']) expect(ids).toContain(id)
     // Opus 5.5: ONLY the 1M variant is offered (owner decision 2026-09-23); the plain id is gone from the API too.
     expect(ids).not.toContain('claude-opus-5-5')
     // the picker markup offers exactly the same Claude ids the API lists
     for (const id of ids) expect(indexHtml, id).toContain(`<option value="${id}"`)
+  })
+  it('a DeepSeek Flash új route-ot kínál, az OpenRouter legacy AUTO-t jelöli és változatlanul adja vissza', async () => {
+    process.env[CLI_VERSION_OVERRIDE_ENV] = ''
+    const secret = vi.spyOn(vault, 'getSecret').mockImplementation(key =>
+      ['DEEPSEEK_API_KEY', 'openrouter-fleet-key'].includes(key) ? 'offline-placeholder' : null)
+    try {
+      const { body } = await getModels()
+      const deepseek = body.deepseek as Array<{ id: string }>
+      expect(deepseek.map(m => m.id)).toContain('deepseek-flash')
+      expect(deepseek.map(m => m.id)).not.toContain('deepseek-v4-flash')
+      const catalog = body.openrouter as { tiers: Array<{ key: string; auto: string; autoWarning: string; manualWarnings: Record<string, string> }> }
+      const free = catalog.tiers.find(t => t.key === 'tier0')!
+      expect(free.auto).toBe('meta-llama/llama-3.3-70b-instruct:free')
+      expect(free.autoWarning).toMatch(/nem ajánlott/)
+      expect(free.manualWarnings['qwen/qwen3-coder:free']).toMatch(/nem ajánlott/)
+      expect(catalog.tiers.find(t => t.key === 'tier3')!.manualWarnings['google/gemini-3.1-pro']).toMatch(/nem ajánlott/)
+    } finally { secret.mockRestore() }
   })
   it('UNMEASURED: cli.version null with an error, claudeSupport.measured false and NOTHING unsupported (fail-open)', async () => {
     process.env[CLI_VERSION_OVERRIDE_ENV] = ''
