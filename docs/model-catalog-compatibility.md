@@ -11,7 +11,7 @@ Az új modellválasztás és ajánlás a Claude Opus/Sonnet/Haiku 5.5 vonalát k
 
 ## Beállítás és dashboard
 
-A `DEFAULT_AGENT_MODEL.valueSet` az új opciókat, a `legacyValueSet` a már használt korábbi modellazonosítókat tartalmazza. A validáció mindkettőt elfogadja. A dashboard a listán kívüli aktuális értéket „korábbi beállítás” jelöléssel hozzáadja a beállítás szerkesztőjéhez. Az agent szerkesztő meglévő dinamikus opciója ugyanígy megőrzi a mentett modellt.
+A `DEFAULT_AGENT_MODEL.valueSet` az új opciókat, a `legacyValueSet` a már használt korábbi modellazonosítókat tartalmazza. A validáció mindkettőt elfogadja. A dashboard a listán kívüli aktuális értéket „korábbi beállítás” jelöléssel hozzáadja a beállítás szerkesztőjéhez. Az agent szerkesztő dinamikus opciója ugyanígy megőrzi a mentett modellt. Az aszinkron katalógusfrissítés végén a kliens a hiányzó aktuális modellt új dinamikus opcióként pótolja, majd visszaállítja a kiválasztást; így az optgroup újraépítése sem ejti el a régi Claude/DeepSeek/OpenRouter vagy egyedi ID-t.
 
 A Claude agentválasztó tényleges forrása a `web/index.html` két statikus listája. A `/api/models/available` Claude-listája ezzel egyezik; a CLI-kapu megmarad. A Haiku 5.5 CLI-támogatását ez a munka élő modellhívással nem ellenőrizte.
 

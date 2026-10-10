@@ -108,6 +108,59 @@ describe('IT-1569 modellkatalógus kompatibilitás', () => {
     expect(options.map(o => o.disabled)).toEqual([true, false, false])
   })
 
+  it.each(['deepseek-v4-flash', 'claude-opus-5[1m]', 'claude-sonnet-5', 'claude-haiku-4-5-20251001', 'opus', 'sonnet', 'haiku', 'google/gemini-3.1-pro', 'openrouter-auto:tier0'])(
+    'az async katalógusfrissítés végén a mentett %s kiválasztás marad', async (model) => {
+      class Option {
+        value = ''
+        textContent = ''
+        className = ''
+        dataset: Record<string, string> = {}
+        disabled = false
+      }
+      class Select {
+        id = 'editAgentModel'
+        selected = model
+        children: Option[] = []
+        groups: Group[] = []
+        get options() { return [...this.children, ...this.groups.flatMap(g => g.children)] }
+        get value() { return this.options.some(o => o.value === this.selected) ? this.selected : this.options[0]?.value ?? '' }
+        set value(value: string) { this.selected = this.options.some(o => o.value === value) ? value : '' }
+        appendChild(option: Option) { this.children.push(option) }
+      }
+      class Group {
+        children: Option[] = []
+        style = { display: '' }
+        constructor(readonly parentElement: Select) { parentElement.groups.push(this) }
+        set innerHTML(_value: string) { this.children = [] }
+        appendChild(option: Option) { this.children.push(option) }
+      }
+      const sel = new Select()
+      sel.appendChild(Object.assign(new Option(), { value: 'claude-sonnet-5-5' }))
+      const stale = new Group(sel)
+      stale.appendChild(Object.assign(new Option(), { value: model }))
+      const auto = new Group(sel)
+      const manual = new Group(sel)
+      const elements: Record<string, Select | Group> = { editAgentModel: sel, deepseekModelGroup: stale, openrouterAutoGroup: auto, openrouterManualGroup: manual }
+      const source = readFileSync(join(process.cwd(), 'web/app.js'), 'utf8')
+      const start = source.indexOf('function applyOpenRouterLegacyGate(sel)')
+      const body = source.slice(start, source.indexOf('function updateCustomModelIdRow(selectEl)', start))
+      const context = {
+        document: { getElementById: (id: string) => elements[id] ?? null, createElement: () => new Option() },
+        currentAgent: { model, name: 'old-agent' }, openrouterCurated: new Set(),
+        applyClaudeCliGate() {}, updateCustomModelIdRow() {},
+        fetch: async () => ({ ok: true, json: async () => ({
+          deepseek: [{ id: 'deepseek-flash', label: 'Flash' }],
+          openrouter: { tiers: [{ autoId: 'openrouter-auto:tier0', auto: 'meta-llama/llama-3.3-70b-instruct:free', autoWarning: 'Legacy: nem ajánlott' }] },
+        }) }),
+      }
+      await runInNewContext(body + '\nloadAvailableModels()', context)
+      expect(sel.value).toBe(model)
+      const option = sel.options.find(o => o.value === model)!
+      expect(option).toBeDefined()
+      expect(option.disabled).toBe(false)
+    },
+  )
+
   it('a beállítás UI a listából kivett korábbi értéket kijelzi és ugyanazt menti vissza', () => {
     class Element {
       children: Element[] = []

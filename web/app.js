@@ -4509,7 +4509,17 @@ async function loadAvailableModels() {
     }
     selections.forEach(([sel, value]) => {
       if (!sel) return
-      if (Array.from(sel.options).some(opt => opt.value === value)) sel.value = value
+      // A frissített optgroupból kivett mentett ID sem eshet át más modellre.
+      if (typeof value === 'string' && value) {
+        if (!Array.from(sel.options).some(opt => opt.value === value)) {
+          const saved = document.createElement('option')
+          saved.value = value
+          saved.className = 'dynamic-model-opt'
+          saved.textContent = value + ' (korábbi / egyedi modell)'
+          sel.appendChild(saved)
+        }
+        sel.value = value
+      }
       applyOpenRouterLegacyGate(sel)
     })
     applyClaudeCliGate(data)
