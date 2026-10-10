@@ -42,6 +42,19 @@ export interface OpenRouterCatalog {
   tiers: OpenRouterTier[]
 }
 
+// A 2026-10-10-i nyilvános /models metaadatlistán nem szereplő route-ok.
+// Hiány a listából nem bizonyított 404. Megőrizzük a mentett ID-t és az AUTO
+// feloldást; új választásként nem ajánljuk, free helyett nem teszünk paid utódot.
+const LEGACY_ROUTE_WARNINGS: Record<string, string> = {
+  'meta-llama/llama-3.3-70b-instruct:free': 'Legacy: nem ajánlott, a nyilvános modelllistán nem szerepel (2026-10-10).',
+  'qwen/qwen3-coder:free': 'Legacy: nem ajánlott, a nyilvános modelllistán nem szerepel (2026-10-10).',
+  'google/gemini-3.1-pro': 'Legacy: nem ajánlott, a nyilvános modelllistán nem szerepel (2026-10-10).',
+}
+
+export function openRouterModelWarning(model: string): string | null {
+  return LEGACY_ROUTE_WARNINGS[model] ?? null
+}
+
 // Fallback catalog (fleet-model-allocation.md, 2026-07-13). Used until the
 // weekly task writes store/openrouter-models.json.
 const DEFAULT_CATALOG: OpenRouterCatalog = {

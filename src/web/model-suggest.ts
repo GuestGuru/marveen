@@ -1,17 +1,9 @@
 // Pure, side-effect-free persona→model classifier. Imported by the route and
 // by unit tests. No fs, no network, no db -- all I/O happens in the caller.
 
-// MODELSUGGEST807: the top-tier suggestion is the SHIPPED distribution default,
-// never a literal. This module used to hardcode claude-opus-4-8[1m] on every
-// opus branch, so after the Opus 5 migration the dashboard advised DOWNGRADING
-// Opus 5 agents to 4.8 (measured on the live endpoint before the fix: 8 of 10
-// agents were suggested 4.8, 7 of them with changeAdvised, 5 of those running
-// Opus 5; after: 0 of 10) -- a customer-facing surface the migration missed.
-// [1m] everywhere, not a split: a second plain-opus literal would be the next
-// forgotten drift seed, a context-threshold split would make suggestions flap
-// around the boundary, and this module's own cost table prices the variants
-// identically.
-import { DISTRIBUTION_DEFAULT_AGENT_MODEL } from '../config-registry.js'
+// Az ajánlott felső tier külön áll a futó install alapmodelljétől:
+// a javaslat kézi döntés, nem runtime- vagy mentett konfiguráció-migráció.
+export const RECOMMENDED_TOP_TIER_MODEL = 'claude-opus-5-5[1m]'
 
 // Human label for the reason texts, derived from the constant so a future
 // model bump rewrites the prose too: 'claude-opus-5[1m]' -> 'Opus 5 (1M)'.
@@ -27,15 +19,13 @@ export function humanModelLabel(model: string): string {
   return oneM ? `${label} (1M)` : label
 }
 
-const TOP_TIER_MODEL = DISTRIBUTION_DEFAULT_AGENT_MODEL
+const TOP_TIER_MODEL = RECOMMENDED_TOP_TIER_MODEL
 const TOP_TIER_LABEL = humanModelLabel(TOP_TIER_MODEL)
 
 export type ModelId =
-  | 'claude-haiku-4-5-20251001'
+  | 'claude-haiku-5-5'
   | 'claude-sonnet-5-5'
-  | 'claude-sonnet-5'
-  | 'claude-opus-5[1m]'
-  | 'claude-opus-5'
+  | 'claude-opus-5-5[1m]'
   | 'claude-fable-5'
   | 'claude-fable-5-1'
   | string
@@ -137,6 +127,9 @@ const MODEL_COST_PER_M: Record<string, number> = {
   'claude-sonnet-5-5': 2,
   'claude-sonnet-5': 3,
   'claude-sonnet-4-6': 3,
+  // Haiku 5.5 alap inputár, 2026-10-10: https://platform.claude.com/docs/en/models/overview
+  // A hosszú kontextus felára, cache és előfizetés nincs ebben a durva becslésben.
+  'claude-haiku-5-5': 0.10,
   'claude-haiku-4-5': 0.80,
 }
 
@@ -325,16 +318,16 @@ export function classifyPersona(
 
   if (haikuHits >= 2 && opusHits === 0) {
     return {
-      suggestedModel: 'claude-haiku-4-5-20251001',
-      reason: `A persona rövid, ismétlődő vagy fizikai/adminisztratív feladatokra utal (${haikuHits} egyező jelző) -- Haiku 4.5 elegendő és olcsóbb.`,
+      suggestedModel: 'claude-haiku-5-5',
+      reason: `A persona rövid, ismétlődő vagy fizikai/adminisztratív feladatokra utal (${haikuHits} egyező jelző) -- Haiku 5.5 ajánlott.`,
       changeAdvised: true,
     }
   }
 
   // Default: Sonnet is the balanced general-purpose choice
   return {
-    suggestedModel: 'claude-sonnet-5',
-    reason: 'Általános célú ágens -- Sonnet 5 ajánlott (egyensúly minőség és sebesség között).',
+    suggestedModel: 'claude-sonnet-5-5',
+    reason: 'Általános célú ágens -- Sonnet 5.5 ajánlott (egyensúly minőség és sebesség között).',
     changeAdvised: true, // caller compares to currentModel to decide final changeAdvised
   }
 }
@@ -384,8 +377,8 @@ export function suggestForAgent(
 
   let suggestedModel: ModelId
   if (totalOpus >= 2) suggestedModel = TOP_TIER_MODEL
-  else if (totalHaiku >= 2 && totalOpus === 0) suggestedModel = 'claude-haiku-4-5-20251001'
-  else suggestedModel = 'claude-sonnet-5'
+  else if (totalHaiku >= 2 && totalOpus === 0) suggestedModel = 'claude-haiku-5-5'
+  else suggestedModel = 'claude-sonnet-5-5'
 
   const changeAdvised = normalize(suggestedModel) !== normalize(currentModel)
 
