@@ -3833,6 +3833,7 @@ async function openAgentDetail(agentName) {
     // of the two async loads finished first (measured in Chromium: a value set
     // onto a disabled option still reads back, but the order must not matter).
     if (lastAvailableModelsData) applyClaudeCliGate(lastAvailableModelsData)
+    applyOpenRouterLegacyGate(sel)
     updateCustomModelIdRow(sel)
   })
   populateProfileSelect(
@@ -4370,11 +4371,28 @@ function applyClaudeCliGate(data) {
   })
 }
 
+// A nem listázott route új választásként tiltott, de a már mentett érték
+// továbbra is látható és visszamenthető; a runtime feloldást ez nem érinti.
+function applyOpenRouterLegacyGate(sel) {
+  if (!sel) return
+  Array.from(sel.options).forEach(opt => {
+    if (opt.dataset.legacyWarning === '1') opt.disabled = opt.value !== sel.value
+  })
+}
+
 async function loadAvailableModels() {
   try {
     const res = await fetch('/api/models/available')
     if (!res.ok) return
     const data = await res.json()
+    // Optgroup-frissítéskor a böngésző elveszítheti az aktuális kiválasztást.
+    const selections = ['agentModel', 'editAgentModel'].map(id => {
+      const sel = document.getElementById(id)
+      const value = id === 'editAgentModel' && currentAgent && !currentAgent.customProvider
+        ? currentAgent.activeModel || currentAgent.model || (sel && sel.value)
+        : sel && sel.value
+      return [sel, value]
+    })
     applyClaudeCliGate(data)
     const deepseekModels = Array.isArray(data.deepseek) ? data.deepseek : []
     const editGroup = document.getElementById('deepseekModelGroup')
@@ -4434,7 +4452,9 @@ async function loadAvailableModels() {
       for (const t of orTiers) {
         const opt = document.createElement('option')
         opt.value = t.autoId
-        opt.textContent = `${t.label} - auto (${t.auto})`
+        opt.textContent = `${t.label} - auto (${t.auto})` + (t.autoWarning ? ` — ${t.autoWarning}` : '')
+        if (t.autoWarning) opt.dataset.legacyWarning = '1'
+        opt.disabled = !!t.autoWarning
         g.appendChild(opt)
       }
     }
@@ -4452,7 +4472,9 @@ async function loadAvailableModels() {
       for (const m of orManual) {
         const opt = document.createElement('option')
         opt.value = m.id
-        opt.textContent = `🔀 ${m.name || m.id}`
+        opt.textContent = `🔀 ${m.name || m.id}` + (m.warning ? ` — ${m.warning}` : '')
+        if (m.warning) opt.dataset.legacyWarning = '1'
+        opt.disabled = !!m.warning
         g.appendChild(opt)
       }
     }
@@ -4485,6 +4507,12 @@ async function loadAvailableModels() {
         g.appendChild(opt)
       }
     }
+    selections.forEach(([sel, value]) => {
+      if (!sel) return
+      if (Array.from(sel.options).some(opt => opt.value === value)) sel.value = value
+      applyOpenRouterLegacyGate(sel)
+    })
+    applyClaudeCliGate(data)
     updateCustomModelIdRow(document.getElementById('editAgentModel'))
     updateCustomModelIdRow(document.getElementById('agentModel'))
   } catch { /* dashboard not available */ }
@@ -15155,6 +15183,14 @@ function buildSettingRow(def) {
       o.value = opt
       o.textContent = opt
       valueInput.appendChild(o)
+    }
+    // A régi mentett érték látható és visszamenthető marad; új opcióként
+    // a katalógus már csak az aktuális modelleket kínálja.
+    if (!def.valueSet.includes(originalValue)) {
+      const saved = document.createElement('option')
+      saved.value = originalValue
+      saved.textContent = originalValue + ' (korábbi beállítás)'
+      valueInput.appendChild(saved)
     }
     valueInput.value = originalValue
   } else if (def.type === 'boolean') {

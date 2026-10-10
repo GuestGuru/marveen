@@ -25,9 +25,9 @@
 // proves precedent, not need -- do not read it as "it was always this".) It
 // matches the main agent's template value, so the two do not quietly diverge.
 // resolveModelId passes the [1m] id through unchanged (measured), exactly as
-// the CLI already handles the 4.8[1m] default. The valueSet below carries BOTH
-// claude-opus-5 and claude-opus-5[1m] so an operator can still pick the
-// non-1M form.
+// the CLI already handles the 4.8[1m] default.
+// A régi alapérték a legacyValueSet révén menthető; az új választólista
+// ettől függetlenül az aktuális modellvonalat kínálja.
 export const DISTRIBUTION_DEFAULT_AGENT_MODEL = 'claude-opus-5[1m]'
 
 export type SettingType = 'int' | 'string' | 'color' | 'boolean'
@@ -42,6 +42,8 @@ export interface SettingDefinition {
   requiresRestart: boolean
   /** Optional fixed set of allowed values (enum-style settings). */
   valueSet?: string[]
+  /** Korábbi mentett értékek: elfogadottak, de új választásként nem ajánlottak. */
+  legacyValueSet?: string[]
   /** Inclusive bounds, only meaningful for type 'int'. */
   min?: number
   max?: number
@@ -531,15 +533,13 @@ export const SETTINGS_REGISTRY: SettingDefinition[] = [
       // live value (pinned in gg-opus55-default.test.ts). Drop once the .env moves to [1m].
       'claude-opus-5-5',
       'claude-opus-5-5[1m]',
-      'claude-opus-5',
-      'claude-opus-5[1m]',
       'claude-sonnet-5-5',
-      'claude-sonnet-5',
       'claude-fable-5',
       'claude-fable-5-1',
       'claude-opus-4-8[1m]',
-      'claude-haiku-4-5-20251001',
+      'claude-haiku-5-5',
     ],
+    legacyValueSet: ['claude-opus-5', 'claude-opus-5[1m]', 'claude-sonnet-5', 'claude-haiku-4-5-20251001'],
   },
   // --- Claude plans module (PR2b/PR2c) ---
   // Gates BOTH POST /api/claude-plans/rotate (returns 409 while off) and the
@@ -606,7 +606,7 @@ export interface SettingValidationResult {
 export function validateSettingValue(def: SettingDefinition, raw: unknown): SettingValidationResult {
   if (def.valueSet && def.valueSet.length > 0) {
     const str = String(raw)
-    if (!def.valueSet.includes(str)) {
+    if (!def.valueSet.includes(str) && !def.legacyValueSet?.includes(str)) {
       return { ok: false, error: `Érvénytelen érték. Megengedett: ${def.valueSet.join(', ')}` }
     }
     return { ok: true, value: str }

@@ -18,7 +18,7 @@ import { measureClaudeCliVersion } from '../claude-cli-version.js'
 import { claudeSupportForCli, isModelUnsupportedByCli, CLAUDE_MODEL_MIN_CLI } from '../../claude-cli-support.js'
 import { CHANNEL_PLUGIN_IDS } from '../plugin-ids.js'
 import { getSecret, setSecret, deleteSecret, listSecrets } from '../vault.js'
-import { loadOpenRouterCatalog, fetchAllOpenRouterModels, loadCuratedManual, addCuratedManual, removeCuratedManual } from '../openrouter-models.js'
+import { loadOpenRouterCatalog, fetchAllOpenRouterModels, loadCuratedManual, addCuratedManual, removeCuratedManual, openRouterModelWarning } from '../openrouter-models.js'
 import { listCustomProviders } from '../custom-providers.js'
 import {
   agentDir,
@@ -27,7 +27,7 @@ import {
   readFileOr,
   extractDescriptionFromClaudeMd,
   findAvatarForAgent,
-  resolveModelId,
+  resolveSelectedModelId,
   readAgentModel,
   resolveAgentModelDetailed,
   readModelProfileMap,
@@ -701,18 +701,16 @@ export async function tryHandleAgents(ctx: RouteContext, webDir: string): Promis
         // Opus 5.5: ONLY the 1M variant (owner decision 2026-09-23). The gate table is keyed on the
         // base id, so the [1m] variant inherits the 2.1.280 minimum -- pinned in picker-cli-gate.test.ts.
         { id: 'claude-opus-5-5[1m]', label: 'Opus 5.5 (1M kontextus, legújabb Opus)', minCli: CLAUDE_MODEL_MIN_CLI['claude-opus-5-5'].minCli },
-        { id: 'claude-opus-5', label: 'Opus 5' },
         { id: 'claude-sonnet-5-5', label: 'Sonnet 5.5 (legújabb Sonnet)', minCli: CLAUDE_MODEL_MIN_CLI['claude-sonnet-5-5'].minCli },
-        { id: 'claude-sonnet-5', label: 'Sonnet 5' },
         { id: 'claude-sonnet-4-6', label: 'Sonnet 4.6' },
         { id: 'claude-fable-5', label: 'Fable 5' },
         { id: 'claude-opus-4-8[1m]', label: 'Opus 4.8 (1M kontextus)' },
-        { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5 (leggyorsabb)' },
+        { id: 'claude-haiku-5-5', label: 'Haiku 5.5' },
       ],
       deepseek: hasDeepseek
         ? [
             { id: 'deepseek-v4-pro', label: 'DeepSeek-V4-Pro (1M kontextus, erősebb)' },
-            { id: 'deepseek-v4-flash', label: 'DeepSeek-V4-Flash (1M kontextus, gyorsabb/olcsóbb)' },
+            { id: 'deepseek-flash', label: 'DeepSeek Flash (aktuális Flash route)' },
           ]
         : [],
       deepseekConfigured: hasDeepseek,
@@ -732,13 +730,15 @@ export async function tryHandleAgents(ctx: RouteContext, webDir: string): Promis
               label: t.label,
               autoId: `openrouter-auto:${t.key}`,
               auto: t.auto,
+              autoWarning: openRouterModelWarning(t.auto),
               manual: t.manual,
+              manualWarnings: Object.fromEntries(t.manual.map(id => [id, openRouterModelWarning(id)])),
             })),
           }
         : null,
       // User-curated manual models (ticked in the main agent's browse popup).
       // Feeds the "OpenRouter - kézi" optgroup in every agent's model dropdown.
-      openrouterManual: hasOpenRouter ? loadCuratedManual() : [],
+      openrouterManual: hasOpenRouter ? loadCuratedManual().map(m => ({ ...m, warning: openRouterModelWarning(m.id) })) : [],
       openrouterConfigured: hasOpenRouter,
       // Custom Anthropic-compatible providers defined in store/custom-providers.json.
       customProviders: listCustomProviders(),
@@ -1031,7 +1031,7 @@ export async function tryHandleAgents(ctx: RouteContext, webDir: string): Promis
     const { description, model: rawModel, profile: rawProfile } = data as { name: string; description: string; model?: string; profile?: string }
     const rawName = typeof data.name === 'string' ? data.name.trim() : ''
     const name = sanitizeAgentName(rawName)
-    const model = resolveModelId(rawModel || DEFAULT_MODEL)
+    const model = resolveSelectedModelId(rawModel || DEFAULT_MODEL)
     const profileId = (rawProfile || 'default').trim() || 'default'
 
     if (!name) { json(res, { error: 'Name is required' }, 400); return true }

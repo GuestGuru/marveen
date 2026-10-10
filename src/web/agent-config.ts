@@ -38,6 +38,23 @@ export const MODEL_ALIASES: Record<string, string> = {
   'inherit': DEFAULT_MODEL,
 }
 
+// Új, explicit választásra érvényes aliasok. A mentett konfigurációk olvasása
+// továbbra is a korábbi MODEL_ALIASES táblát használja, csendes migráció nélkül.
+export const SELECTION_MODEL_ALIASES: Record<string, string> = {
+  ...MODEL_ALIASES,
+  opus: 'claude-opus-5-5[1m]',
+  'opus-5-5': 'claude-opus-5-5[1m]',
+  opus55: 'claude-opus-5-5[1m]',
+  sonnet: 'claude-sonnet-5-5',
+  haiku: 'claude-haiku-5-5',
+  'haiku-5-5': 'claude-haiku-5-5',
+  haiku55: 'claude-haiku-5-5',
+}
+
+export function resolveSelectedModelId(raw: string): string {
+  return SELECTION_MODEL_ALIASES[raw] || raw
+}
+
 export function agentDir(name: string): string {
   // safeJoin rejects path-traversal components. The first line of defense is
   // still sanitizeAgentName() at the create-endpoint, but going through

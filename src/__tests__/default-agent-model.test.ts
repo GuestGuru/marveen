@@ -32,11 +32,11 @@ describe('DEFAULT_AGENT_MODEL', () => {
     expect(getSettingDefinition('DEFAULT_AGENT_MODEL')!.default).toBe(DISTRIBUTION_DEFAULT_AGENT_MODEL)
   })
 
-  it('offers the distribution default among the selectable values', () => {
+  it('keeps the distribution default accepted as a legacy value', () => {
     const def = getSettingDefinition('DEFAULT_AGENT_MODEL')!
     expect(def.valueSet).toBeDefined()
-    expect(def.valueSet).toContain(DISTRIBUTION_DEFAULT_AGENT_MODEL)
-    expect(def.valueSet).toContain('claude-opus-5')
+    expect(validateSettingValue(def, DISTRIBUTION_DEFAULT_AGENT_MODEL).ok).toBe(true)
+    expect(def.legacyValueSet).toContain('claude-opus-5')
     // The worker drives the `claude` CLI, so only Claude ids are admissible.
     expect(def.valueSet!.every((m) => m.startsWith('claude-'))).toBe(true)
   })
@@ -51,7 +51,7 @@ describe('DEFAULT_AGENT_MODEL', () => {
     const def = getSettingDefinition('DEFAULT_AGENT_MODEL')!
     // Either an operator set it (then it must be a selectable id), or it fell
     // through to the distribution default.
-    expect(def.valueSet).toContain(DEFAULT_AGENT_MODEL)
+    expect(validateSettingValue(def, DEFAULT_AGENT_MODEL).ok).toBe(true)
   })
 })
 

@@ -9,6 +9,7 @@
 #
 # Runs in tmux session worker-rembrandt-<project> so the orchestrator can watch
 # the pane and relay progress, exactly like the Claude workers.
+# A terra kulcs kompatibilitási név: GPT-6 Sol; sol: GPT-6.1 Sol; luna: GPT-6 Luna.
 set -uo pipefail
 
 PROJECT="${1:-}"; MODEL_KEY="${2:-terra}"; EFFORT="${3:-high}"; TASK_FILE="${4:-}"; WAIT="${5:-}"
@@ -25,9 +26,9 @@ WORKDIR="/home/ubuntu/projects/$PROJECT"
 [ -d "$WORKDIR" ] || { echo "unknown project: $PROJECT" >&2; exit 2; }
 
 case "$MODEL_KEY" in
-  sol)   MODEL="gpt-5.6-sol" ;;
-  terra) MODEL="gpt-5.6-terra" ;;
-  luna)  MODEL="gpt-5.6-luna" ;;
+  sol)   MODEL="gpt-6.1-sol" ;;
+  terra) MODEL="gpt-6-sol" ;;
+  luna)  MODEL="gpt-6-luna" ;;
   *) echo "unknown model: $MODEL_KEY (terra|sol|luna)" >&2; exit 2 ;;
 esac
 
