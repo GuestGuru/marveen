@@ -59,8 +59,12 @@ describe('fleetChannelHooks', () => {
     expect(matchers).toEqual(['startup|resume|clear'])
   })
 
-  it('fails OPEN: a missing script must never block a colleague prompt', () => {
+  it('the notification hooks fail open; the promotion save guard fails closed', () => {
     for (const c of commands) {
+      if (c.includes('brain-promotion-save-gate.py')) {
+        expect(c).toContain('|| exit 2;')
+        continue
+      }
       expect(c.startsWith("bash -c '[ -f "), c).toBe(true)
       expect(c.endsWith("; exit 0'"), c).toBe(true)
     }

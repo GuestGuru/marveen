@@ -80,6 +80,8 @@ export function fleetChannelHooks(projectRoot: string): Record<string, unknown> 
       },
     ],
     PreToolUse: [
+      // Átemelő mentés: blokkoló interpreter-ellenőrzés, nem fail-open wrapper.
+      { matcher: '.*brain_save$', hooks: [{ type: 'command', command: `command -v python3 >/dev/null 2>&1 || exit 2; python3 "${join(projectRoot, 'scripts', 'hooks', 'brain-promotion-save-gate.py')}"`, timeout: 10 }] },
       { matcher: 'Bash', hooks: [{ type: 'command', command: gate, timeout: 15 }] },
       { matcher: '.*send_email.*', hooks: [{ type: 'command', command: gate, timeout: 15 }] },
       {

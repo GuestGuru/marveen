@@ -115,3 +115,30 @@ mutat; a bothoz rendelést a helyi toolnaplóval és a mentések szerzőjével e
 
 A promptváltozás hatását a következő éjszakai körön kell újra mérni (IT-1295, 2026-10-05); a szöveg jelenléte
 és a generátor tesztje önmagában nem bizonyítja az agent későbbi utasításkövetését.
+
+
+## Sorrendvédelem (IT-1295)
+
+Az utómérés 2026-10-10-én a 2026-10-05-i és 10-i természetes köröket vizsgálta:
+14 kör, 208 tétel; minden kör legfeljebb 40 elem és egy candidates-hívás. A
+rendezett kurzornapló azonban nem bizonyítja a mentések sorrendjét: egy bot egy
+későbbi tételt mentett előbb, majd a done-sorokat rendezve írta be.
+
+A `scripts/hooks/brain-promotion-save-gate.py` PreToolUse hook az átemelő
+`marveen-<agent>-mem-<id>` kulcsú MCP brain_save előtt a meglévő CLI
+`check-save` ellenőrzését futtatja. Csak a kurzor utáni első, saját, átemelhető
+tételt engedi menteni; a javító kulcs ugyanarra a még lezáratlan tételre mehet.
+A `done` ugyanezt ellenőrzi: átugrás, visszalépés vagy ismételt nyugtázás hibát
+ad, és nem ír kurzort. Új állapottár, adatbázis-írás és migráció nincs.
+
+Bekötés: fő botnál a repo `.claude/settings.json`, sub-botoknál a GG
+`fleetChannelHooks` overlay; az meglévő hookokkal összeolvad. Hiányzó build vagy
+sérült kurzor esetén az átemelő mentés blokkolva van. Telepítéskor előbb build,
+majd a hookok regisztrálása és új sessionben az aktiválás ellenőrzése szükséges.
+A kód és a teszt nem helyettesíti a következő éles éjszakai kör mérését.
+
+Korlát: a kapu az átemelő kulcsú MCP brain_save útját védi, nem a shelles MCP
+hívást vagy az eltérő kulcsot. A szándékosan SKIP-nek minősített hibás mentést
+nem tudja megkülönböztetni a valóban kihagyandó tételtől. A 40-es körkorlát
+változatlanul promptutasítás. Ezek ellenőrzése a teljes session toolnaplójából
+kell, nem pusztán a rendezett kurzorból.
