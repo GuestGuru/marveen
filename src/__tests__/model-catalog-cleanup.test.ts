@@ -161,6 +161,101 @@ describe('IT-1569 modellkatalógus kompatibilitás', () => {
     },
   )
 
+  it('a pending metaadatválasz megőrzi a mentett modelltől eltérő, még nem mentett UI-választást', async () => {
+    const source = readFileSync(join(process.cwd(), 'web/app.js'), 'utf8')
+    const start = source.indexOf('function applyOpenRouterLegacyGate(sel)')
+    const body = source.slice(start, source.indexOf('function updateCustomModelIdRow(selectEl)', start))
+    const sel = { value: 'claude-sonnet-5', options: [
+      { value: 'claude-sonnet-5', dataset: {} }, { value: 'claude-sonnet-5-5', dataset: {} },
+    ] }
+    let resolveFetch!: (response: unknown) => void
+    const response = new Promise(resolve => { resolveFetch = resolve })
+    const context = {
+      document: { getElementById: (id: string) => id === 'editAgentModel' ? sel : null },
+      currentAgent: { name: 'old-agent', model: 'claude-sonnet-5' }, openrouterCurated: new Set(),
+      applyClaudeCliGate() {}, updateCustomModelIdRow() {}, fetch: () => response,
+    }
+    const pending = runInNewContext(body + '\nloadAvailableModels()', context)
+    sel.value = 'claude-sonnet-5-5'
+    resolveFetch({ ok: true, json: async () => ({}) })
+    await pending
+    expect(sel.value).toBe('claude-sonnet-5-5')
+    // A curation utáni ismételt betöltés ugyanezt az explicit értéket őrzi.
+    await runInNewContext(body + '\nloadAvailableModels()', context)
+    expect(sel.value).toBe('claude-sonnet-5-5')
+  })
+
+  it.each([
+    ['available-first', false], ['ollama-first', false],
+    ['available-first', true], ['ollama-first', true],
+  ] as const)('a szinkron inicializálás után a %s sorrend helyes (közben user-választás: %s)', async (order, userChanges) => {
+    class Option {
+      value = ''
+      className = ''
+      textContent = ''
+      dataset: Record<string, string> = {}
+      disabled = false
+    }
+    class Select {
+      id = 'editAgentModel'
+      selected = 'claude-sonnet-5-5'
+      children: Option[] = []
+      groups: Group[] = []
+      get options() { return [...this.children, ...this.groups.flatMap(group => group.children)] }
+      get value() { return this.options.some(option => option.value === this.selected) ? this.selected : this.options[0]?.value ?? '' }
+      set value(value: string) { this.selected = value }
+      appendChild(option: Option) { this.children.push(option) }
+      querySelectorAll() { return [] }
+    }
+    class Group {
+      children: Option[] = []
+      style = { display: '' }
+      constructor(readonly parentElement: Select) { parentElement.groups.push(this) }
+      set innerHTML(_value: string) { this.children = [] }
+      appendChild(option: Option) { this.children.push(option) }
+    }
+    const saved = 'deepseek-v4-flash'
+    const sel = new Select()
+    sel.appendChild(Object.assign(new Option(), { value: 'claude-sonnet-5-5' }))
+    const deepseek = new Group(sel)
+    deepseek.appendChild(Object.assign(new Option(), { value: saved }))
+    const ollama = new Group(sel)
+    const elements: Record<string, Select | Group> = { editAgentModel: sel, deepseekModelGroup: deepseek, ollamaModelGroup: ollama }
+    const source = readFileSync(join(process.cwd(), 'web/app.js'), 'utf8')
+    const modelStart = source.indexOf('function applyOpenRouterLegacyGate(sel)')
+    const modelBody = source.slice(modelStart, source.indexOf('function updateCustomModelIdRow(selectEl)', modelStart))
+    const ollamaStart = source.indexOf('async function loadOllamaModels()')
+    const ollamaBody = source.slice(ollamaStart, source.indexOf('// Populates the DeepSeek optgroups', ollamaStart))
+    const initStart = source.indexOf('  // A mentett modell szinkron inicializálása')
+    const initialization = source.slice(initStart, source.indexOf('  populateProfileSelect(', initStart))
+      .replace('  loadAvailableModels()', '  availablePending = loadAvailableModels()')
+      .replace('  loadOllamaModels()', '  ollamaPending = loadOllamaModels()')
+    const resolvers: Record<string, (value: unknown) => void> = {}
+    const context = {
+      document: { getElementById: (id: string) => elements[id] ?? null, createElement: () => new Option() },
+      currentAgent: { name: 'old-agent', model: saved }, openrouterCurated: new Set(), lastAvailableModelsData: null,
+      applyClaudeCliGate() {}, updateCustomModelIdRow() {},
+      availablePending: null as Promise<unknown> | null, ollamaPending: null as Promise<unknown> | null,
+      fetch: (url: string) => new Promise(resolve => { resolvers[url] = resolve }),
+    }
+    runInNewContext(modelBody + ollamaBody + initialization, context)
+    expect(sel.value).toBe(saved)
+    if (userChanges) sel.value = 'claude-sonnet-5-5'
+    const expected = userChanges ? 'claude-sonnet-5-5' : saved
+    const finishAvailable = async () => {
+      resolvers['/api/models/available']({ ok: true, json: async () => ({ deepseek: [{ id: 'deepseek-flash', label: 'Flash' }] }) })
+      await context.availablePending
+    }
+    const finishOllama = async () => {
+      resolvers['/api/ollama/models']({ ok: true, json: async () => [] })
+      await context.ollamaPending
+    }
+    if (order === 'available-first') { await finishAvailable(); await finishOllama() }
+    else { await finishOllama(); await finishAvailable() }
+    expect(sel.value).toBe(expected)
+    expect(sel.options.some(option => option.value === expected)).toBe(true)
+  })
+
   it('a beállítás UI a listából kivett korábbi értéket kijelzi és ugyanazt menti vissza', () => {
     class Element {
       children: Element[] = []

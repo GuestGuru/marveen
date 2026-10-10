@@ -3793,9 +3793,9 @@ async function openAgentDetail(agentName) {
   const chConnected = agentIsConnected(currentAgent)
   document.getElementById('agentDetailChStatus').innerHTML = `<span class="tg-status"><span class="tg-dot ${chConnected ? 'connected' : 'disconnected'}"></span>${chConnected ? t('agents.channel.connected') : t('agents.channel.disconnected')}</span>`
 
-  // Settings tab - load Ollama + DeepSeek + custom-provider models then set value
-  loadAvailableModels()
-  loadOllamaModels().then(() => {
+  // A mentett modell szinkron inicializálása megelőzi az aszinkron listákat.
+  // Utána a listafrissítés már a felhasználó aktuális választását őrzi.
+  {
     const sel = document.getElementById('editAgentModel')
     const mv = currentAgent.activeModel || currentAgent.model || 'claude-opus-4-8[1m]'
     const customProviderId = currentAgent.customProvider || null
@@ -3828,14 +3828,14 @@ async function openAgentDetail(agentName) {
       }
       sel.value = mv
     }
-    // PICKERCLIKAPU923: re-apply the CLI gate AFTER the value is set, so the
-    // agent's current model is never the disabled option regardless of which
-    // of the two async loads finished first (measured in Chromium: a value set
-    // onto a disabled option still reads back, but the order must not matter).
+    // A kapuk az inicializált értéket látják. A listák későbbi frissítése
+    // megőrzi az aktuális UI-választást, és újra alkalmazza a szükséges kaput.
     if (lastAvailableModelsData) applyClaudeCliGate(lastAvailableModelsData)
     applyOpenRouterLegacyGate(sel)
     updateCustomModelIdRow(sel)
-  })
+  }
+  loadAvailableModels()
+  loadOllamaModels()
   populateProfileSelect(
     document.getElementById('editAgentProfile'),
     document.getElementById('editAgentProfileDesc'),
@@ -4304,6 +4304,8 @@ async function loadOllamaModels() {
     if (res.ok) models = await res.json()
   } catch { /* Ollama not reachable -- fall through with an empty list */ }
   if (!Array.isArray(models)) models = []
+  // A választást a válasz beérkezésekor olvassuk: közben már változhatott.
+  const selections = groups.map(group => [group && group.parentElement, group && group.parentElement.value])
   for (const group of groups) {
     if (!group) continue
     group.innerHTML = ''
@@ -4317,6 +4319,7 @@ async function loadOllamaModels() {
       group.appendChild(opt)
     }
   }
+  selections.forEach(([sel, value]) => restoreModelSelection(sel, value))
 }
 
 // Populates the DeepSeek optgroups in both the wizard and the agent edit
@@ -4380,6 +4383,22 @@ function applyOpenRouterLegacyGate(sel) {
   })
 }
 
+function restoreModelSelection(sel, value) {
+  if (!sel) return
+  // A frissített optgroupból kivett aktuális ID sem eshet át más modellre.
+  if (typeof value === 'string' && value) {
+    if (!Array.from(sel.options).some(opt => opt.value === value)) {
+      const saved = document.createElement('option')
+      saved.value = value
+      saved.className = 'dynamic-model-opt'
+      saved.textContent = value + ' (korábbi / egyedi modell)'
+      sel.appendChild(saved)
+    }
+    sel.value = value
+  }
+  applyOpenRouterLegacyGate(sel)
+}
+
 async function loadAvailableModels() {
   try {
     const res = await fetch('/api/models/available')
@@ -4388,10 +4407,7 @@ async function loadAvailableModels() {
     // Optgroup-frissítéskor a böngésző elveszítheti az aktuális kiválasztást.
     const selections = ['agentModel', 'editAgentModel'].map(id => {
       const sel = document.getElementById(id)
-      const value = id === 'editAgentModel' && currentAgent && !currentAgent.customProvider
-        ? currentAgent.activeModel || currentAgent.model || (sel && sel.value)
-        : sel && sel.value
-      return [sel, value]
+      return [sel, sel && sel.value]
     })
     applyClaudeCliGate(data)
     const deepseekModels = Array.isArray(data.deepseek) ? data.deepseek : []
@@ -4507,21 +4523,7 @@ async function loadAvailableModels() {
         g.appendChild(opt)
       }
     }
-    selections.forEach(([sel, value]) => {
-      if (!sel) return
-      // A frissített optgroupból kivett mentett ID sem eshet át más modellre.
-      if (typeof value === 'string' && value) {
-        if (!Array.from(sel.options).some(opt => opt.value === value)) {
-          const saved = document.createElement('option')
-          saved.value = value
-          saved.className = 'dynamic-model-opt'
-          saved.textContent = value + ' (korábbi / egyedi modell)'
-          sel.appendChild(saved)
-        }
-        sel.value = value
-      }
-      applyOpenRouterLegacyGate(sel)
-    })
+    selections.forEach(([sel, value]) => restoreModelSelection(sel, value))
     applyClaudeCliGate(data)
     updateCustomModelIdRow(document.getElementById('editAgentModel'))
     updateCustomModelIdRow(document.getElementById('agentModel'))
