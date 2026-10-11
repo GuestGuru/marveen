@@ -37,7 +37,7 @@ Jelenleg módosított upstream fájljaink (ezekre számíts konfliktusra): `inst
 `src/web/routes/agents.ts`, `src/web/update-checker.ts`, `scripts/hooks/ledger*.py`,
 `src/web.ts` és `src/web/agent-process.ts` (az `ensure*Section` bekötések) (kiegészítve
 2026-09-30, IT-1178); a `src/web.ts` hook-ágában az `ensureBrainPromotionForFleet` hívás is (2026-10-03, IT-1289,
-lásd `docs/gg-brain-promotion.md`).
+lásd `docs/gg-brain-promotion.md`). A `src/web/channel-intake-monitor.ts` `parseIntakeProbe`-ja is (2026-10-11): egy sor, ami a Telegram 5xx/429-et nem tokenhibának veszi, lásd `src/gg/intake-probe-status.ts`.
 
 ---
 
