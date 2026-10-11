@@ -36,6 +36,7 @@ import { agentDir, listAgentNames } from './agent-config.js'
 import { isAgentRunning } from './agent-process.js'
 import { readLastIngestionTimestamp, readLastIngestionTimestampAcross, mainTranscriptDirs } from './inbound-probe.js'
 import { sendRoutineAlert } from './routine-alert.js'
+import { isTransientTelegramStatus } from '../gg/intake-probe-status.js'
 
 const MINUTE_MS = 60 * 1000
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -108,6 +109,8 @@ export function parseIntakeProbe(status: number, body: unknown): IntakeProbe {
   if (status === 0) {
     return { reachable: false, tokenOk: true, pendingUpdates: null, webhookUrl: null, lastErrorMessage: null }
   }
+  // GG fork: a Telegram 5xx/429 is not a token verdict (src/gg/intake-probe-status.ts)
+  if (isTransientTelegramStatus(status)) return parseIntakeProbe(0, null)
   const parsed = (body ?? {}) as TelegramWebhookInfoBody
   if (status !== 200 || parsed.ok !== true || !parsed.result) {
     return {
