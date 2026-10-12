@@ -14,6 +14,28 @@ memóriájában sok a céges tudás, nagy része a 09-29 előtti korból, amikor
 **Tamás döntése (2026-10-03):** a bot maga dönti el, mit emel át, a kolléga bevonása nélkül.
 Nincs jóváhagyási lista, nincs válaszvárás, és nincs tájékoztató üzenet sem.
 
+## Közös szabály és helyi adapter (IT-1608)
+
+A közös céges memória szabályainak forrása a gg-mcp instructions és a
+`gg_knowledge_get(topic: "ceges-agy")` kézikönyv. A gg-mcp telepíti a `ceges-agy`
+(tool-leképezés, mentés, javítás, visszavonás) és a `memory-review` (kliensoldali
+átnézés, tartós célhely-javaslat) közös skilleket. Marveen nem tart saját példányt
+az általános munkafolyamatból: a generált CLAUDE.md-blokk csak a flotta polcait,
+a gazda tokenjét és a háttérkörök helyi szabályát köti a központi forráshoz.
+
+A `brain-promotion` a Marveen saját memóriaadaptere: a meglévő bot-sessionben
+értékel, ugyanazzal a gazda-tokennel, legfeljebb 40 tétellel; a sorrendkapu,
+kurzor és csendes futás megmarad. Új központi LLM-job nem indul. A dream-engine
+flotta-memória-egészség és helyi működés; nem a céges agy központi átnézője.
+
+Céges szabály tartós célja a wiki vagy a gg-mcp közös skill forrásrepója,
+forrás-id-vel és konkrét javaslattal. A globális bot-created skill és a privát
+flotta-tükör nem terjeszti ezt a kollégák Claude/Codex klienseinek. Generált
+közös skillt a bot nem szerkeszt: telepítéskor felülíródik. Személyes és
+botműködési tudás user/local skillbe kerül, személyes működésmód-váltás a gazda
+jóváhagyásával. A saját memória átemelése a brainbe és a jóváhagyást igénylő
+tartós szabályváltoztatási javaslat külön művelet.
+
 ## Hogyan
 
 | Rész | Hol | Mit csinál |
@@ -37,7 +59,7 @@ fő agent gazdájának nevében menne (az IT-1161 nyitott kérdése).
 2. Egy körben egyetlen `candidates --limit 40` adag: a saját `shared`/`warm`/`cold` tételei a kurzor után, id szerint.
    A `hot` (futó állapot) és a „céges agy: …” mutatók kimaradnak. A `remaining` a következő
    éjszakára marad; az adag végén nincs újabb lapozás. Ez promptutasítás, nem CLI-szintű napi kvóta.
-3. Tételenként dönt a CLAUDE.md „Hova kerül” sorrendjével. Titok, futó állapot, HR, a botok
+3. Tételenként dönt a központi kézikönyv szabályával. Titok, futó állapot, HR, a botok
    működése és a gazda preferenciái nem mennek át. Átemelés előtt `brain_search`-öt futtat a
    duplikátumok kiszűrésére, utána `brain_save`. A `kulcs` értéke `marveen-<agent>-mem-<id>`, így
    egy újrafutás nem duplikál. A `fogalmak` között mindig ott a `marveen-átemelés`. Döntésnél a
@@ -56,7 +78,7 @@ A kezdeti állomány (mérve 2026-10-03: a fő agent 392, jean 132, salesninja 1
 - **Kikapcsolás egy botnál:** `task-config.json` → `"enabled": false` (a boot nem írja vissza).
 - **Mit vitt át:** `node dist/gg/brain-promotion-cli.js status --agent <név>`; a céges agyban
   keresés a `marveen-átemelés` fogalomra, illetve az adott gazda szerzőségére.
-- **Visszavonás:** a gazda szól a botnak; a CLAUDE.md-blokk visszavonási szabálya érvényes
+- **Visszavonás:** a gazda szól a botnak; a `ceges-agy` közös skill visszavonási szabálya érvényes
   (`brain_archive`, UPDATE/SUPERSEDE esetén az előd visszamentése).
 - **Újra-átnézés elölről:** a `store/brain-promotion/<agent>.json` törlése. A `kulcs` miatt nem
   duplikál, csak tokent költ.

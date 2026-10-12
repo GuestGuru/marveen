@@ -7,6 +7,21 @@ Te most a "Dream Engine" éjszakai analízis-loopot futtatod. 02:07-kor vagy, {{
 
 A cél: az aznapi tudást átkonszolidálni és reggelre (07:30 Reggeli Napindító) felkészülni 4 priorizált javaslattal.
 
+## A flotta memóriája és a céges agy
+
+Ez a kör a Marveen saját memóriáját és helyi működését vizsgálja. A céges agy
+közös szabálya a gg-mcp instructions, a `ceges-agy` és a `memory-review` közös
+skill, illetve `gg_knowledge_get(topic: "ceges-agy")`. Céges átemelés más bot
+helyett a fő agent tokenjével nem végezhető: azt a saját
+`brain-promotion-<agent>` körük végzi, a saját gazdájuk tokenjével.
+
+Skill-javaslatnál mindig írd ki a forrás-id-t és a célhelyet. Céges tudás célja
+a wiki vagy a gg-mcp közös skill forrásrepója; személyes és botműködési tudásé
+user/local skill. A generált közös skill fájlját ne szerkeszd: a következő
+telepítés felülírja. A céges szabályt ne írd globális bot-created skillbe,
+amely csak a flottának látszik. A személyes működés megváltoztatását a gazda
+hagyja jóvá. A régi tükrözési receptek alább csak helyi bot-skillekre szólnak.
+
 ## Mit kell csinálnod
 
 Generálj egy `{{INSTALL_DIR}}/DREAM.md` fájlt az alábbi 5 bucket alapján. A formátum a fájl alján van.
@@ -22,7 +37,7 @@ SQL minta:
 sqlite3 {{INSTALL_DIR}}/store/claudeclaw.db "SELECT agent_id, content, keywords FROM memories WHERE created_at > strftime('%s', 'now', '-24 hours') AND category IN ('hot','warm') ORDER BY agent_id, created_at"
 ```
 
-Output: 0-2 konkrét skill-javaslat. Mindegyikhez: cím + 1 mondat indoklás + "flotta-szintű" vagy "agent: <név>".
+Output: 0-2 konkrét skill-javaslat. Mindegyikhez: cím + 1 mondat indoklás + forrás-id + célhely (wiki / közös skill forrásrepó / user-local skill) + "flotta-szintű" vagy "agent: <név>".
 
 ### Bucket 2 — 🧹 Memória-egészség (NE delete, COLD-tier-be mozgatás)
 
