@@ -1,32 +1,6 @@
-// GG-specific: the company-brain (gg-brain) rules for the fleet, injected into
-// every agent's CLAUDE.md as a generated block. IT-1178 (M7-A2).
-//
-// ── Why this file exists ────────────────────────────────────────────────────
-//
-// 2026-09-29: the company brain (brain.guest.guru) became the shared memory of
-// the whole company -- colleagues, their Claude Code and Codex, and these bots.
-// The general rule reaches every client through the gg-mcp server instructions
-// (IT-1177), and the full handbook is a wiki page (`tudas/ceges-agy`). What is
-// NOT there is the part only a Marveen bot has: a second memory of its own, a
-// `shared` shelf that four agents' hand-written CLAUDE.md files call "the common
-// company memory", and an owner who sees only the Telegram/Slack reply, never
-// the terminal. Without this block a bot keeps filing company knowledge on the
-// fleet shelf, where no colleague can find it.
-//
-// Why a generated block and not a skill: the bots write the shared
-// ~/.claude/skills tree themselves, without approval, so a skill is not a
-// stable carrier for a company rule. The block is rewritten on every spawn.
-//
-// Why static text: the rule is the same for every bot. The owner's e-mail (for
-// `dontotte`) comes from `gg_allowed_tools` at runtime, not from here.
-//
-// Scope: sub-agents via startAgentProcess (agent-process.ts), the main agent
-// via the dashboard start (web.ts) -- unlike memory-rules, the main agent's
-// hand-maintained CLAUDE.md carries nothing about the brain.
-//
-// Deliberately NOT here: templates, field lists, JSON examples. Those live in
-// the handbook; a copy here would drift (see the memory-rules block's own
-// "MUTASS IDE" rule). A test caps the body at 6000 characters.
+// A közös céges szabályt a gg-mcp instructions, a wiki és a telepített skillek adják.
+// Ez a generált blokk csak a Marveen saját memóriaadapterét és gazdájának tokenjét
+// köti hozzájuk. Minden induláskor frissül; a kézi persona többi része megmarad.
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -42,102 +16,47 @@ export const BRAIN_RULES_BLOCK_RE = new RegExp(
 
 export function buildBrainRulesBody(): string {
   return [
-    '## Céges agy: mi megy oda, és mi a saját memóriádba',
+    '## Céges agy: központi szabályok, Marveen saját adapter',
     '',
-    'Ez a blokk minden indulásodkor újragenerálódik (IT-1178), ezért EZ a mérvadó szövege. A céges',
-    'agy (brain.guest.guru) általános szabályait a gg-mcp minden session elején megadja (a szerver',
-    'utasításában); a teljes kézikönyv: `gg_knowledge_get(topic: "ceges-agy")`. Ha mentés előtt',
-    'bizonytalan vagy, azt olvasd el. Itt csak az áll, ami a Marveen-botokra külön érvényes.',
+    'A közös céges memória szabályainak forrása a gg-mcp szerver instructions és a kézikönyv:',
+    '`gg_knowledge_get(topic: "ceges-agy")`. A gg-mcp telepíti a `ceges-agy` közös skillt',
+    '(tool-leképezés, keresés, mentés, javítás, visszavonás) és a `memory-review` skillt',
+    '(kliensoldali átnézés, forráshoz kötött javaslat). Hiányzó skillnél a kézikönyvet olvasd;',
+    'helyi másolattal ne pótold a közös szabályokat. Ez a blokk csak a Marveen adaptere.',
     '',
     '### A `shared` polc nem a céges agy',
     '',
-    'A `shared` a flotta botjainak közös polca: a kollégák és az ő Claude Code-juk, Codexük nem',
-    'látják. A céges agyat minden kolléga és minden agent látja és keresi. Ha a fenti, kézzel írt',
-    'memória-szakaszod („Memória rendszer”) a `shared`-et közös céges memóriának nevezi, vagy azt',
-    'mondja, hogy az egész cégre igaz tudás oda megy: 2026-09-29 óta EZ a blokk a mérvadó, a céges',
-    'tudás a céges agyba megy.',
+    'A `shared` a flotta botjainak közös polca: a kollégák Claude Code-ja és Codexe nem látja.',
+    'Ha a kézi memória-szakaszod a `shared`-et közös céges memóriának nevezi, EZ a blokk a mérvadó:',
+    'a céges tudás a céges agyba megy, a bot működése és a gazda preferenciái a saját memóriába.',
+    'Ne mentsd mindkét helyre: saját felidézéshez elég a céges bejegyzésre mutató hivatkozás.',
+    'A flotta személyes-adat-szabálya a `shared` polcra szól; a céges agy célterét és hozzáférését',
+    'a központi szabály adja. Titok és auth nélküli végpont kulcsa egyik helyre sem kerülhet.',
     '',
-    '- Ne mentsd mindkét helyre. Ha a saját munkádhoz is kell, a saját memóriádba csak egy mutató',
-    '  kerüljön („céges agy: <cím>”), ne a szöveg másolata.',
-    '- Céges kérdésnél előbb a céges agyban keress (`brain_search`), utána a saját polcodon.',
-    '- A „Mit szabad emlékbe írni” blokk személyes-adat-szabálya a `shared` polcra szól. A céges',
-    '  agyba az ügyfél, a tulajdonos és a kolléga e-mailje, telefonszáma, adószáma, a szabadság és',
-    '  a számlázási ügy belefér. Titok viszont ott sem: token, jelszó, és az az azonosító sem, ami',
-    '  mögött auth nélküli végpont áll (tulaj- vagy lakás-UUID, `/tfh/…` link).',
+    '### Gazda és háttérkör',
     '',
-    '### Hova kerül: döntsd el ebben a sorrendben',
+    'A mentés a gazdád nevében megy: a gg-mcp tokened az övé. Csak a gazdád munkájában született',
+    'tudást mentsd; amit egy másik bottól kaptál, azt az a bot mentse. Idegen tokent ne használj.',
+    'A visszaigazolás a gazdádnak küldött Telegram- vagy Slack-válasz része, a `ceges-agy`',
+    'szabálya szerint; a terminált nem látja. Visszavonásnál ugyanazt a közös skillt kövesd.',
     '',
-    '1. **Titok, vagy auth nélküli végpont kulcsa?** Sehova.',
-    '2. **Futó állapot** (nyitott, valakire vár, holnap folytatod)? A Linearba. A saját `hot`',
-    '   tieredben követheted, a céges agyba nem kerül.',
-    '3. **HR-ügy** (TÉR, teljesítményértékelés, fizetés, személyes konfliktus)? Csak a',
-    '   `management` térbe, és csak ha a gazdád a tagja. Ha a mentés 403-at ad, ne mentsd máshova;',
-    '   a saját, nem `shared` memóriádban maradhat, ha a munkádhoz kell.',
-    '4. **Egy kollégának (embernek) is hasznos,** ha holnap ugyanebbe futna bele? A céges agyba',
-    '   (`brain_save`), a pillanatban, kérés nélkül.',
-    '5. **Csak a botok működéséről szól** (kapu, helper, a dashboard API, a flotta szabályai)? A',
-    '   saját memóriádba; `shared`, ha minden botra igaz.',
-    '6. **Csak a gazdádról szól** (hangnem, üzenet-gyakoriság, formátum, egyéni kérés)? A saját',
-    '   memóriádba, `warm`.',
+    'Heartbeatben és más háttérkörben ne ments a céges agyba: a következő gazdával folytatott',
+    'beszélgetésben ajánld fel a tudást, és válasz után mentsd.',
+    'Egy kivétel van: a `brain-promotion-<neved>` éjszakai átemelő kör. Ott a saját memóriád céges',
+    'tudását te értékeled és mented, a gazdád tokenjével, felajánlás és üzenet nélkül.',
+    'A saját `warm` polcodra kerüljön a beszélgetésben menthető, de ott el nem mentett céges tudás;',
+    'a helyi átemelő adapter onnan veszi elő. A 40-es adag, sorrendkapu és kurzor megmarad.',
     '',
-    'Példák a flotta saját emlékeiből:',
+    '### Tartós célhely és forrás',
     '',
-    '| Emlék | Hova |',
-    '|---|---|',
-    '| A szálláshely-szolgáltatási engedély névre szól, lakáseladásnál nem száll át a vevőre | céges agy, tény |',
-    '| A GG3 `reviews.overall_score` 0–10-es skálán van, és a 0.0 hiányzó pontszám | céges agy, tanulság |',
-    '| Nem vállalunk lakcímkártya-ügyintézést (egy kolléga döntése) | céges agy, döntés; `dontotte`: az ő e-mailje |',
-    '| IFA-mérték kerületenként, a GG3-ból mérve | céges agy, tény; mérési dátummal és a GG3-táblára hivatkozva |',
-    '| A Linear `users` név-szűrője a `name`-et nézi, a becenév a `displayName`-ben van | céges agy, tanulság |',
-    '| A self-pace kapu a parancs alakját nézi; a `/api/memories` listázás plafonja | saját memória (`shared`, ha minden botra igaz) |',
-    '| „Ne küldj ennyi köztes üzenetet” (a gazdád kérése) | saját memória, `warm` |',
-    '| Egy számlázási hiba NYITOTT, egy kolléga válaszára vár | Linear; a hiba OKA tanulságként a céges agyba |',
-    '',
-    '### Kinek a nevében, és hogyan',
-    '',
-    '- A mentés a gazdád nevében megy: a gg-mcp tokened az övé. Ezért csak azt mentsd, ami a',
-    '  gazdád munkájában született; amit egy másik bottól kaptál, azt az a bot mentse.',
-    '- Döntésnél a `dontotte` a döntő ember e-mailje. A gazdádé a `gg_allowed_tools` válaszának',
-    '  `en` mezőjében áll. Ha nem tudod, ki döntött: `agent`.',
-    '- A tér alapból a gazdád csapatáé. Ha a hiba több teret sorol fel, a témához illőt válaszd;',
-    '  ami az egész cégnek szól, az a `ceg`.',
-    '- Ha a `brain_*` toolok nem látszanak, előbb a ToolSearch-csel töltsd be őket („brain”). Ha',
-    '  így sincsenek, a `gg_allowed_tools` megmondja, hiányzik-e a `brain` csomag. A munka megy',
-    '  tovább; a gazdádnak egy sorban szólj, hogy most nem mentettél a céges agyba.',
-    '',
-    '### Visszaigazolás és visszavonás',
-    '',
-    'A gazdád a terminált nem látja: a visszaigazolás abba az üzenetbe kerül, amit neki küldesz',
-    '(Telegram- vagy Slack-válasz):',
-    '',
-    '> Elmentettem a céges agyba: „<cím>” (`<tér>` tér). Ha nem kéred, szólj, és visszavonom.',
-    '',
-    'Ha a válasz `letrejott: false`, a céges agy nem írt semmit (a tartalom már bent volt, vagy a',
-    '`kulcs` foglalt): ezt mondd, ne a mentést.',
-    '',
-    'Heartbeatben és más háttérkörben, amit nem a gazdád üzenete indított (ütemezett feladat),',
-    'ne ments a céges agyba: a mentés a gazdáddal folytatott beszélgetésben történik, látható',
-    'visszaigazolással. Ha háttérkörben születik menthető tudás, a gazdádnak küldött következő',
-    'üzenetben ajánld fel („Ezt elmenteném a céges agyba: …”), és a válasza után mentsd.',
-    '',
-    'Egy kivétel van: a `brain-promotion-<neved>` éjszakai átemelő kör (IT-1289). Abban a saját',
-    'memóriád céges tudását te döntöd el és mented, felajánlás és üzenet nélkül, a feladat leírása',
-    'szerint (Tamás döntése, 2026-10-03: a kollégát nem terheljük). Ezért a beszélgetésben menthető,',
-    'de ott el nem mentett céges tudás a saját `warm` polcodra menjen, ne a `shared`-re: onnan éjjel',
-    'átkerül.',
-    '',
-    'Ha a gazdád egy szóval visszavonja („ne”, „ezt ne”, „vond vissza”, „töröld”), a mentés',
-    'válaszának `dontes` mezője dönt:',
-    '',
-    '- Nincs `dontes`, vagy `ADD`: `brain_archive` az `id`-vel, `ok`: „a gazda visszavonta”.',
-    '  Válasz: „Visszavontam: „<cím>” (archiválva, visszaállítható).”',
-    '- `UPDATE` vagy `SUPERSEDE`: NE archiváld. A mentés egy korábbi bejegyzést írt felül, és az',
-    '  archiválás azt is kivenné a keresésből. `brain_get` az `id`-vel; a lánc előző tagjának',
-    '  (`chain.older`) szövegét mentsd vissza új `kulcs`-csal és `felulirja: <id>`-vel, és mondd',
-    '  meg a gazdának, hogy a korábbi változat állt vissza.',
-    '',
-    'Ha az `id` már nincs meg (közben újraindultál): `brain_search` a címre, `forrasok: ["agent"]`,',
-    'mai `tol`-lal. Az archiválás visszaállítható: `brain_archive`, `visszaallitas: true`.',
+    'A dream-engine a flotta saját memória-egészségét és helyi működését vizsgálja; a céges',
+    'memória átnézése a `memory-review` munkafolyamat, a saját tokeneddel. Ne végezz céges',
+    'átemelést más bot helyett a fő agent sessionjéből.',
+    'Céges tudás célja a wiki vagy a közös skill forrásrepója (gg-mcp), forrás-id-vel és konkrét',
+    'javaslattal. Ne zárd a céges szabályt globális bot-created skillbe, ami a kollégákhoz nem jut el.',
+    'A generált közös skill fájlját ne szerkeszd: a következő telepítés felülírja. Csak személyes',
+    'és botműködési tudás kerüljön user/local skillbe, a gazda személyes működését érintő',
+    'változtatáshoz az ő jóváhagyása kell.',
   ].join('\n')
 }
 

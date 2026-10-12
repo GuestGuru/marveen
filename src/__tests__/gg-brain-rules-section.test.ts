@@ -121,42 +121,30 @@ describe('buildBrainRulesBody -- what the block teaches', () => {
     expect(body).toContain('auth nélküli végpont')
   })
 
-  it('carries the decision order, HR included, with the 403 answer', () => {
-    for (const s of ['Futó állapot', 'A Linearba', 'HR-ügy', '`management`', '403', 'kérés nélkül', '`warm`']) {
-      expect(body).toContain(s)
-    }
+  it('delegates shared workflow and tool mapping to the centrally installed skills', () => {
+    expect(body).toContain('`ceges-agy`');
+    expect(body).toContain('`memory-review`');
+    expect(body).toContain('gg-mcp');
+    expect(body).not.toContain('### Hova kerül: döntsd el ebben a sorrendben');
+    expect(body).not.toContain('`chain.older`');
   })
 
-  it('saves in the owner\'s name only what the owner\'s work produced', () => {
-    expect(body).toContain('a gazdád nevében')
-    expect(body).toContain('amit egy másik bottól kaptál, azt az a bot mentse')
-    expect(body).toContain('`gg_allowed_tools` válaszának')
+  it('keeps owner identity and fleet background safeguards local', () => {
+    expect(body).toContain('a gazdád nevében');
+    expect(body).toContain('amit egy másik bottól kaptál, azt az a bot mentse');
+    expect(body).toContain('Telegram- vagy Slack-válasz');
+    expect(body).toContain('Heartbeatben');
+    expect(body).toContain('ne ments a céges agyba');
+    expect(body).toContain('`brain-promotion-<neved>`');
   })
 
-  it('puts the confirmation into the channel reply, not the terminal', () => {
-    expect(body).toContain('Telegram- vagy Slack-válasz')
-    expect(body).toContain('Elmentettem a céges agyba:')
-    expect(body).toContain('`letrejott: false`')
+  it('routes company improvements to source and protects generated skills', () => {
+    expect(body).toContain('wiki');
+    expect(body).toContain('közös skill forrásrepója');
+    expect(body).toContain('forrás-id');
+    expect(body).toContain('generált közös skill fájlját ne szerkeszd');
   })
 
-  // Döntés (2026-09-30, IT-1178): a gazda jelenléte nélküli háttérkör (heartbeat)
-  // NEM ment a céges agyba; a mentés a beszélgetésben, látható visszaigazolással
-  // történik. A terv első változata még megengedte (utólagos visszaigazolással).
-  it('does not save in a background round without the owner', () => {
-    expect(body).toContain('Heartbeatben')
-    expect(body).toContain('ne ments a céges agyba')
-    expect(body).toContain('a gazdáddal folytatott beszélgetésben')
-    expect(body).not.toContain('heartbeatben mentettél')
-  })
-
-  // Az archiválás nem aktiválja vissza a felülírt elődöt (gg-brain IT-1072):
-  // UPDATE/SUPERSEDE után a sima archiválás a régi tényt is eltüntetné.
-  it('undoes by branch: archive for ADD, restore the predecessor for UPDATE/SUPERSEDE', () => {
-    expect(body).toContain('`brain_archive`')
-    expect(body).toContain('`UPDATE` vagy `SUPERSEDE`: NE archiváld')
-    expect(body).toContain('`chain.older`')
-    expect(body).toContain('`visszaallitas: true`')
-  })
 })
 
 // A fő-agens a mintában (memory-rules) kimarad, mert a kézi CLAUDE.md-je hordozza
