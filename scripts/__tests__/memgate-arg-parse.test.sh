@@ -61,7 +61,14 @@ run_gate() {
       MARVEEN_ALERT_CHAT_ID="111" \
       MARVEEN_CORE_AGENTS="__no_core__" \
       MARVEEN_MEM_GATE_OBSERVE=0 \
-      timeout "$secs" bash "$GATE" "$@" 2>&1)"
+      python3 -c '
+import subprocess, sys
+try:
+    result = subprocess.run(sys.argv[2:], timeout=float(sys.argv[1]))
+except subprocess.TimeoutExpired:
+    sys.exit(124)
+sys.exit(result.returncode)
+' "$secs" bash "$GATE" "$@" 2>&1)"
   RC=$?
 }
 

@@ -854,6 +854,10 @@ class TestClaudeTokenSources(unittest.TestCase):
         expanduser = patch.object(uc.os.path, "expanduser", return_value=credential_path)
         expanduser.start()
         self.addCleanup(expanduser.stop)
+        # Elfelejtett mock esetén se indulhasson valódi keychain-olvasás.
+        security = patch.object(uc.subprocess, "run", side_effect=AssertionError("Nem mockolt subprocess hívás"))
+        security.start()
+        self.addCleanup(security.stop)
         self._tmp = tempfile.NamedTemporaryFile("w", suffix=".env", delete=False)
         self._tmp.write("CLAUDE_CODE_OAUTH_TOKEN=env-tok\n")
         self._tmp.close()
@@ -862,28 +866,44 @@ class TestClaudeTokenSources(unittest.TestCase):
     def _security_ok(self, stdout=None):
         return MagicMock(returncode=0, stdout=stdout if stdout is not None else self.KEYCHAIN_PAYLOAD)
 
+    def test_token_assertion_failures_do_not_disclose_values(self):
+        # Szintetikus hibás tokennel a hibakimenet védelmét is ellenőrizzük.
+        unexpected_token = "synthetic-private-token"
+        for method in (
+            "test_keychain_used_when_credentials_file_absent",
+            "test_keychain_beats_env_file",
+            "test_credentials_file_still_wins_over_keychain",
+            "test_security_failure_falls_through_to_env_file",
+            "test_no_source_at_all_returns_none_pair",
+        ):
+            with self.subTest(method=method), \
+                 patch.object(uc, "_read_claude_token", return_value=(unexpected_token, "test")):
+                case = TestClaudeTokenSources(method)
+                result = unittest.TestResult()
+                case.run(result)
+                self.assertEqual(len(result.failures), 1)
+                self.assertEqual(result.errors, [])
+                self.assertNotIn(unexpected_token, result.failures[0][1])
+
     def test_keychain_used_when_credentials_file_absent(self):
         with patch.object(uc.sys, "platform", "darwin"), \
              patch.object(uc.os.path, "exists", side_effect=lambda p: p == self._tmp.name), \
              patch.object(uc, "ENV_PATH", self._tmp.name), \
              patch.object(uc.subprocess, "run", return_value=self._security_ok()):
             token, source = uc._read_claude_token()
-        self.assertEqual(token, "keychain-tok")
+        self.assertTrue(token == "keychain-tok", "Váratlan tokenforrás-érték")
         self.assertEqual(source, "keychain")
 
     def test_keychain_beats_env_file(self):
         """The .env token answers 403, so it must never win over the keychain."""
-        # `exists` must NOT be True for the credentials path: expanduser is real,
-        # so a blanket True opens the machine's own ~/.claude/.credentials.json
-        # and assertEqual prints its token on failure (a real-token leak on any
-        # host that HAS the file). Say the intent instead: credentials absent,
-        # env present -- keychain still wins over env.
+        # Csak az ideiglenes env létezik; a credential fájl izolált,
+        # a security hívás szintetikus választ ad.
         with patch.object(uc.sys, "platform", "darwin"), \
              patch.object(uc.os.path, "exists", side_effect=lambda p: p == self._tmp.name), \
              patch.object(uc, "ENV_PATH", self._tmp.name), \
              patch.object(uc.subprocess, "run", return_value=self._security_ok()):
             token, source = uc._read_claude_token()
-        self.assertEqual(token, "keychain-tok")
+        self.assertTrue(token == "keychain-tok", "Váratlan tokenforrás-érték")
         self.assertEqual(source, "keychain")
 
     def test_credentials_file_still_wins_over_keychain(self):
@@ -895,7 +915,7 @@ class TestClaudeTokenSources(unittest.TestCase):
              patch.object(uc.os.path, "expanduser", return_value=cred.name), \
              patch.object(uc.subprocess, "run", return_value=self._security_ok()) as run:
             token, source = uc._read_claude_token()
-        self.assertEqual(token, "file-tok")
+        self.assertTrue(token == "file-tok", "Váratlan tokenforrás-érték")
         self.assertEqual(source, "credentials_file")
         run.assert_not_called()
 
@@ -911,7 +931,7 @@ class TestClaudeTokenSources(unittest.TestCase):
              patch.object(uc, "ENV_PATH", self._tmp.name), \
              patch.object(uc.subprocess, "run", return_value=MagicMock(returncode=1, stdout="")):
             token, source = uc._read_claude_token()
-        self.assertEqual(token, "env-tok")
+        self.assertTrue(token == "env-tok", "Váratlan tokenforrás-érték")
         self.assertEqual(source, "env_file")
 
     def test_unparseable_keychain_payload_is_silent(self):
@@ -929,7 +949,9 @@ class TestClaudeTokenSources(unittest.TestCase):
     def test_no_source_at_all_returns_none_pair(self):
         with patch.object(uc.sys, "platform", "linux"), \
              patch.object(uc.os.path, "exists", return_value=False):
-            self.assertEqual(uc._read_claude_token(), (None, None))
+            token, source = uc._read_claude_token()
+        self.assertTrue(token is None, "Váratlan tokenforrás-érték")
+        self.assertIsNone(source)
 
 
 class TestCodexSnapshotFreshness(unittest.TestCase):

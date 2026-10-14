@@ -17,6 +17,8 @@ Registration (user-level ~/.claude/settings.json, post-install step):
   This means the hook can be registered before merge without causing errors
   on other branches where the file does not yet exist.
 """
+from __future__ import annotations
+
 import sys
 import os
 import re
