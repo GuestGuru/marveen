@@ -28,3 +28,11 @@ Minden lap két szemszögből mutatja be a funkciót:
 | [Háttér-feladatok](background-tasks.md) | Leválasztott, hosszú feladatok futtatása + értesítés |
 
 *A dokumentáció él; javításokat/bővítéseket szívesen fogadunk.*
+
+## Fejlesztői tesztek
+
+A teljes egységteszt-kör: Node 22 és Python 3.10+, `npm ci`, majd `npm test`. A Python- és shell-teszteket a `src/__tests__/script-tests-runner.test.ts` automatikusan megtalálja.
+
+A `usage-collect.test.py` tokenforrásai kizárólag ideiglenes credential/env fájlok és mockolt `security` hívások lehetnek. Tokenértéket assertion-hiba sem írhat ki; ezt szintetikus hibás értékkel külön regressziós teszt védi. A `skill-usage-capture` hook halasztott annotációkat használ, így a teszt a macOS rendszer Python 3.9-ével is futtatható.
+
+A custom-provider shell-fixture a másolt buildben kikapcsolt keychain-réteggel teszteli a saját fájlos vaultját; a memgate argumentumteszt Pythonból szab időkorlátot, ezért GNU `timeout` telepítése nélkül is lefut.
