@@ -164,3 +164,60 @@ hívást vagy az eltérő kulcsot. A szándékosan SKIP-nek minősített hibás 
 nem tudja megkülönböztetni a valóban kihagyandó tételtől. A 40-es körkorlát
 változatlanul promptutasítás. Ezek ellenőrzése a teljes session toolnaplójából
 kell, nem pusztán a rendezett kurzorból.
+
+## Éles aktiválás és természetes utómérés (2026-10-13, IT-1580)
+
+A mért runtime `/home/gg/marveen`, HEAD `0417c570` (az IT-1608 utáni main).
+A sorrendvédelmet tartalmazó kód 2026-10-11 07:13 körül jutott ki;
+a dashboard naplója ugyanakkor mind a hat sub-bot hookbeállításának
+frissítését mutatja. A fő bot projektbeállítása és a hat sub-bot
+projektbeállítása egy-egy `.*brain_save$` matchert tartalmaz a blokkoló
+`brain-promotion-save-gate.py` parancshoz. A buildben megvan a `check-save`
+és a szigorú `done`; a beállításokban nincs `disableAllHooks` kapcsoló.
+
+A konfiguráció aktiválását a 2026-10-12 03:00–03:01 közötti, mind a hét
+botot érintő természetes processz-újraindítás támasztja alá. A folytatás
+`--continue` módban történt: az azonos session-UUID és a változatlan systemd
+channels-indulási idő nem jelenti, hogy ugyanaz a Claude processz futott
+tovább. A dashboard restart-naplóját és a tényleges processzadatokat is
+ellenőrizni kell. A következő természetes nightly így 2026-10-13-ra esett;
+a korábbi 2026-10-11-i ablak még a kód telepítése előtt volt.
+
+A teljes session tool-use/result naplókból, a `task_runs` és a kurzorlog
+összevetéséből mért ablak: `2026-10-12T23:00:00Z`–`2026-10-13T00:30:00Z`
+(Europe/Budapest 2026-10-13 01:00–02:30).
+
+| Bot | Éjszakai tételek | candidates-hívás | Döntés |
+|---|---:|---:|---|
+| marveen | 5 | 1 | 5 SKIP |
+| brokermarcsi | 0 | 1 | üres adag |
+| bubi | 0 | 1 | üres adag |
+| jean | 0 | 1 | üres adag |
+| marlenka | 0 | 1 | üres adag |
+| peppa | 0 | 1 | üres adag |
+| salesninja | 0 | 1 | üres adag |
+
+Mind a hét runner-sor `fired`, `done`, `intact`, kitöltött befejezéssel.
+Mindegyik hívás `--limit 40`; második adag nincs. A fő bot eredeti
+jelöltlistája és a sorosan végzett `done`-hívások azonosak:
+`1148, 1151, 1152, 1153, 1158`. A hat sub-botnál `remaining=0` és nulla elem.
+Az üres adag az elfogadási feltétel szerint megfelelő.
+
+Ebben a mintában **nulla átemelő brain_save** volt, MCP-n és shelles úton is.
+Nincs új céges bejegyzés, ezért szerzőségre, legalább öt teljes célbejegyzés
+tartalmára, explicit térhasználatra és save/done sorrendre nincs új mentési
+minta. Közvetlen PreToolUse-blokkolást vagy javíthatatlan mentési hiba utáni
+megállást sem figyeltünk meg; ezekre nem állítunk éles garanciát.
+A fent dokumentált shelles/eltérő kulcsú és tudatos SKIP korlátok megmaradnak.
+
+Az ablak `conversation_log`-ja üres. A promotion körökben nincs csatornaküldés,
+saját memóriamentés vagy napi napló; az ablak későbbi, 02:15-ös saját hot
+memóriája és napi naplója külön háttérfeladathoz tartozik. Éles tesztmentés,
+kézi kör, restart, settings-, task-config- vagy kurzorírás nem történt a mérés
+során. A részletes session- és runner-azonosítók az IT-1580-ban vannak.
+
+Mérési recept: előbb `PRAGMA table_info(task_runs)`; a mért feladatnév-oszlop
+`name`, nem `task_id`. A `ts` milliszekundum, a többi vizsgált SQLite-idő
+másodperc. A központi auditot UTC `Z` ablakkal kérdezd; a rotáció miatt az
+üres audit önmagában nem bizonyít nulla hívást, ehhez a teljes sessionnapló is
+szükséges.
