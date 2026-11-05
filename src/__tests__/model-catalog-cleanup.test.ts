@@ -29,7 +29,10 @@ describe('IT-1569 modellkatalógus kompatibilitás', () => {
       expect(resolveSelectedModelId(previous)).toBe(previous)
     }
     expect(DEFAULT_MODEL).toBe('claude-opus-5-5')
-    expect(DISTRIBUTION_DEFAULT_AGENT_MODEL).toBe('claude-opus-5[1m]')
+    // v1.46 merge (2026-11-05): the distribution default follows upstream (MODELSUGGEST923 /
+    // DEFAULTCLIGUARD927). It only reaches a MODEL-LESS launch; this install sets
+    // DEFAULT_AGENT_MODEL in .env, and saved agent models are still never rewritten.
+    expect(DISTRIBUTION_DEFAULT_AGENT_MODEL).toBe('claude-opus-5-5[1m]')
     expect(resolveSelectedModelId('inherit')).toBe(DEFAULT_MODEL)
   })
 
@@ -270,7 +273,8 @@ describe('IT-1569 modellkatalógus kompatibilitás', () => {
     const start = source.indexOf('function buildSettingRow(def)')
     const body = source.slice(start, source.indexOf('async function saveAllSettings()', start))
     const def = { ...getSettingDefinition('DEFAULT_AGENT_MODEL')!, value: 'claude-opus-5[1m]' }
-    const context = { document: { createElement: () => new Element() }, t: (key: string) => key, def }
+    // settingDescription: an upstream v1.46 helper buildSettingRow calls; stubbed like t().
+    const context = { document: { createElement: () => new Element() }, t: (key: string) => key, settingDescription: (d: { description?: string }) => d.description ?? '', def }
     const row = runInNewContext(body + '\nbuildSettingRow(def)', context) as Element
     const select = row.children[1].children[0]
     expect(select.value).toBe(def.value)

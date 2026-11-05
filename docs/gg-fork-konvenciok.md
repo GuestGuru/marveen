@@ -72,18 +72,26 @@ változik; előtte és utána ellenőrizni kell a settings-overlay és a futó �
 
 ## 3. Upstream átvétele
 
+A teljes munka WORKTREE-ben megy: v1.46 óta a `db-write-gate.mjs` az éles checkoutban
+tiltja a `git fetch upstream`-et, a merge-et, a commitot és az ágváltást (csak a
+`git fetch origin` és a záró `git pull --ff-only origin <ág>` marad nyitva).
+
 ```bash
+git worktree add -b chore/upstream-<verzio> /home/gg/wt-up<verzio> origin/develop
+cd /home/gg/wt-up<verzio>
 git fetch upstream --tags
-git rev-list --left-right --count develop...upstream/develop   # ahead / behind
-git merge-tree --write-tree --name-only develop upstream/develop | head -20  # próba-merge
-git checkout -b chore/merge-upstream-<verzio> develop
-git merge --no-ff upstream/develop
+git rev-list --left-right --count HEAD...upstream/main   # ahead / behind
+git merge --no-commit --no-ff upstream/main
+git diff --name-only --diff-filter=U                     # a valódi konfliktusok
+npm ci                                                    # saját node_modules, nem symlink
 ```
 
-A visszatérő — és tipikusan **egyetlen** — konfliktus a `package.json` és a
-`package-lock.json` verziósora. Ez nem valódi ütközés: a mi verziónkat kell ráemelni az
-új upstream verzióra (lásd a következő pontot). Merge után `npm install`, `npm run
-typecheck`, `npm run build`, `npm test` — mérés nélkül ne állítsd, hogy kész.
+A konfliktusok jellemzően a fork által is módosított upstream fájlokban jönnek: a
+`package.json` / `package-lock.json` verziósora (mechanikus), és ahol MI vagyunk a
+bővebbek (`agent-scaffold.ts`, `routes/memories.ts`, `db.ts`, a kapuk a
+`scripts/hooks/` alatt): ott nem választani kell, hanem összefésülni. Merge után
+`npx tsc --noEmit`, `npm run build`, `npx vitest run`, és a `docs/UPSTREAM-KIMARADT.md`
+frissítése a szándékos eltérésekkel. Mérés nélkül ne állítsd, hogy kész.
 
 ---
 

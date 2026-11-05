@@ -61,7 +61,7 @@ describe('suggestForAgent -- base (no signals)', () => {
 
   it('normalises [1m] suffix for comparison', () => {
     const text = 'IT architekt. Komplex elosztott rendszerterv, mikroszolgáltatás, stratégiai döntések.'
-    // Plain opus-5 vs the suggested opus-5[1m]: same family after normalize(),
+    // Plain opus-5-5 vs the suggested opus-5-5[1m]: same family after normalize(),
     // so no change is advised -- the suffix alone must not trigger churn.
     const result = suggestForAgent('rick', 'claude-opus-5-5', text)
     expect(result.changeAdvised).toBe(false)

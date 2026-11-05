@@ -46,17 +46,43 @@ export interface ContinueDecisionInput {
   useMcpJsonForChannel: boolean
   /** Measured installed Claude Code version, null when unmeasured. */
   installedCli: string | null
+  /**
+   * Co-listen providers loaded next to the primary (AGENTEXTRACH1006). With a
+   * channel-having primary they ride its decision (and the post-launch verify
+   * covers them). With NO primary channel they are the only plugins loaded,
+   * so the measured gates are evaluated on THEM: a slack-only agent must not
+   * resume where a slack-primary one would not (Dani, #1710 review).
+   */
+  extraProviders?: readonly string[]
+  /** agent-config.json `"continue": false` (see readContinueOptOut): this agent is always launched fresh. */
+  continueOptOut?: boolean
 }
 
 export interface ContinueDecision { useContinue: boolean; reason: string }
+
+/** The reason decideContinueFlag gives for a per-agent opt-out; the launch path logs it by this name. */
+export const CONTINUE_OPT_OUT_REASON = 'per-agent opt-out (agent-config.json "continue": false)'
+
+/** Per-agent opt-out from `--continue`. Only a literal JSON
+ *  false counts: absent, true, a string, a broken or non-object config keep
+ *  today's decision, so an install without the key is unchanged. */
+export function readContinueOptOut(rawConfigJson: string): boolean {
+  try { return JSON.parse(rawConfigJson)?.continue === false } catch { return false }
+}
 
 /** Pure decision. Every "no" names its reason so the launch log says why a context was dropped. */
 export function decideContinueFlag(i: ContinueDecisionInput): ContinueDecision {
   if (!i.hasPriorSession) return { useContinue: false, reason: 'no prior session to continue' }
   if (i.fresh) return { useContinue: false, reason: 'fresh launch requested' }
-  if (!i.hasChannel) return { useContinue: true, reason: 'channel-less agent keeps its context' }
+  if (i.continueOptOut) return { useContinue: false, reason: CONTINUE_OPT_OUT_REASON }
+  const extras = i.extraProviders ?? []
+  if (!i.hasChannel && extras.length === 0) return { useContinue: true, reason: 'channel-less agent keeps its context' }
   if (i.isMainAgent) return { useContinue: false, reason: 'main agent lifecycle is service-managed; not in scope' }
-  if (i.provider !== 'telegram') return { useContinue: false, reason: `provider '${i.provider}' not measured; only telegram was (CONTRESUME922)` }
+  // The plugin(s) the gates are about: the primary when it has a channel,
+  // otherwise the extras, which are then the only plugins this launch loads.
+  const gated = i.hasChannel ? [i.provider] : extras
+  const unmeasured = gated.find(p => p !== 'telegram')
+  if (unmeasured !== undefined) return { useContinue: false, reason: `provider '${unmeasured}' not measured; only telegram was (CONTRESUME922)` }
   if (i.useMcpJsonForChannel) return { useContinue: false, reason: 'mcp.json+tee channel path not measured' }
   if (i.usesLaunchSecret) return { useContinue: false, reason: 'launch reads an ephemeral launch-secret (provider/API key); a resume starts without it (measured 401)' }
   if (!i.fleetTokenLaunch) return { useContinue: false, reason: 'launch is not on the fleet OAuth token path (the measured auth path)' }
