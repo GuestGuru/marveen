@@ -1,5 +1,29 @@
 # Ami az upstream-atvetelbol KIMARADT, es miert
 
+## v1.46.1 átvétel (2026-11-05): ami a fork-oldalon eltér, és miért
+
+Kimaradt hunk nincs: a `.github/workflows/test.yml` és a `morning-stamp-gate.test.sh` is
+átjött. A `morning-briefing.sh` most az upstream sentinel- és kézbesítési útját futtatja, a
+promptban egy GG-eltéréssel (e-mail és naptár a `gg-napi-forras.sh`-ból). A v1.40-es
+szekció két tétele ezzel lezárult.
+
+Szándékos fork-eltérések, amiket a merge MEGTARTOTT vagy ÚJONNAN vett fel:
+
+- `scripts/hooks/bash-egress-parser.mjs`, `ggProxyExec`: a gg-mcp proxy `exec` szegmense
+  nem kerül megítélésre, mint a merge előtt. Az upstream launched-fetch olvasata 1824 valós
+  flotta-parancsból 15-öt tiltott volna (Linear, Slack, Google Drive a proxyn át).
+- `scripts/hooks/outgoing-copy-gate.py`, `_gg_is_mcp_proxy_bundle`: a proxy bundle nem
+  levelező szkript, a `--` utáni argv-t ítéli meg a kapu (a bundle levélküldő kódja miatt
+  a fő ágens minden proxy-hívása tiltva lett volna).
+- `scripts/self-pace-gate.mjs`, `isScheduleDeleteCurl`: a sub-ágens ütemezés-törlési sávja
+  (gazda-döntés, 2026-09-17) az upstream új `scheduleSurfaceDeny`-jában is nyitva marad.
+- `src/gg/brain-promotion-fleet.ts`: az átemelő feladatok írás után regisztrálódnak a
+  hash-registryben (#2003), különben a runner nem indítaná őket.
+- `src/web/routes/memories.ts` és `src/db.ts`: a GG owner-guard (PUT `owner`, DELETE
+  `?owner=`) az upstream verziózás, dedup és törlés-jóváhagyás MELLETT él tovább.
+- `src/config-registry.ts`: a `DISTRIBUTION_DEFAULT_AGENT_MODEL` a GG IT-1569 döntése
+  szerint `claude-opus-5[1m]` marad (az upstream `claude-opus-5-5[1m]`-re emelte).
+
 ## v1.40.0 átvétel (2026-10-03): a `.github/workflows/test.yml` bővítése
 
 Az upstream kilenc új CI-lépést tett a `test.yml`-be (egress-drift-scan, dash-audit-scan,

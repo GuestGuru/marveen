@@ -62,11 +62,18 @@ class TestFmtReset(unittest.TestCase):
         _, rel = uc.fmt_reset(ts)
         self.assertEqual(rel, "now")
 
-    def test_local_string_has_budapest_offset_marker(self):
+    def test_local_string_has_the_zone_abbreviation(self):
+        # The zone is pinned here: LOCAL_TZ is the install zone, so the runner's
+        # own zone (UTC on CI) must not decide the marker.
+        from zoneinfo import ZoneInfo
         ts = _future_ts(days=1)
-        local_str, _ = uc.fmt_reset(ts)
-        # e.g. "2026-07-23 14:45 CEST" -- must contain a plausible tz abbrev
+        with patch.object(uc, "LOCAL_TZ", ZoneInfo("Europe/Budapest")):
+            local_str, _ = uc.fmt_reset(ts)
+        # e.g. "2026-07-23 14:45 CEST"
         self.assertRegex(local_str, r"CES?T$")
+        with patch.object(uc, "LOCAL_TZ", ZoneInfo("America/New_York")):
+            local_str, _ = uc.fmt_reset(ts)
+        self.assertRegex(local_str, r"E[DS]T$")
 
 
 class TestParseIsoToEpoch(unittest.TestCase):
@@ -854,6 +861,10 @@ class TestClaudeTokenSources(unittest.TestCase):
         expanduser = patch.object(uc.os.path, "expanduser", return_value=credential_path)
         expanduser.start()
         self.addCleanup(expanduser.stop)
+        # Elfelejtett mock esetén se indulhasson valódi keychain-olvasás.
+        security = patch.object(uc.subprocess, "run", side_effect=AssertionError("Nem mockolt subprocess hívás"))
+        security.start()
+        self.addCleanup(security.stop)
         self._tmp = tempfile.NamedTemporaryFile("w", suffix=".env", delete=False)
         self._tmp.write("CLAUDE_CODE_OAUTH_TOKEN=env-tok\n")
         self._tmp.close()
@@ -862,28 +873,44 @@ class TestClaudeTokenSources(unittest.TestCase):
     def _security_ok(self, stdout=None):
         return MagicMock(returncode=0, stdout=stdout if stdout is not None else self.KEYCHAIN_PAYLOAD)
 
+    def test_token_assertion_failures_do_not_disclose_values(self):
+        # Szintetikus hibás tokennel a hibakimenet védelmét is ellenőrizzük.
+        unexpected_token = "synthetic-private-token"
+        for method in (
+            "test_keychain_used_when_credentials_file_absent",
+            "test_keychain_beats_env_file",
+            "test_credentials_file_still_wins_over_keychain",
+            "test_security_failure_falls_through_to_env_file",
+            "test_no_source_at_all_returns_none_pair",
+        ):
+            with self.subTest(method=method), \
+                 patch.object(uc, "_read_claude_token", return_value=(unexpected_token, "test")):
+                case = TestClaudeTokenSources(method)
+                result = unittest.TestResult()
+                case.run(result)
+                self.assertEqual(len(result.failures), 1)
+                self.assertEqual(result.errors, [])
+                self.assertNotIn(unexpected_token, result.failures[0][1])
+
     def test_keychain_used_when_credentials_file_absent(self):
         with patch.object(uc.sys, "platform", "darwin"), \
              patch.object(uc.os.path, "exists", side_effect=lambda p: p == self._tmp.name), \
              patch.object(uc, "ENV_PATH", self._tmp.name), \
              patch.object(uc.subprocess, "run", return_value=self._security_ok()):
             token, source = uc._read_claude_token()
-        self.assertEqual(token, "keychain-tok")
+        self.assertTrue(token == "keychain-tok", "Váratlan tokenforrás-érték")
         self.assertEqual(source, "keychain")
 
     def test_keychain_beats_env_file(self):
         """The .env token answers 403, so it must never win over the keychain."""
-        # `exists` must NOT be True for the credentials path: expanduser is real,
-        # so a blanket True opens the machine's own ~/.claude/.credentials.json
-        # and assertEqual prints its token on failure (a real-token leak on any
-        # host that HAS the file). Say the intent instead: credentials absent,
-        # env present -- keychain still wins over env.
+        # Csak az ideiglenes env létezik; a credential fájl izolált,
+        # a security hívás szintetikus választ ad.
         with patch.object(uc.sys, "platform", "darwin"), \
              patch.object(uc.os.path, "exists", side_effect=lambda p: p == self._tmp.name), \
              patch.object(uc, "ENV_PATH", self._tmp.name), \
              patch.object(uc.subprocess, "run", return_value=self._security_ok()):
             token, source = uc._read_claude_token()
-        self.assertEqual(token, "keychain-tok")
+        self.assertTrue(token == "keychain-tok", "Váratlan tokenforrás-érték")
         self.assertEqual(source, "keychain")
 
     def test_credentials_file_still_wins_over_keychain(self):
@@ -895,7 +922,7 @@ class TestClaudeTokenSources(unittest.TestCase):
              patch.object(uc.os.path, "expanduser", return_value=cred.name), \
              patch.object(uc.subprocess, "run", return_value=self._security_ok()) as run:
             token, source = uc._read_claude_token()
-        self.assertEqual(token, "file-tok")
+        self.assertTrue(token == "file-tok", "Váratlan tokenforrás-érték")
         self.assertEqual(source, "credentials_file")
         run.assert_not_called()
 
@@ -911,7 +938,7 @@ class TestClaudeTokenSources(unittest.TestCase):
              patch.object(uc, "ENV_PATH", self._tmp.name), \
              patch.object(uc.subprocess, "run", return_value=MagicMock(returncode=1, stdout="")):
             token, source = uc._read_claude_token()
-        self.assertEqual(token, "env-tok")
+        self.assertTrue(token == "env-tok", "Váratlan tokenforrás-érték")
         self.assertEqual(source, "env_file")
 
     def test_unparseable_keychain_payload_is_silent(self):
@@ -929,7 +956,9 @@ class TestClaudeTokenSources(unittest.TestCase):
     def test_no_source_at_all_returns_none_pair(self):
         with patch.object(uc.sys, "platform", "linux"), \
              patch.object(uc.os.path, "exists", return_value=False):
-            self.assertEqual(uc._read_claude_token(), (None, None))
+            token, source = uc._read_claude_token()
+        self.assertTrue(token is None, "Váratlan tokenforrás-érték")
+        self.assertIsNone(source)
 
 
 class TestCodexSnapshotFreshness(unittest.TestCase):
@@ -987,6 +1016,27 @@ class TestCodexSnapshotFreshness(unittest.TestCase):
             self.assertIsNone(result["snapshot_at"])
             self.assertIsNone(result["snapshot_age_hours"])
 
+    def test_collect_codex_without_sessions_names_reason_no_sessions(self):
+        # Codex never ran on this host (the common case): ok False, and a
+        # stable reason field the /usage reply keys on instead of the error text.
+        with patch.object(uc.glob, "glob", return_value=[]):
+            result = uc.collect_codex()
+        self.assertFalse(result["ok"])
+        self.assertEqual(result.get("reason"), "no_sessions")
+        self.assertIn("no ~/.codex/sessions rollout files found", result.get("error", ""))
+
+    def test_collect_codex_real_failure_has_no_no_sessions_reason(self):
+        # A real failure (rollout present, no rate_limits) must not be labelled
+        # as "Codex never ran".
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "rollout-x.jsonl")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(json.dumps({"type": "event", "payload": {"rate_limits": {}}}) + "\n")
+            with patch.object(uc.glob, "glob", return_value=[path]):
+                result = uc.collect_codex()
+        self.assertFalse(result["ok"])
+        self.assertNotEqual(result.get("reason"), "no_sessions")
+
     def _snapshot(self, codex):
         return {
             "generated_at_local": "2026-09-11 14:00:00 CEST",
@@ -1019,6 +1069,32 @@ class TestCodexSnapshotFreshness(unittest.TestCase):
         self.assertNotIn("[STALE]", out)
         self.assertIn("h old", out)
 
+
+
+class TestInstallZone(unittest.TestCase):
+    """ISSUE1895 (#1895): reset stamps follow the install zone, not a fixed Europe/Budapest."""
+
+    def test_explicit_marveen_tz_wins(self):
+        with patch.dict(os.environ, {"MARVEEN_TZ": "Europe/London"}):
+            self.assertEqual(str(uc._local_tz()), "Europe/London")
+
+    def test_scheduler_tz_from_the_overrides_file(self):
+        with tempfile.TemporaryDirectory() as d, patch.object(uc, "STORE_DIR", d), patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("MARVEEN_TZ", None)
+            with open(os.path.join(d, "config-overrides.json"), "w") as f:
+                json.dump({"SCHEDULER_TZ": "America/New_York"}, f)
+            self.assertEqual(str(uc._local_tz()), "America/New_York")
+
+    def test_host_fallback_is_a_named_zone_not_a_fixed_offset(self):
+        # A fixed offset (datetime.now().astimezone().tzinfo) renders a reset on the
+        # other side of a DST switch one hour off; a ZoneInfo keeps the rules.
+        from zoneinfo import ZoneInfo
+        with tempfile.TemporaryDirectory() as d, patch.object(uc, "STORE_DIR", d), patch.object(uc, "ENV_PATH", os.path.join(d, ".env")):
+            env = {k: v for k, v in os.environ.items() if k not in ("MARVEEN_TZ", "TZ")}
+            with patch.dict(os.environ, env, clear=True):
+                if "/zoneinfo/" not in os.path.realpath("/etc/localtime"):
+                    self.skipTest("host has no named zone to fall back to")
+                self.assertIsInstance(uc._local_tz(), ZoneInfo)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

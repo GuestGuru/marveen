@@ -30,8 +30,8 @@ describe('the generated memory-search example is URL-encoded', () => {
     expect(searchBlock(SCAFFOLD)).toBe('')
   })
 
-  it('the main-agent template uses --data-urlencode', () => {
-    expect(TEMPLATE).toContain('--data-urlencode "q=')
+  it('the main-agent template encodes q (v1.46: through the marveen-api.sh helper, which urlencodes)', () => {
+    expect(TEMPLATE).toMatch(/--data-urlencode "q=|marveen-api\.sh memory-search /)
     expect(searchBlock(TEMPLATE)).toBe('')
   })
 

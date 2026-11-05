@@ -78,7 +78,7 @@ Nézd át, mi történt **az előző memória-kör óta**. Két dolgot csinálj:
 Ha volt fontos döntés, preferencia, tanulság vagy bármi ami később hasznos, mentsd el:
 
 ```bash
-curl -s -X POST http://localhost:3420/api/memories \
+curl -s -X POST http://localhost:{{WEB_PORT}}/api/memories \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $(cat {{INSTALL_DIR}}/store/.dashboard-token)" \
   -d '{"agent_id":"SAJAT_NEVED","content":"...","category":"warm","keywords":"..."}'
@@ -132,10 +132,13 @@ Lépések:
 2. Ha van releváns skill: PATCH (csak a megváltozott rész cseréje, ne az egész fájl).
    - A `## Buktatók` szekciót preferáld ha hiba/recovery volt.
    - A `## Eljárás` szekciót ha a folyamat változott.
-3. Ha NINCS releváns skill: hozz létre újat:
+   - Ha a releváns skill GLOBÁLIS (`~/.claude/skills/` alatt), vagy te vagy a fő ágens (a projekt-gyökér `.claude/skills` mappáját is minden ágens látja), ne a helyén javítsd: a javított teljes szöveget küldd javaslatként (`POST /api/skills/propose`, lásd a 3. pontot).
+3. Ha NINCS releváns skill: hozz létre újat. A fő ágens és a minden ágensnek szóló skill NE ezzel a blokkal
+   készüljön (a fő ágens munkakönyvtára a projekt gyökere, annak `.claude/skills` mappáját minden ágens látja):
+   azt a blokk utáni javaslat-úton küldd.
    ```bash
-   mkdir -p ~/.claude/skills/<NEV>
-   cat > ~/.claude/skills/<NEV>/SKILL.md <<EOF
+   mkdir -p .claude/skills/<NEV>
+   cat > .claude/skills/<NEV>/SKILL.md <<EOF
    ---
    name: <NEV>
    description: Mikor használd, mit csinál (1-2 mondat). Konkrét trigger.
@@ -155,7 +158,13 @@ Lépések:
    - ...
    EOF
    ```
-4. Index regen (mindkét szint):
+   Ez a SAJÁT mappád (a munkakönyvtárad `.claude/skills`). Ha a skill minden ágensnek szól, ne a `~/.claude/skills/`-be írd: küldd a teljes SKILL.md-t a `POST /api/skills/propose` végpontra (`{"name": ..., "skill_md": ..., "reason": ...}`, dashboard tokennel), a gazda jóváhagyásáig karanténban vár. A fő ágens mindig így küldi.
+4. Linter az érintett skillen (KÖTELEZŐ, a skill-akció után):
+   ```bash
+   node {{INSTALL_DIR}}/scripts/skill-lint.mjs .claude/skills/<NEV>     # javaslatnál a piszkozaton: .claude/skill-javaslat
+   ```
+   Ha hibát jelez (nem 0 a kilépési kód): javítsd a jelzett pontot, és futtasd újra, amíg tiszta nem lesz. A szabályok (Anthropic, Skill authoring best practices): a SKILL.md törzse legfeljebb 500 sor; a 100 sornál hosszabb `references/` fájl tetején tartalomjegyzék; minden segédfájlra közvetlenül a SKILL.md mutasson; a SKILL.md linkjei létező fájlra mutassanak. A linter csak jelez; külső forrásból telepített skillt ne írj át.
+5. Index regen (mindkét szint):
    ```bash
    bash {{INSTALL_DIR}}/scripts/skill-index.sh          # globális index frissítése
    bash {{INSTALL_DIR}}/scripts/skill-index.sh "$(pwd)" # ágensspecifikus merged index frissítése

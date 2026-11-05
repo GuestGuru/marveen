@@ -22,6 +22,9 @@ python3 fleet.py msg <from> <to> "message"
 python3 fleet.py agents
 python3 fleet.py kanban-due | kanban-stuck <sec> | kanban-status <status>
 python3 fleet.py accent-audit <out|log|mem> [agent] [days]
+python3 fleet.py kanban-comment <id> <author> <text|->   # writes; see SKILL.md "Kanban writes"
+python3 fleet.py kanban-move <id> <status> <actor>
+python3 fleet.py kanban-set <id> <field> <value> <actor>
 ```
 
 Accent gate (Hungarian text): `mem-save`, `daily-log` and `msg` warn on stderr
@@ -103,7 +106,7 @@ mail_rules.example.json  # copy to mail_rules.json (gitignored) with real values
 
 ## Safety notes
 - Token is read from `store/.dashboard-token` at call time. Never print or commit it.
-- Kanban helpers are READ-ONLY; mutations stay in your own audited flows.
+- The kanban read helpers are read-only SQL; the three write commands (kanban-comment / kanban-move / kanban-set) go through the dashboard API, see SKILL.md "Kanban writes" (actor required on move and set).
 - `mail_rules.json` (your real senders) must be gitignored (see `.gitignore`).
 
 ## License

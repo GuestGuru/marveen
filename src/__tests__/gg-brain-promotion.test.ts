@@ -268,6 +268,7 @@ describe('ensureBrainPromotionForFleet', () => {
     write(join(home, 'settings.json'))
     write(join(agentsDir, 'bubi', '.claude', 'settings.json'))
     write(join(agentsDir, 'bubi', '.claude-config', 'settings.json'))
+    const registered: string[] = []
     const res = ensureBrainPromotionForFleet({
       mainAgentId: 'marveen',
       subAgents: ['peppa', 'bubi', 'marveen'],
@@ -276,9 +277,12 @@ describe('ensureBrainPromotionForFleet', () => {
       settingsPathFor: (a) => a === 'marveen' ? join(home, 'settings.json') : join(agentsDir, a, '.claude', 'settings.json'),
       agentDirFor: (a) => join(agentsDir, a),
       atomicWrite: spyWrite,
+      register: (d) => registered.push(d),
     })
     expect(res.tasks).toEqual(['marveen', 'bubi', 'peppa'])
     expect(res.notes).toHaveLength(3)
     expect(existsSync(join(dir, 'tasks', 'brain-promotion-peppa', 'SKILL.md'))).toBe(true)
+    // v1.46 registry (#2003): every task the server wrote is registered, or the runner never fires it.
+    expect(registered).toEqual(['brain-promotion-marveen', 'brain-promotion-bubi', 'brain-promotion-peppa'])
   })
 })

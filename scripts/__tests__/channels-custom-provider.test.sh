@@ -61,6 +61,12 @@ trap 'rm -rf "$root"' EXIT
 
 # Copy dist/ and the helper script.
 cp -r "$INSTALL_DIR/dist" "$root/dist"
+# A fixture saját fájlos vaultot használjon, a gép keychainjéhez ne férjen hozzá.
+cat > "$root/dist/web/keychain.js" <<'KEYCHAIN_STUB'
+export function isKeychainAvailable() { return false }
+export function keychainRetrieveStatus() { throw new Error('Tesztből keychain-olvasás tiltva') }
+export function keychainStore() { throw new Error('Tesztből keychain-írás tiltva') }
+KEYCHAIN_STUB
 mkdir -p "$root/scripts"
 cp "$REAL_HELPER" "$root/scripts/main-agent-custom-provider.mjs"
 
