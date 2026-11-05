@@ -126,6 +126,9 @@ self-scope by cwd, so they are safe even if inherited. Merge this `hooks` object
            matcher NEMA hiba. Nalunk a regex alak MERTEN mukodik (a napi replay a kimeno
            uzeneteket is hozza), ezert marad. -->
     ],
+    "StopFailure": [
+      { "hooks": [ { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/hooks/ledger-turn-failure.py\"", "timeout": 10 } ] }
+    ],
     "SessionStart": [
       { "matcher": "startup|resume|clear", "hooks": [ { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/hooks/ledger-replay.py\"", "timeout": 15 } ] }
     ]
@@ -134,16 +137,43 @@ self-scope by cwd, so they are safe even if inherited. Merge this `hooks` object
 ```
 
 - `UserPromptSubmit` takes no matcher (fires on every prompt).
-- `PostToolUse` matcher `mcp__plugin_[a-z0-9-]+_[a-z0-9-]+__reply`: matches **every**
-  channel plugin's sanitized reply tool name (`mcp__plugin_telegram_telegram__reply`,
-  `mcp__plugin_discord_discord__reply`, …).
-  ⚠️ The hook re-parses the tool name, but that check only re-applies the **same
-  pattern** — it does not know which plugins are channels. A non-channel plugin
-  that happens to expose a `reply` tool would therefore be recorded as an outbound
-  turn. Capture is restricted to known providers, so such a row cannot become an
-  open question, but the outbound side is still shape-based, not identity-based.
-  > Az upstream ugyanezt providerenkent kulon matcherrel oldja meg; ha a regex valaha
-  > nem illeszkedne egy uj plugin nevere, az a NEMA hiba esete -- ilyenkor sorold fel.
+- **One `PostToolUse` entry per installed channel plugin.** Drop the discord line if
+  that plugin is not installed; add a line for any other channel plugin you run.
+
+## A turn that died while a message waited
+
+The trio records that a message arrived and that a reply went out; it does not see a
+turn that ENDED IN AN API ERROR (e.g. "Prompt is too long" right after the inbound).
+Claude Code fires `StopFailure` instead of `Stop` on such a turn, so the Stop-side
+reply guard never runs either. `scripts/hooks/ledger-turn-failure.py` on `StopFailure`
+appends one line to `store/ledger-turn-failures.jsonl` (agent, chat, message_id,
+`error`, `error_details`) when the newest inbound has no later reply. With
+`LEDGER_TURN_FAILURE_NOTIFY=1` (environment or `.env`) it also runs `scripts/notify.sh`
+once per message, outside the session that failed. Off by default.
+
+## Provider coverage — the silent failure to avoid
+
+The transcript is only as complete as the set of channels it captures, and a
+missing channel does **not** look like a failure. The replay still emits a
+non-empty block from the channels that *are* captured, so a respawned session
+reads what looks like a full history while the conversation that actually
+matters is absent. An empty block invites suspicion; a full block from the wrong
+channel reads as normal operation.
+
+Check coverage by channel, not by row count:
+
+```sql
+SELECT chat_id, direction, COUNT(*), MAX(created_at)
+FROM conversation_log GROUP BY chat_id, direction;
+```
+
+Every channel you actually converse on should appear, in **both** directions. If
+your primary channel is missing, the inbound hook is not matching its envelope or
+its reply tool has no `PostToolUse` matcher — continuity is not working for it,
+however healthy the totals look.
+- `PostToolUse` matcher `mcp__plugin.telegram.telegram__reply`: the `.` are regex
+  wildcards that match the sanitized tool name `mcp__plugin_telegram_telegram__reply`
+  (the hook also double-checks `tool_name` contains `telegram`+`reply`).
 - `SessionStart` matcher `startup|resume|clear`: the matcher is a **regex over the
   `source` field**, whose only values are `startup` / `resume` / `clear` / `compact`.
   There is no `auto` source — an `"auto"` matcher silently matches nothing, so the
@@ -160,8 +190,10 @@ no `jq`). Take effect on the next session start after the settings change.
 - `bash scripts/__tests__/conversation-ledger.test.sh` — 48 cases (inbound/outbound
   capture / replay context window / N-limit / chronological order + prefixes /
   open-question / answered-no-block / idempotency / multi-agent scope / live-drain
-  grace + dedup + answered / multi-provider namespacing + reply-tool routing /
-  edges) against the real hooks, isolated via `LEDGER_DB_PATH` + `LEDGER_OWNER_CHAT`.
+  grace + dedup + answered / edges) against the real hooks, isolated via
+  `LEDGER_DB_PATH` + `LEDGER_OWNER_CHAT`.
+- `python3 scripts/__tests__/ledger-turn-failure.test.py` -- the StopFailure trace
+  (row for an open inbound, none for an answered one, one notification per message).
 - `npx vitest run src/__tests__/conversation-ledger-schema.test.ts` — schema-drift
   guard (db.ts migration == ledger_lib.py).
 

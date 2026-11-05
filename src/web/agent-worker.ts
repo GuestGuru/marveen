@@ -2,11 +2,14 @@ import { tmuxStderr } from './tmux-stderr.js'
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, rmSync, readFileSync, writeFileSync, readdirSync, lstatSync, symlinkSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
-import { homedir, userInfo } from 'node:os'
+import { homedir, tmpdir, userInfo } from 'node:os'
 import { createHash } from 'node:crypto'
 import { resolveFromPath, tryResolveFromPath } from '../platform.js'
 import { logger } from '../logger.js'
-import { MAIN_AGENT_ID, PROJECT_ROOT, DEFAULT_AGENT_MODEL } from '../config.js'
+import { launchableInstallDefaultSync, launchableDistributionDefaultSync } from './default-model-guard.js'
+import { measureClaudeCliVersionSync } from './claude-cli-version.js'
+import { CLAUDE_MODEL_MIN_CLI, baseModelId, isModelUnsupportedByCli } from '../claude-cli-support.js'
+import { MAIN_AGENT_ID, PROJECT_ROOT, DEFAULT_AGENT_MODEL, DEFAULT_AGENT_MODEL_IS_DISTRIBUTION, WORKER_AUTOUPDATE } from '../config.js'
 import {
   capturePane,
   isSessionReadyForPrompt,
@@ -24,6 +27,9 @@ import { withSessionSendLock } from './session-send-lock.js'
 import { readClaudeCodeOauthJson } from './claude-credentials.js'
 import { detectPaneState } from '../pane-state.js'
 import { notifyChannel } from '../notify.js'
+import { ROOT_SANDBOX_ENV } from './root-sandbox-env.js'
+import { shouldRunBackgroundServices, ALLOW_SECOND_INSTANCE_SERVICES_KEY } from './hook-registration-guard.js'
+import { exactTmuxTarget } from '../tmux-target.js'
 
 // =============================================================================
 // Interactive-tmux agent worker (jun.15 subscription migration).
@@ -57,10 +63,72 @@ const TMUX = resolveFromPath('tmux')
 // when neither override nor custom provider is in play.
 const WORKER_MODEL_OVERRIDE = process.env.MARVEEN_WORKER_MODEL ?? null
 
-// APRO920 (c)(2): pure so the launch-model log line's source label is unit
-// testable without spinning up a real tmux session.
-export function workerModelSource(env: NodeJS.ProcessEnv = process.env): string {
-  return env.MARVEEN_WORKER_MODEL ? 'env:MARVEEN_WORKER_MODEL' : 'default'
+
+// WORKERMODEL1773 (#1773): the worker's --model, resolved in one pure place
+// (it also carries the launch log's source label, APRO920 (c)(2): replaces
+// workerModelSource, which called a custom-provider or an explicit
+// DEFAULT_AGENT_MODEL launch "default").
+// The #1609 guard (DEFAULTCLIGUARD927) only ever looked at the SHIPPED default:
+// an explicit value -- MARVEEN_WORKER_MODEL, or a configured DEFAULT_AGENT_MODEL
+// -- reached --model unchecked, so on a CLI below the model's minimum the worker
+// came up and every prompt got 400 unrecognized_model. Measured 2026-10-07 with
+// the real guard and CLI 2.1.110: an explicit claude-opus-5-5[1m] passed through
+// unchanged, while the shipped default fell back to claude-opus-5[1m].
+//
+// The decision now carries `unlaunchable` for an explicit value the measured
+// CLI cannot run (fail-open: an unmeasured CLI flags nothing; a custom-provider
+// model is not a Claude model and is not checked).
+export type WorkerModelSourceLabel = 'env:MARVEEN_WORKER_MODEL' | 'custom-provider' | 'env:DEFAULT_AGENT_MODEL' | 'default'
+export interface WorkerModelDecision {
+  model: string
+  source: WorkerModelSourceLabel
+  /**
+   * Set when the explicitly configured model cannot be launched by the
+   * measured CLI. `requested` is the configured value; `fallback` is the model
+   * this run uses instead (the owner's decision (A), WORKERMODEL1773 part 2),
+   * or null when the fallback is not launchable either and the requested model
+   * is kept (nothing better to run).
+   */
+  unlaunchable: { requested: string; minCli: string; installedCli: string; fallback: string | null } | null
+}
+export interface WorkerModelInputs {
+  /** MARVEEN_WORKER_MODEL, or null. */
+  override: string | null
+  /** The main agent's custom-provider model, or null when none is configured. */
+  customProviderModel: string | null
+  /** DEFAULT_AGENT_MODEL as resolved by config. */
+  configuredDefault: string
+  /** True when no operator configured DEFAULT_AGENT_MODEL (the shipped default). */
+  defaultIsDistribution: boolean
+  /** The #1609 guard for the shipped default (called only on that path). */
+  launchableDefault: () => string
+  /**
+   * The distribution default as the #1609 guard launches it on this CLI (the
+   * shipped default, or its previous tier). Called only when an explicit value
+   * is unlaunchable: it is the model that run falls back to.
+   */
+  launchableFallback: () => string
+  /** The measured installed CLI version, or null when unmeasured. */
+  installedCli: () => string | null
+}
+export function resolveWorkerModel(i: WorkerModelInputs): WorkerModelDecision {
+  // The owner's decision (A), WORKERMODEL1773 part 2: an explicit model the
+  // measured CLI cannot run is replaced FOR THIS RUN by the model a model-less
+  // launch would use (the #1609 guard's choice). The setting itself is only
+  // read here, never written: the next launch decides again, so a CLI upgrade
+  // brings the configured model back without anyone touching it.
+  const explicit = (model: string, source: WorkerModelSourceLabel): WorkerModelDecision => {
+    const installed = i.installedCli()
+    const req = CLAUDE_MODEL_MIN_CLI[baseModelId(model)]
+    if (!(installed && req && isModelUnsupportedByCli(model, installed))) return { model, source, unlaunchable: null }
+    const candidate = i.launchableFallback()
+    const fallback = isModelUnsupportedByCli(candidate, installed) ? null : candidate
+    return { model: fallback ?? model, source, unlaunchable: { requested: model, minCli: req.minCli, installedCli: installed, fallback } }
+  }
+  if (i.override) return explicit(i.override, 'env:MARVEEN_WORKER_MODEL')
+  if (i.customProviderModel) return { model: i.customProviderModel, source: 'custom-provider', unlaunchable: null }
+  if (!i.defaultIsDistribution) return explicit(i.configuredDefault, 'env:DEFAULT_AGENT_MODEL')
+  return { model: i.launchableDefault(), source: 'default', unlaunchable: null }
 }
 
 // How long to wait for a freshly launched worker to reach an idle prompt.
@@ -132,11 +200,62 @@ export function workerHomeFor(agentId: string, variant: 'slow' | 'fast'): string
  * fleet. The boot-time pre-start in web.ts is already gated, but the worker
  * also LAZY-starts from runViaWorker (scaffold generation, heartbeat, digest),
  * which is how a WEB_ONLY sandbox still created live tmux sessions and wrote
- * into worker config dirs (WORKERHOME1). Read at call time, pure, so the gate
+ * into worker config dirs (WORKERHOME1). Read at call time, so the gate
  * is unit-testable and follows env changes in tests.
+ *
+ * A second instance (a worktree checkout or a temp-dir clone) is refused too, by the same decision as the
+ * background services in web.ts (#2419, Samu 64972): a dashboard action in its UI must not start a live worker
+ * session or write the live worker's config dir either. MARVEEN_ALLOW_SECOND_INSTANCE_SERVICES=1 in the process
+ * environment opts in, as it does for the services; WEB_ONLY=true always refuses.
  */
-export function workerStartAllowed(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env['WEB_ONLY'] !== 'true'
+export function workerStartAllowed(
+  env: NodeJS.ProcessEnv = process.env,
+  where: { projectRoot?: string; isGitFile?: (root: string) => boolean; tmpDir?: string } = {},
+): boolean {
+  return shouldRunBackgroundServices({
+    projectRoot: where.projectRoot ?? PROJECT_ROOT,
+    webOnly: env['WEB_ONLY'] === 'true',
+    allowSecondInstance: env[ALLOW_SECOND_INSTANCE_SERVICES_KEY] === '1',
+    isGitFile: where.isGitFile,
+    tmpDir: where.tmpDir ?? tmpdir(),
+  }).run
+}
+
+/**
+ * WORKERAUTOUPDATE1011: the worker launch line's auto-updater clause.
+ *
+ * Both workers used to launch WITHOUT DISABLE_AUTOUPDATER. channels.sh exports
+ * it and also sets it in the tmux global env, but -g only reaches sessions
+ * created AFTER it: after a reboot the dashboard's worker session is usually
+ * what creates the tmux server, so both workers came up with a live updater
+ * (measured 2026-10-11: two updater-enabled workers 14s before a native
+ * 2.1.296 landed and the launcher symlink moved, while channels and every
+ * sub-agent had the variable). So the clause is explicit, never inherited.
+ *
+ * Default: every worker is pinned. With WORKER_AUTOUPDATE on a native install,
+ * the SLOW worker alone is the designated updater -- `unset`, not merely "no
+ * export", because the tmux global env may still carry the variable.
+ */
+export function workerAutoUpdaterEnv(i: { role: 'slow' | 'fast'; optIn: boolean; nativeInstall: boolean }): string {
+  return i.role === 'slow' && i.optIn && i.nativeInstall
+    ? 'unset DISABLE_AUTOUPDATER; '
+    : 'export DISABLE_AUTOUPDATER=1; '
+}
+
+/**
+ * True when `bin` resolves into the native installer's versions dir
+ * (~/.local/share/claude/versions/<v>). Mirrors claude_is_native in
+ * channels.sh: on an npm-global install the in-process updater would race the
+ * boot-time claude_ensure, so the opt-in is honoured on native installs only.
+ */
+export function isNativeClaudeBin(bin: string | null, home: string = homedir()): boolean {
+  if (!bin) return false
+  try {
+    const root = realpathSync(join(home, '.local', 'share', 'claude', 'versions'))
+    return realpathSync(bin).startsWith(root + '/')
+  } catch {
+    return false
+  }
 }
 
 // Slow session: long-running tasks (analysis, reports, search). The original
@@ -344,6 +463,26 @@ function lstatSyncSafe(p: string): ReturnType<typeof lstatSync> | null {
 
 interface WorkerSettings { enabledPlugins?: Record<string, boolean>; [k: string]: unknown }
 
+/** The fleet-freeze PreToolUse gate in the worker's own settings (KILLSWITCH1022). */
+export const WORKER_FREEZE_GATE_CMD = `bash "${join(PROJECT_ROOT, 'scripts', 'hooks', 'fleet-freeze-gate.sh')}"`
+
+/**
+ * KILLSWITCH1022: the worker runs tools too (--dangerously-skip-permissions),
+ * and its cwd is outside the project, so the project .claude/settings.json never
+ * reaches it. The fleet-freeze gate goes into its OWN settings, first in
+ * PreToolUse: every other entry (and every other hook event) Claude Code may have
+ * written is kept, and the gate entry is replaced, never duplicated.
+ */
+export function withFleetFreezeGate(settings: WorkerSettings): WorkerSettings {
+  const hooks = (settings.hooks && typeof settings.hooks === 'object' && !Array.isArray(settings.hooks) ? settings.hooks : {}) as Record<string, unknown>
+  const pre = (Array.isArray(hooks.PreToolUse) ? hooks.PreToolUse : []) as unknown[]
+  const preToolUse = [
+    { matcher: '*', hooks: [{ type: 'command', command: WORKER_FREEZE_GATE_CMD, timeout: 5 }] },
+    ...pre.filter((e) => !JSON.stringify(e).includes('fleet-freeze-gate.sh')),
+  ]
+  return { ...settings, hooks: { ...hooks, PreToolUse: preToolUse } }
+}
+
 /**
  * Build (idempotently) the worker's isolated cwd + CLAUDE_CONFIG_DIR:
  *  - empty project .mcp.json (defense in depth);
@@ -415,7 +554,7 @@ export function ensureWorkerCwd(ctx: WorkerCtx = ctxSlow): void {
   // skipDangerousModePermissionPrompt: suppress the "Bypass Permissions mode"
   // first-run warning so the headless worker (launched with
   // --dangerously-skip-permissions) reaches its prompt without a blocking modal.
-  writeFileSync(settingsPath, JSON.stringify({ ...current, enabledPlugins, skipDangerousModePermissionPrompt: true }, null, 2) + '\n')
+  writeFileSync(settingsPath, JSON.stringify(withFleetFreezeGate({ ...current, enabledPlugins, skipDangerousModePermissionPrompt: true }), null, 2) + '\n')
 
   // Subscription auth: materialise the host login JSON as .credentials.json AND
   // clear the stale path-hashed Keychain entry that would shadow it (see the
@@ -491,7 +630,7 @@ function startWorkerSessionFor(ctx: WorkerCtx): void {
   // Gate BEFORE any side effect: in WEB_ONLY staging neither the tmux session
   // nor the ensureWorkerCwd config-dir writes may happen (WORKERHOME1).
   if (!workerStartAllowed()) {
-    logger.warn({ session: ctx.session }, 'agent-worker: WEB_ONLY mode -- refusing to start a worker session or write its config dir')
+    logger.warn({ session: ctx.session }, 'agent-worker: WEB_ONLY or second instance -- refusing to start a worker session or write its config dir')
     return
   }
   if (workerSessionExists(ctx)) return
@@ -520,13 +659,13 @@ function startWorkerSessionFor(ctx: WorkerCtx): void {
   // which already disables the suggestion for the same scrape-misread reason.
   // Resolve model and optional custom-provider env prefix.
   // Priority: MARVEEN_WORKER_MODEL override > main-agent custom provider > default.
-  let workerModel = WORKER_MODEL_OVERRIDE ?? DEFAULT_AGENT_MODEL
   let customEnvPrefix = ''
+  let customProviderModel: string | null = null
   if (!WORKER_MODEL_OVERRIDE) {
     try {
       const cpEnv = buildCustomProviderLaunchEnv(MAIN_AGENT_ID)
       if (cpEnv) {
-        workerModel = cpEnv.model
+        customProviderModel = cpEnv.model
         customEnvPrefix = cpEnv.envPrefix
         if (cpEnv.customApiKeyForApproval) {
           stampCustomApiKeyApproval(join(ctx.configDir, '.claude.json'), cpEnv.customApiKeyForApproval)
@@ -536,14 +675,46 @@ function startWorkerSessionFor(ctx: WorkerCtx): void {
       logger.warn({ err }, 'agent-worker: could not resolve main-agent custom provider; falling back to default model')
     }
   }
+  // DEFAULTCLIGUARD927 keeps guarding the shipped default inside; WORKERMODEL1773
+  // flags an explicit value the measured CLI cannot run.
+  const decision = resolveWorkerModel({
+    override: WORKER_MODEL_OVERRIDE,
+    customProviderModel,
+    configuredDefault: DEFAULT_AGENT_MODEL,
+    defaultIsDistribution: DEFAULT_AGENT_MODEL_IS_DISTRIBUTION,
+    launchableDefault: () => launchableInstallDefaultSync('worker'),
+    launchableFallback: () => launchableDistributionDefaultSync('worker'),
+    installedCli: () => measureClaudeCliVersionSync().version,
+  })
+  const workerModel = decision.model
+  if (decision.unlaunchable) {
+    logger.warn(
+      { session: ctx.session, model: decision.model, source: decision.source, ...decision.unlaunchable },
+      decision.unlaunchable.fallback
+        ? 'WORKERMODEL1773: the configured worker model is not launchable by the installed Claude Code CLI; this run falls back (the setting is unchanged)'
+        : 'WORKERMODEL1773: the configured worker model is not launchable by the installed Claude Code CLI, and neither is the fallback; launching it anyway, every prompt will be refused (400 unrecognized_model)',
+    )
+    notifyWorkerModelFallback(decision, Date.now())
+  }
 
   const claudeLaunchBin = tryResolveFromPath('claude') ?? 'claude'
+  const autoUpdaterEnv = workerAutoUpdaterEnv({
+    role: ctx === ctxSlow ? 'slow' : 'fast',
+    optIn: WORKER_AUTOUPDATE,
+    nativeInstall: isNativeClaudeBin(tryResolveFromPath('claude')),
+  })
+  if (WORKER_AUTOUPDATE && ctx === ctxSlow && autoUpdaterEnv.startsWith('export')) {
+    logger.warn({ session: ctx.session }, 'WORKERAUTOUPDATE1011: WORKER_AUTOUPDATE is on but claude is not a native install; the slow worker stays pinned')
+  }
   const launch =
     (hasFleetOauthToken() ? `export CLAUDE_CODE_OAUTH_TOKEN="$(cat ${shArg(FLEET_OAUTH_TOKEN_PATH)})"; ` : '') +
     `export CLAUDE_CONFIG_DIR=${shArg(ctx.configDir)}; ` +
+    autoUpdaterEnv +
     `export CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false; ` +
     // CHANSPARE925: no Agent view (Left would background the worker into the daemon).
     `export CLAUDE_CODE_DISABLE_AGENT_VIEW=1; ` +
+    // ROOTRESPAWN1001: IS_SANDBOX=1 on a root host (see root-sandbox-env.ts).
+    `${ROOT_SANDBOX_ENV}; ` +
     customEnvPrefix +
     `cd ${shArg(ctx.home)} && ` +
     `${shArg(claudeLaunchBin)} --dangerously-skip-permissions --model ${shArg(workerModel)}`
@@ -552,7 +723,7 @@ function startWorkerSessionFor(ctx: WorkerCtx): void {
   // APRO920 (c)(2): same rationale as startAgentProcess's model-resolved log --
   // which config-chain element supplied the --model value.
   logger.info(
-    { session: ctx.session, model: workerModel, source: workerModelSource() },
+    { session: ctx.session, model: workerModel, source: decision.source },
     'agent-worker: launch model resolved',
   )
   logWorkerClaudeVersion(ctx)
@@ -630,7 +801,7 @@ function selfHealWorkerOnce(ctx: WorkerCtx): boolean {
   if (!shouldSelfHeal(cls)) return false
   logger.warn({ cls, session: ctx.session }, 'agent-worker: pane parked on unexpected chrome -- bounded Escape self-heal')
   for (let i = 0; i < WORKER_SELF_HEAL_MAX_ESCAPES; i++) {
-    try { execFileSync(TMUX, ['send-keys', '-t', ctx.session, 'Escape'], { timeout: 5000 }) } catch { break }
+    try { execFileSync(TMUX, ['send-keys', '-t', exactTmuxTarget(ctx.session), 'Escape'], { timeout: 5000 }) } catch { break }
     try { execFileSync('/bin/sleep', ['0.5'], { timeout: 2000 }) } catch { /* best effort */ }
     const now = classifyWorkerPane(capturePane(ctx.session))
     if (now === 'idle' || now === 'busy') {
@@ -642,6 +813,51 @@ function selfHealWorkerOnce(ctx: WorkerCtx): boolean {
   restartWorkerSession(ctx)
   return true
 }
+
+// WORKERMODEL1773 part 2: one operator signal per configured model and CLI
+// version per day. Every worker (re)start resolves the model again, and a
+// restart loop must not turn into a message loop; a CLI upgrade or a changed
+// setting is a new key and is announced at once.
+export const WORKER_MODEL_FALLBACK_NOTIFY_WINDOW_MS = 24 * 60 * 60 * 1000
+const workerModelFallbackNotified = new Map<string, number>()
+
+/** Pure: should this decision be announced now? Records the announcement when it says yes. */
+export function shouldNotifyWorkerModelFallback(
+  sent: Map<string, number>,
+  key: string,
+  nowMs: number,
+  windowMs: number = WORKER_MODEL_FALLBACK_NOTIFY_WINDOW_MS,
+): boolean {
+  const last = sent.get(key)
+  if (last !== undefined && nowMs - last < windowMs) return false
+  sent.set(key, nowMs)
+  return true
+}
+
+/** Pure: the rate-limit key -- the configured model AND the CLI version, so an upgrade announces again. */
+export function workerModelFallbackKey(d: WorkerModelDecision): string {
+  const u = d.unlaunchable!
+  return `${u.requested}|${u.installedCli}`
+}
+
+/** Pure: the operator text for an unlaunchable configured worker model. */
+export function workerModelFallbackText(d: WorkerModelDecision): string {
+  const u = d.unlaunchable!
+  const head = `⚠️ Marveen worker: a beállított worker-modellt (${u.requested}, forrás: ${d.source}) a telepített Claude Code ${u.installedCli} nem tudja elindítani (legalább ${u.minCli} kell).`
+  return u.fallback
+    ? `${head} Ez a futás helyette ezzel indult: ${u.fallback}. A beállítást nem írtuk át; Claude Code-frissítés után a beállított modell magától visszajön.`
+    : `${head} A tartalék modell sem indítható ezen a verzión, ezért a beállított modellel indult: minden kérés hibát fog adni. Frissítsd a Claude Code-ot, vagy állíts be indítható modellt.`
+}
+
+function notifyWorkerModelFallback(d: WorkerModelDecision, nowMs: number): void {
+  const u = d.unlaunchable
+  if (!u) return
+  if (!shouldNotifyWorkerModelFallback(workerModelFallbackNotified, workerModelFallbackKey(d), nowMs)) return
+  void notifyChannel(workerModelFallbackText(d)).catch(() => { /* notifyChannel logs internally */ })
+}
+
+/** Test hook: forget which fallbacks were already announced. */
+export function resetWorkerModelFallbackNotices(): void { workerModelFallbackNotified.clear() }
 
 /** Loud, rate-limited operator signal: the worker never became ready. */
 function alertWorkerStuck(ctx: WorkerCtx, paneTail: string): void {
@@ -658,7 +874,7 @@ async function ensureWorkerReady(ctx: WorkerCtx): Promise<boolean> {
   // session that the gated start never created, then alertWorkerStuck would
   // notifyChannel the LIVE channel from a staging instance.
   if (!workerStartAllowed()) {
-    logger.warn({ session: ctx.session }, 'agent-worker: WEB_ONLY mode -- worker disabled, failing the request fast')
+    logger.warn({ session: ctx.session }, 'agent-worker: WEB_ONLY or second instance -- worker disabled, failing the request fast')
     return false
   }
   startWorkerSessionFor(ctx)
@@ -710,21 +926,21 @@ function restartWorkerSession(ctx: WorkerCtx): void {
   // gated upstream, but a restart here would kill-session a LIVE worker from a
   // staging instance -- never do that.
   if (!workerStartAllowed()) {
-    logger.warn({ session: ctx.session }, 'agent-worker: WEB_ONLY mode -- refusing to restart (kill) a worker session')
+    logger.warn({ session: ctx.session }, 'agent-worker: WEB_ONLY or second instance -- refusing to restart (kill) a worker session')
     return
   }
   // TMUXWINDOWATTR920: stderr piped; "not running" is the expected case here,
   // so it is logged at debug with the site instead of copied onto stderr.
-  try { execFileSync(TMUX, ['kill-session', '-t', ctx.session], { timeout: 5000, stdio: ['ignore', 'pipe', 'pipe'] }) } catch (err) { logger.debug({ site: 'agent-worker.restart', session: ctx.session, tmux: tmuxStderr(err) }, 'tmux kill-session: not running') }
+  try { execFileSync(TMUX, ['kill-session', '-t', exactTmuxTarget(ctx.session)], { timeout: 5000, stdio: ['ignore', 'pipe', 'pipe'] }) } catch (err) { logger.debug({ site: 'agent-worker.restart', session: ctx.session, tmux: tmuxStderr(err) }, 'tmux kill-session: not running') }
   try { startWorkerSessionFor(ctx) } catch (err) { logger.warn({ err, session: ctx.session }, 'agent-worker: restart failed') }
 }
 
 // Reset context between requests so unrelated one-shots never share/grow context.
 function clearWorkerContext(ctx: WorkerCtx): void {
   try {
-    execFileSync(TMUX, ['send-keys', '-t', ctx.session, '-l', '/clear'], { timeout: 5000 })
+    execFileSync(TMUX, ['send-keys', '-t', exactTmuxTarget(ctx.session), '-l', '/clear'], { timeout: 5000 })
     execFileSync('/bin/sleep', ['0.2'], { timeout: 2000 })
-    execFileSync(TMUX, ['send-keys', '-t', ctx.session, 'Enter'], { timeout: 5000 })
+    execFileSync(TMUX, ['send-keys', '-t', exactTmuxTarget(ctx.session), 'Enter'], { timeout: 5000 })
     execFileSync('/bin/sleep', ['0.5'], { timeout: 2000 })
   } catch (err) {
     logger.warn({ err }, 'agent-worker: /clear failed (continuing)')

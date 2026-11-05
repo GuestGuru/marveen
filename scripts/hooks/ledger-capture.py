@@ -30,9 +30,13 @@ import ledger_lib  # noqa: E402
 #   TEXT
 # </channel>
 # The source is "plugin:<plugin>:<server>" for plugin-provided channels and a
-# bare "<provider>" for a native one; group 1 is the provider either way.
+# bare "<provider>" for a native one. Group 1 is the FULL source, recorded with
+# the row so the reply guard can name the right provider's reply tool
+# (upstream PROVIDERVAK908); group 2 is the provider either way (GG fork: the
+# ledger namespaces chat ids with it, see qualify_chat); group 3 the remaining
+# attributes, group 4 the body.
 CHANNEL_RX = re.compile(
-    r'<channel\s+source="(?:plugin:)?([A-Za-z0-9_-]+)(?::[A-Za-z0-9_-]+)?"([^>]*)>(.*?)</channel>',
+    r'<channel\s+source="((?:plugin:)?([A-Za-z0-9_-]+)(?::[A-Za-z0-9_.-]+)?)"([^>]*)>(.*?)</channel>',
     re.DOTALL,
 )
 
@@ -89,7 +93,7 @@ def main():
     matched = stored = skipped = failed = unknown = 0
     for m in CHANNEL_RX.finditer(prompt):
         matched += 1
-        provider, attrs, text = m.group(1), m.group(2), m.group(3)
+        source, provider, attrs, text = m.group(1), m.group(2), m.group(3), m.group(4)
         # ⚠️ Only KNOWN providers. The regex accepts any source= value, and the
         # prompt is user-controlled: anyone who types a <channel source="acme"
         # chat_id="…"> block into a message would otherwise get a real ledger
@@ -120,6 +124,7 @@ def main():
                     agent_id, key, message_id, text.strip(), ts,
                     attachment_kind=att_kind, attachment_file_id=att_file_id,
                     reply_to_message_id=reply_to_message_id,
+                    source=source,
                 )
                 stored += 1
             except Exception as exc:

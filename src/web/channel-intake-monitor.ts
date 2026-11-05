@@ -35,7 +35,7 @@ import { MAIN_AGENT_ID } from '../config.js'
 import { agentDir, listAgentNames } from './agent-config.js'
 import { isAgentRunning } from './agent-process.js'
 import { readLastIngestionTimestamp, readLastIngestionTimestampAcross, mainTranscriptDirs } from './inbound-probe.js'
-import { sendRoutineAlert } from './routine-alert.js'
+import { sendOwnerActionAlert } from './routine-alert.js'
 import { isTransientTelegramStatus } from '../gg/intake-probe-status.js'
 
 const MINUTE_MS = 60 * 1000
@@ -98,6 +98,8 @@ interface TelegramWebhookInfoBody {
   }
 }
 
+const TOKEN_REJECTED_STATUSES = new Set([401, 404])
+
 /**
  * Turn one getWebhookInfo response into a probe reading.
  *
@@ -112,6 +114,13 @@ export function parseIntakeProbe(status: number, body: unknown): IntakeProbe {
   // GG fork: a Telegram 5xx/429 is not a token verdict (src/gg/intake-probe-status.ts)
   if (isTransientTelegramStatus(status)) return parseIntakeProbe(0, null)
   const parsed = (body ?? {}) as TelegramWebhookInfoBody
+  // Only 401/404 mean Telegram refused THIS token (revoked / malformed). A 5xx
+  // ("Bad Gateway") or 429 is Telegram's own hiccup and says nothing about the
+  // token: reading it as token-invalid paged the owner nightly around 03:11
+  // about bots whose getMe answered 200 a minute later (INTAKE5XX1008).
+  if (status !== 200 && !TOKEN_REJECTED_STATUSES.has(status)) {
+    return { reachable: false, tokenOk: true, pendingUpdates: null, webhookUrl: null, lastErrorMessage: parsed.description ?? null }
+  }
   if (status !== 200 || parsed.ok !== true || !parsed.result) {
     return {
       reachable: true,
@@ -307,7 +316,9 @@ async function checkAgentIntake(agentName: string, projectRoot: string): Promise
     { agent: agentName, verdict: decision.verdict, pending: probe.pendingUpdates, silentForMs },
     'channel-intake-monitor: channel intake is dead',
   )
-  sendRoutineAlert(
+  // Owner-action, not self-heal: this monitor only observes and alerts, it
+  // never restarts anything itself, so NOTIFY_ROUTINE_ALERTS must not silence it.
+  sendOwnerActionAlert(
     `channel-intake:${agentName}:${decision.verdict}`,
     formatIntakeAlert(agentName, decision, probe, silentForMs),
     { cooldownMs: INTAKE_ALERT_COOLDOWN_MS },

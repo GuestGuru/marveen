@@ -159,7 +159,7 @@ describe('wiring', () => {
 
   it('the main agent gets it at dashboard start, on live instances only', () => {
     const src = read('src/web.ts')
-    const gate = src.indexOf('if (!webOnly) {\n    ensureFederationClaudeMdSection()')
+    const gate = src.indexOf('if (!servicesOff) {\n    ensureFederationClaudeMdSection()') // upstream v1.46 renamed webOnly
     const call = src.indexOf('ensureBrainRulesSection(PROJECT_ROOT, atomicWriteFileSync)')
     expect(gate).toBeGreaterThan(-1)
     expect(call).toBeGreaterThan(gate)
