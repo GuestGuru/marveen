@@ -11,8 +11,8 @@ import {
   pruneAgentMessages,
   pruneToolCallLogRetention,
   checkpointAndCompact,
-  getMemoriesForChat,
 } from './db.js'
+import { getDigestInputMemories } from './gg/digest-memories.js' // GG fork: #1225
 import { runAgent } from './agent.js'
 import { logger } from './logger.js'
 import { MAIN_AGENT_ID } from './config.js'
@@ -143,8 +143,9 @@ export function runDecaySweep(): void {
 export async function runDailyDigest(chatId: string): Promise<string | null> {
   // Collect today's episodic memories (last 24h)
   const oneDayAgo = Math.floor(Date.now() / 1000) - 86400
-  const allRecent = getMemoriesForChat(chatId, 50)
-  const todayMemories = allRecent.filter((m) => m.created_at >= oneDayAgo)
+  // GG fork: own rows only (chat_id AND agent_id), window in SQL -- the
+  // chat_id-only read summarised the whole fleet's day (#1225).
+  const todayMemories = getDigestInputMemories(chatId, MAIN_AGENT_ID, oneDayAgo)
 
   if (todayMemories.length < 2) {
     logger.info({ chatId, count: todayMemories.length }, 'Napi naplo: tul keves emlek, kihagyjuk')
